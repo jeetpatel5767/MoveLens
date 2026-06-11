@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// FORBIDDEN env vars: ANTHROPIC_API_KEY, OPENAI_API_KEY, AUDIT_MODEL — never add these.
+// No paid-AI API keys belong here. See CLAUDE.md hard rules.
 
 const EnvSchema = z.object({
   SUI_GRAPHQL_URL: z.string().url(),
