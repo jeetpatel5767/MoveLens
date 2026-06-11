@@ -1,0 +1,384 @@
+{
+  "project": "MoveLens",
+  "rules": "NEVER remove or edit features. ONLY the 'passes' field may be changed, and ONLY after the listed steps were executed end-to-end in this session. Removing or editing features is unacceptable because it could lead to missing or buggy functionality. NOTE (BRIEFING.md): Layer 4 features F25-F28 are deferred until ALL Phase 1-5 features pass, regardless of phase number.",
+  "features": [
+    {
+      "id": "F01",
+      "phase": 1,
+      "priority": 1,
+      "category": "ingest",
+      "description": "Environment loader validates all required env vars and fails fast with readable errors",
+      "steps": [
+        "Delete one required var from .env",
+        "Start the app",
+        "Verify it exits with an error naming the missing var",
+        "Restore the var and verify clean startup"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F02",
+      "phase": 1,
+      "priority": 1,
+      "category": "ingest",
+      "description": "Sui GraphQL client fetches a real testnet package with modules and disassembly (NEVER JSON-RPC)",
+      "steps": [
+        "Call fetchPackage with a known testnet package id",
+        "Verify >= 1 module returned with non-empty disassembly",
+        "Verify version and upgradeCount fields populated",
+        "Run: grep -ri 'jsonrpc' src/ and verify ZERO matches"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F03",
+      "phase": 1,
+      "priority": 1,
+      "category": "ingest",
+      "description": "Invalid or missing packages produce typed errors, not crashes",
+      "steps": [
+        "Call fetchPackage with malformed address, verify rejection before any network call",
+        "Call fetchPackage with a valid-format but nonexistent address",
+        "Verify PackageNotFoundError is thrown with a readable message"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F04",
+      "phase": 1,
+      "priority": 2,
+      "category": "ingest",
+      "description": "MVR reverse resolution converts package id to human-readable name, and never blocks an audit",
+      "steps": [
+        "Resolve a known MVR-registered mainnet package, verify a name like @scope/name returns",
+        "Resolve an unregistered package, verify { name: null } returns without throwing",
+        "Simulate endpoint timeout, verify audit pipeline continues with nulls"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F05",
+      "phase": 1,
+      "priority": 2,
+      "category": "ingest",
+      "description": "Move source upload path builds a valid PackageContext from pasted files",
+      "steps": [
+        "POST source files via the API",
+        "Verify non-.move files and >1MB payloads are rejected with 400",
+        "Verify a valid upload produces a PackageContext with modules populated"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F06",
+      "phase": 2,
+      "priority": 1,
+      "category": "audit_engine",
+      "description": "Finding and AuditReport zod schemas plus rule_id registry exist with 13 sector prefixes (ML-ACC, ML-INT, ML-HOT, ML-OWN, ML-ARI, ML-UPG, ML-RAC, ML-RET, ML-TOK, ML-WRP, ML-DOS, ML-DEP, ML-LOG) and 93 seeded rules",
+      "steps": [
+        "Verify rules.ts contains all REGEX+AST rules parsed from movelens_vuln_corpus_classified.md across the 13 sector prefixes",
+        "Verify Finding schema rejects an unknown rule_id",
+        "Verify AuditReport schema requires the exact watermark string"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F07",
+      "phase": 2,
+      "priority": 1,
+      "category": "audit_engine",
+      "description": "Four Move test fixtures exist with expected.json ground truth",
+      "steps": [
+        "Verify vulnerable_cap.move, missing_signer.move, overflow.move, clean.move exist in test/fixtures",
+        "Verify each has a sibling expected.json listing required rule_ids",
+        "Verify each fixture is under 80 lines and contains a module declaration"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F08",
+      "phase": 2,
+      "priority": 1,
+      "category": "audit_engine",
+      "description": "Layer 1 deterministic rule engine runs all 93 rules and emits schema-valid findings with confidence=1.0",
+      "steps": [
+        "Run Layer 1 on vulnerable_cap.move, verify expected rule_ids appear with confidence 1.0 and source layer1",
+        "Run on missing_signer.move and overflow.move, verify expected rule_ids appear",
+        "Run on clean.move, verify zero critical or high findings",
+        "Verify every emitted finding validates against the zod schema"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F09",
+      "phase": 2,
+      "priority": 1,
+      "category": "audit_engine",
+      "description": "Engine is fault-tolerant and meets the time budget (Layers 1+2 under 5s, full run under 90s)",
+      "steps": [
+        "Artificially make Layer 4 sidecar unreachable, verify audit completes with Layer 1+2 findings",
+        "Time Layers 1+2 on a fixture, verify under 5 seconds",
+        "Verify duplicate findings (same rule_id+module+line) are deduplicated keeping highest confidence"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F10",
+      "phase": 2,
+      "priority": 2,
+      "category": "audit_engine",
+      "description": "Layer 2 OZ benchmark runs 10 deviation checks and Cetus ML-OZ-001 always appears first in report",
+      "steps": [
+        "Run Layer 2 on overflow.move",
+        "Verify ML-OZ-001 fires with severity critical and confidence 0.95",
+        "Verify the Cetus-class finding sorts first in the report",
+        "Verify all 10 OZ rules are implemented and unit-tested against deviation snippets"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F11",
+      "phase": 3,
+      "priority": 1,
+      "category": "report",
+      "description": "Report assembler produces a complete AuditReport with risk grade, sorted findings, and hardcoded watermark",
+      "steps": [
+        "Assemble a report from fixture findings",
+        "Verify findings sorted critical-first, confidence descending within severity",
+        "Verify severity counts and A-F risk grade computed per the documented mapping",
+        "Verify watermark string present verbatim"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F12",
+      "phase": 3,
+      "priority": 1,
+      "category": "seal",
+      "description": "Seal threshold encryption round-trips a report for the owner identity",
+      "steps": [
+        "Encrypt a fixture report with encryptReport",
+        "Verify ciphertext is not parseable JSON",
+        "Decrypt with the owner identity, verify byte-identical report recovered",
+        "Disable Seal endpoint, verify pipeline falls back to plaintext with sealed=false and a loud warning (fallback works but this feature only passes with real Seal encryption)"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F13",
+      "phase": 4,
+      "priority": 1,
+      "category": "walrus",
+      "description": "Quilt bundler packages report.json, findings.enc, and summary.md into quilt entries",
+      "steps": [
+        "Build a quilt from a fixture report",
+        "Verify 3 entries with correct identifiers",
+        "Verify report.json entry contains only public metadata plus watermark, not decrypted findings"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F14",
+      "phase": 4,
+      "priority": 1,
+      "category": "walrus",
+      "description": "Audit quilt uploads to Walrus testnet and returns a real blob id (CORE TRACK REQUIREMENT)",
+      "steps": [
+        "Run a fixture audit end-to-end and upload",
+        "Verify a real blob id is returned and record it in progress.txt",
+        "Fetch the blob back by id from a fresh process and verify report.json matches",
+        "Wait several minutes, fetch again, verify still retrievable"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F15",
+      "phase": 5,
+      "priority": 1,
+      "category": "mvr",
+      "description": "Demo Move package (<=150 lines) is published on testnet and registered in MVR",
+      "steps": [
+        "Build and publish the move/ demo module to testnet",
+        "Verify the package id on a Sui explorer",
+        "Register it in MVR testnet and verify the PackageInfo object is owned by our keypair"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F16",
+      "phase": 5,
+      "priority": 1,
+      "category": "mvr",
+      "description": "set_metadata attaches the Walrus blob id to our package on-chain and reads back",
+      "steps": [
+        "Call attachAuditToPackage with a real blob id",
+        "Verify tx digest returned and record it in progress.txt",
+        "Call readAuditMetadata and verify the same blob id returns via GraphQL"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F17",
+      "phase": 6,
+      "priority": 2,
+      "category": "memory",
+      "description": "AuditMemory abstraction layer with noop fallback keeps the pipeline alive when MemWal is disabled or down",
+      "steps": [
+        "Set MEMWAL_ENABLED=false",
+        "Run a full fixture audit end-to-end, verify success with noop stub",
+        "Verify a warning is logged and memory_context_used is false"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F18",
+      "phase": 6,
+      "priority": 2,
+      "category": "memory",
+      "description": "MemWal remember/recall loop: past findings are stored and injected into future agent prompts",
+      "steps": [
+        "Audit a fixture, verify remember fires for findings with confidence >= 0.8",
+        "Audit a similar fixture, verify recall returns the stored pattern",
+        "Verify the recalled pattern appears in the agent prompt (via logs)",
+        "Verify report.memory_context_used is true"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F19",
+      "phase": 7,
+      "priority": 1,
+      "category": "frontend",
+      "description": "Audit API: POST starts an async job, GET polls status through all pipeline stages",
+      "steps": [
+        "POST a fixture source, verify auditId returned immediately",
+        "Poll GET and observe status progressing through fetching/auditing/uploading to done",
+        "Verify a failed stage produces status failed with a human-readable error"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F20",
+      "phase": 7,
+      "priority": 1,
+      "category": "frontend",
+      "description": "Landing page accepts a package address or pasted source with client-side validation",
+      "steps": [
+        "Open the app in a real browser",
+        "Type an invalid address, verify inline error and no API call",
+        "Paste fixture source in the source tab and submit",
+        "Verify navigation to /audit/[id]"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F21",
+      "phase": 7,
+      "priority": 1,
+      "category": "frontend",
+      "description": "Report page: live 12-step pipeline stepper, then full findings view with trust panel",
+      "steps": [
+        "Run an audit from the browser and watch the stepper animate through stages",
+        "Verify finished report shows risk grade, severity chips, expandable findings with rule_id, line range, recommendation, confidence bar",
+        "Verify trust panel shows Walrus blob id link, Seal badge, MVR tx digest link",
+        "Verify watermark visibly rendered at top",
+        "Hard-refresh mid-audit and verify state recovers"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F22",
+      "phase": 8,
+      "priority": 2,
+      "category": "polish",
+      "description": "Failure honesty: every stage failure surfaces a readable error, low-confidence findings are de-emphasized",
+      "steps": [
+        "Force a Walrus upload failure, verify report page shows the error (no infinite spinner)",
+        "Verify findings with confidence < 0.4 are visually de-emphasized and labeled low confidence"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F23",
+      "phase": 8,
+      "priority": 2,
+      "category": "polish",
+      "description": "Demo assets: demo.md script with pre-recorded backup blob id and tx digest, plus README",
+      "steps": [
+        "Verify scripts/demo.md exists with the 3-minute flow mapped to judging criteria",
+        "Verify it contains a real backup blobId and tx digest from a pre-run audit",
+        "Verify README.md covers pitch, 12-step architecture, stack, setup"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F24",
+      "phase": 8,
+      "priority": 1,
+      "category": "polish",
+      "description": "Cold-start integrity: fresh clone to working audit in under 5 minutes of human effort",
+      "steps": [
+        "Clone to a clean directory",
+        "cp .env.example .env and fill keys",
+        "Run ./init.sh and verify health checks pass",
+        "Run a fixture audit from the browser and verify a report with blob id renders"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F25",
+      "phase": 2,
+      "priority": 1,
+      "category": "audit_engine",
+      "description": "LanceDB corpus seeded with 200 known-vulnerable Move snippets and similarity search returns correct match for Cetus pattern",
+      "steps": [
+        "Run scripts/seedLanceDB.ts",
+        "Verify lancedb_store/ directory exists",
+        "Query with a Cetus-like snippet and confirm similarity > 0.75 returned"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F26",
+      "phase": 2,
+      "priority": 1,
+      "category": "audit_engine",
+      "description": "Layer 4 Python sidecar starts on port 8765 and /embed + /classify endpoints respond correctly",
+      "steps": [
+        "pip install -r requirements.txt",
+        "python scripts/layer4_server.py",
+        "POST /embed with Cetus snippet → similar_to: cetus_checked_shlw",
+        "POST /classify with overflow snippet → vulnerable: true, category: ML-INT"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F27",
+      "phase": 2,
+      "priority": 2,
+      "category": "audit_engine",
+      "description": "Layer 4 TypeScript caller fetches sidecar results and merges confidence scores into final findings",
+      "steps": [
+        "Run full audit on overflow.move fixture",
+        "Verify Layer 4 findings appear with source: layer4",
+        "Verify confidence score is composite (embed + classify + optional groq)",
+        "Verify Model C (Groq) only called when confidence is 0.4-0.7"
+      ],
+      "passes": false
+    },
+    {
+      "id": "F28",
+      "phase": 2,
+      "priority": 2,
+      "category": "audit_engine",
+      "description": "Full 4-layer engine runs end-to-end on all fixtures under 90 seconds with no paid API calls",
+      "steps": [
+        "Run engine on all 4 fixtures",
+        "Verify total time < 90s",
+        "grep -ri 'anthropic\\|openai_api_key\\|callClaude' src/ returns ZERO matches",
+        "Verify findings from all 4 layers present in output"
+      ],
+      "passes": false
+    }
+  ]
+}

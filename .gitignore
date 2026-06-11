@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.local
+.next/
+out/
+dist/
+lancedb_store/
+__pycache__/
+*.pyc
+.python-version
+/tmp/
+*.log
