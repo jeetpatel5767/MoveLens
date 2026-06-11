@@ -14,7 +14,7 @@
         "Verify it exits with an error naming the missing var",
         "Restore the var and verify clean startup"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F02",

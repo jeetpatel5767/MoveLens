@@ -20,3 +20,12 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Next session should: start feature F01 (env loader) per IMPLEMENTATION.md Task 1.0 — includes scaffolding Next.js 15 app. Remember: F25-F28 (Layer 4) are DEFERRED until all Phase 1-5 features pass.
 - Issues found: none
 - Artifacts: none
+
+[2026-06-11] Session 2
+- Worked on: F01 — environment loader (Task 1.0)
+- Completed (tested end-to-end): F01 passes. git init + initial commit (c6cc29b). Scaffolded Next.js 15 manually (create-next-app blocked by capital-letter dir name). Created src/lib/env.ts (zod-validated env loader), .env.example, package.json, tsconfig.json. Verified: missing SUI_KEYPAIR_B64 → exit 1 naming the var; all vars present → exit 0.
+- Commits: c6cc29b chore: initial commit — harness files; 258059e feat(F01): env loader with zod validation
+- Current state: init.sh green. F01 passes. Next.js 15 app scaffolded. typecheck clean.
+- Next session should: implement F02 — Sui GraphQL client (src/lib/sui/graphql.ts + src/lib/sui/queries.ts). Task 1.1 + 1.2 in IMPLEMENTATION.md. fetchPackage with a real testnet package, verify modules + disassembly returned, grep for jsonrpc = 0 matches.
+- Issues found: movelens_vuln_corpus_classified.md not present in working directory (mentioned in Session 1 progress but file is absent). Needed for F06 (rules.ts). Not blocking F02-F05 but must be located before Phase 2.
+- Artifacts: none
