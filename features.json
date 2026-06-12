@@ -175,7 +175,7 @@
         "Verify 3 entries with correct identifiers",
         "Verify report.json entry contains only public metadata plus watermark, not decrypted findings"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F14",

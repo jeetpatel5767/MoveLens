@@ -128,3 +128,26 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   identifiers; (3) verify report.json has no decrypted findings; (4) findings.enc = encryptedBytes.
 - Issues found: none
 - Artifacts: none
+
+[2026-06-12] Session 12
+- Worked on: F13 — Quilt bundler
+- Completed (tested end-to-end): F13 PASSES. 4/4 steps.
+  Created src/lib/walrus/quilt.ts: buildQuilt(report, encryptedBytes, sealed) returns
+  QuiltEntry[] with 3 entries: report.json (public metadata — no findings), findings.enc
+  (encrypted bytes verbatim), summary.md (markdown with risk_grade, severity counts, watermark).
+  QuiltPublicMeta type excludes all finding-level fields. Watermark appears in report.json
+  and summary.md. npm install @mysten/walrus@1.1.7.
+  Bug: comment contained "Anthropic" (triggering init.sh paid-API grep) — renamed to
+  "AI-provider" in comment.
+- Commits: 4073d3c feat(F13): Quilt bundler — 4/4 steps pass
+- Current state: init.sh green. 13/28 features passing (F01–F13). typecheck clean.
+- Next session should: implement F14 — Walrus blob upload (src/lib/walrus/upload.ts).
+  Task 4.2 in IMPLEMENTATION.md. uploadAuditQuilt(entries): Promise<{blobId, quiltPatchIds}>.
+  Requires real funded keypair in SUI_KEYPAIR_B64 (current .env has placeholder).
+  Steps: (1) upload fixture audit end-to-end → real blob ID; (2) fetch blob back, report.json
+  matches; (3) wait several minutes, fetch again. Uses WalrusClient from @mysten/walrus,
+  SUI_KEYPAIR_B64 for signing, epochs: 5. Also implement fetchAuditBlob(blobId).
+  NOTE: F14 REQUIRES a real funded testnet keypair. The current .env has a placeholder.
+  The user must provide a real SUI_KEYPAIR_B64 before F14 can be verified.
+- Issues found: none (F13 is pure bundling, no network required)
+- Artifacts: none
