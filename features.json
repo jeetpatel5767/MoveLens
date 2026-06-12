@@ -202,7 +202,7 @@
         "Verify the package id on a Sui explorer",
         "Register it in MVR testnet and verify the PackageInfo object is owned by our keypair"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F16",
@@ -215,7 +215,7 @@
         "Verify tx digest returned and record it in progress.txt",
         "Call readAuditMetadata and verify the same blob id returns via GraphQL"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F17",
