@@ -41,7 +41,7 @@
         "Call fetchPackage with a valid-format but nonexistent address",
         "Verify PackageNotFoundError is thrown with a readable message"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F04",
