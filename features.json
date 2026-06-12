@@ -93,7 +93,7 @@
         "Verify each has a sibling expected.json listing required rule_ids",
         "Verify each fixture is under 80 lines and contains a module declaration"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F08",
