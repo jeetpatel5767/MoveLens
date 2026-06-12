@@ -134,7 +134,7 @@
         "Verify the Cetus-class finding sorts first in the report",
         "Verify all 10 OZ rules are implemented and unit-tested against deviation snippets"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F11",
