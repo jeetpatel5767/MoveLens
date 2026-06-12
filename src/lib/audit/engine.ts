@@ -18,20 +18,15 @@ import {
 import type { Finding, AuditReport, SeverityCounts } from "./schema";
 import type { PackageContext } from "../sui/queries";
 import { env } from "../env";
+import type { AuditMemory } from "../memory/index";
+import { NoopMemory } from "../memory/noop";
 
-// ──────────────────────────────────────────────────────────────
-// Minimal AuditMemory stub (Phase 6 will replace with MemWal)
-// ──────────────────────────────────────────────────────────────
+// Re-export so callers can use the type from either location.
+export type { AuditMemory };
 
-export interface AuditMemory {
-  recall: (query: string, namespace: string) => Promise<Finding[]>;
-  remember: (finding: Finding, namespace: string) => Promise<void>;
-}
-
-const NOOP_MEMORY: AuditMemory = {
-  recall:   async () => [],
-  remember: async () => { /* noop */ },
-};
+// Default memory — Phase 6 (F17/F18) wires the real MemWalMemory through createMemory().
+// Tests and the API route can pass a specific memory instance; this default is noop.
+const NOOP_MEMORY: AuditMemory = new NoopMemory();
 
 // ──────────────────────────────────────────────────────────────
 // Engine result type
