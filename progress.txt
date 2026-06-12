@@ -47,3 +47,12 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Next session should: implement F03 (error types — mostly done, just needs PackageNotFoundError live test on 0xdead address) and F04 (MVR resolve.ts). F03 steps: malformed address → InvalidAddressError ✓, nonexistent address → PackageNotFoundError (needs confirming). F04: src/lib/mvr/resolve.ts resolvePackageName().
 - Issues found: none
 - Artifacts: none
+
+[2026-06-12] Session 5
+- Worked on: F03, F04, F05 — completing all of Phase 1
+- Completed (tested end-to-end): F03 ✓ (InvalidAddressError pre-network, PackageNotFoundError for nonexistent address, readable messages — 3/3 steps). F04 ✓ (MVR reverse resolution: @deepbook/core resolves, unregistered→null, timeout→null, never blocks — 3/3 steps). F05 ✓ (source upload: non-.move rejected 400, >1MB rejected 400, valid upload → PackageContext with modules — 3/3 steps). Phase 1 complete: F01–F05 all passing.
+- Commits: c2c6b64 F03, 10bea69 F04, 9b460a8 F05
+- Current state: init.sh green. 5/28 features passing (F01–F05). Phase 1 done. Phase 2 next.
+- Next session should: start F06 — Finding/AuditReport zod schemas + rule registry (93 rules, 13 sectors). Requires movelens_vuln_corpus_classified.md which was noted missing from the repo. MUST locate/recreate that file before F06 can proceed. Task 2.0 in IMPLEMENTATION.md.
+- Issues found: movelens_vuln_corpus_classified.md still missing — blocks F06. Must be provided before Phase 2 work begins.
+- Artifacts: none
