@@ -1,5 +1,5 @@
 // Auto-generated from movelens_vuln_corpus_classified.md — do NOT edit IDs manually.
-// 93 canonical rule IDs across 13 sectors.
+// 93 canonical Layer 1 rule IDs across 13 sectors + 10 Layer 2 OZ benchmark IDs.
 // Only the `passes` field in features.json may change; IDs are immutable.
 
 export const VALID_RULE_IDS: ReadonlySet<string> = new Set([
@@ -39,7 +39,13 @@ export const VALID_RULE_IDS: ReadonlySet<string> = new Set([
   "ML-LOG-006", "ML-LOG-007", "ML-LOG-008", "ML-LOG-009", "ML-LOG-010",
   "ML-LOG-011", "ML-LOG-012", "ML-LOG-013", "ML-LOG-014", "ML-LOG-015",
   "ML-LOG-016", "ML-LOG-017", "ML-LOG-018", "ML-LOG-019", "ML-LOG-020",
+  // LAYER 2 — OpenZeppelin benchmark deviations (10)
+  "ML-OZ-001", "ML-OZ-002", "ML-OZ-003", "ML-OZ-004", "ML-OZ-005",
+  "ML-OZ-006", "ML-OZ-007", "ML-OZ-008", "ML-OZ-009", "ML-OZ-010",
 ]);
 
-/** Total must always be 93. Checked at runtime in rules.ts. */
+/** Layer 1 corpus size — must always be 93. Checked at runtime in rules.ts. */
 export const RULE_COUNT = 93;
+
+/** Layer 2 OZ benchmark size — must always be 10. */
+export const OZ_RULE_COUNT = 10;

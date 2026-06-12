@@ -4,7 +4,7 @@
 // Step 3: AuditReport schema requires the exact watermark string
 
 import { RULES, RULE_REGISTRY } from "../src/lib/audit/rules";
-import { VALID_RULE_IDS, RULE_COUNT } from "../src/lib/audit/rule-ids";
+import { VALID_RULE_IDS, RULE_COUNT, OZ_RULE_COUNT } from "../src/lib/audit/rule-ids";
 import { FindingSchema, AuditReportSchema, WATERMARK } from "../src/lib/audit/schema";
 
 function pass(msg: string) { console.log("PASS", msg); }
@@ -46,8 +46,9 @@ async function main() {
     fail(`step1: Expected 9 SKIP_MVP rules, got ${skipRules.length}`);
   }
 
-  if (VALID_RULE_IDS.size !== RULE_COUNT) {
-    fail(`step1: VALID_RULE_IDS.size=${VALID_RULE_IDS.size}, expected ${RULE_COUNT}`);
+  // VALID_RULE_IDS includes the 93 Layer 1 corpus rules + 10 Layer 2 OZ rules
+  if (VALID_RULE_IDS.size !== RULE_COUNT + OZ_RULE_COUNT) {
+    fail(`step1: VALID_RULE_IDS.size=${VALID_RULE_IDS.size}, expected ${RULE_COUNT + OZ_RULE_COUNT} (${RULE_COUNT} L1 + ${OZ_RULE_COUNT} OZ)`);
   }
 
   // All RULES IDs must be in VALID_RULE_IDS
