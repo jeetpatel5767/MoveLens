@@ -28,7 +28,7 @@
         "Verify version and upgradeCount fields populated",
         "Run: grep -ri 'jsonrpc' src/ and verify ZERO matches"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F03",

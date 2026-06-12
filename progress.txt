@@ -38,3 +38,12 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Next session should: (1) verify F02 with internet — run fetchPackage on a real testnet package ID (e.g. Sui framework 0x1 or 0x2), confirm >=1 module with non-empty disassembly, mark F02 passing. (2) Then implement F03 (error types, already done), F04 (MVR resolve.ts), F05 (source upload). Note: F03 steps are partially covered by F02 code (InvalidAddressError + PackageNotFoundError exist) — verify all F03 steps too when network is available.
 - Issues found: No internet access in build environment — cannot execute live Sui testnet calls. All code is correct per schema inspection of @mysten/sui node_modules.
 - Artifacts: none
+
+[2026-06-12] Session 4
+- Worked on: F02 live verification + two bugs fixed
+- Completed (tested end-to-end): F02 PASSES. Fixed: (1) env.ts missing dotenv.config() — .env was never loaded for tsx scripts; (2) SUI_GRAPHQL_URL was wrong hostname (sui-testnet.mystenlabs.com dead) — correct URL is https://graphql.testnet.sui.io/graphql. fetchPackage('0x2') → 20 modules, version 52, disassembly non-empty. InvalidAddressError fires pre-network. Zero jsonrpc refs in src/.
+- Commits: 0a5a880 fix(env): dotenv; + .env/.env.example URL fix
+- Current state: init.sh green. F01 + F02 passing. 2/28 features done.
+- Next session should: implement F03 (error types — mostly done, just needs PackageNotFoundError live test on 0xdead address) and F04 (MVR resolve.ts). F03 steps: malformed address → InvalidAddressError ✓, nonexistent address → PackageNotFoundError (needs confirming). F04: src/lib/mvr/resolve.ts resolvePackageName().
+- Issues found: none
+- Artifacts: none
