@@ -54,7 +54,7 @@
         "Resolve an unregistered package, verify { name: null } returns without throwing",
         "Simulate endpoint timeout, verify audit pipeline continues with nulls"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F05",
