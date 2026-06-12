@@ -189,7 +189,7 @@
         "Fetch the blob back by id from a fresh process and verify report.json matches",
         "Wait several minutes, fetch again, verify still retrievable"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F15",
