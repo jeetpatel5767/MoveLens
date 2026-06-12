@@ -120,7 +120,7 @@
         "Time Layers 1+2 on a fixture, verify under 5 seconds",
         "Verify duplicate findings (same rule_id+module+line) are deduplicated keeping highest confidence"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F10",
