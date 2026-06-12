@@ -228,7 +228,7 @@
         "Run a full fixture audit end-to-end, verify success with noop stub",
         "Verify a warning is logged and memory_context_used is false"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F18",

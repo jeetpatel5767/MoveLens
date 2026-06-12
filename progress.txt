@@ -214,3 +214,24 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     PackageInfo TX:     3NvP9wMCAqRzgaQYz8vjyfKT27em1qdAw5tj5BTqooUW
     set_metadata TX:    HmhWjcJymAsaLmVXMA3qWN5B4rBDJSZNM8P87QosfF9B (F16 blob: pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zA)
     signer address:     0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
+
+[2026-06-12] Session 14 (continued — F17)
+- Worked on: F17 — AuditMemory abstraction with noop fallback
+- Completed (tested end-to-end): F17 PASSES. 3/3 steps.
+  Created src/lib/memory/index.ts: AuditMemory interface (recall/remember/healthy),
+  MemoryHit type, createMemory() factory (MEMWAL_ENABLED=false → NoopMemory with warning;
+  MEMWAL_ENABLED=true → tries MemWalMemory.healthy(), falls back to NoopMemory on false/error).
+  Created src/lib/memory/noop.ts: NoopMemory class (recall=[],remember=noop,healthy=true).
+  Created src/lib/memory/memwal.ts: MemWalMemory stub (healthy()=false until F18).
+  Updated src/lib/audit/engine.ts: imports AuditMemory from memory/index instead of inline
+  definition; NOOP_MEMORY = new NoopMemory(). Re-exports AuditMemory type for callers.
+  All prior tests (F09, F11, etc.) still pass after refactor.
+- Commits: TBD (committing now)
+- Current state: init.sh green (expected). 17/28 features passing (F01–F17). typecheck clean.
+- Next session should: implement F18 — MemWal remember/recall loop.
+  Task 6.2 in IMPLEMENTATION.md. src/lib/memory/memwal.ts: real MemWalMemory implementation.
+  Steps: (1) audit fixture → remember fires for findings >= 0.8; (2) audit similar fixture →
+  recall returns stored pattern; (3) pattern appears in agent prompt (logs); (4) memory_context_used=true.
+  NOTE: requires @mysten-incubation/memwal SDK and a MemWal endpoint in env.
+- Issues found: none
+- Artifacts: none (all in-process, no on-chain TXs)
