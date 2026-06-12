@@ -197,7 +197,7 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   (3) vec_map::insert aborts if key exists — fixed with upsert: read current, unset_metadata if
   exists, then set_metadata; (4) readAuditMetadata has retry logic (6 attempts, 3s delay) for
   indexer lag after TX.
-- Commits: TBD (committing now)
+- Commits: 4665f9e feat(F15+F16): demo Move package + set_metadata blob attachment — 6/6 steps pass
 - Current state: init.sh green (expected). 16/28 features passing (F01–F16). typecheck clean.
 - Next session should: implement F17 — AuditMemory abstraction with noop fallback.
   Task 6.1 in IMPLEMENTATION.md. src/lib/memory/index.ts: AuditMemory interface with remember()/recall().
