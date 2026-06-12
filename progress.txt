@@ -235,3 +235,35 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   NOTE: requires @mysten-incubation/memwal SDK and a MemWal endpoint in env.
 - Issues found: none
 - Artifacts: none (all in-process, no on-chain TXs)
+
+[2026-06-12] Session 14 (continued — F18 partial)
+- Worked on: F18 — MemWal remember/recall loop
+- Completed (tested end-to-end): BLOCKED — F18 not passing.
+  MemWalMemory implementation is COMPLETE (src/lib/memory/memwal.ts):
+  dynamic ESM import of @mysten-incubation/memwal SDK; healthy() checks env vars;
+  recall() → MemoryHit[] via MemWal semantic search; remember() → rememberAsync().
+  env.ts: added optional MEMWAL_PRIVATE_KEY and MEMWAL_ACCOUNT_ID.
+  createMemory() falls back to NoopMemory with helpful warning if vars absent.
+  scripts/create-memwal-account.ts: one-time setup helper.
+  test/f18-verify.ts: 4-step test that skips gracefully when creds not configured.
+  BLOCKER: MemWal server (https://relayer.memwal.ai) is mainnet-only.
+  Creating a MemWal account requires mainnet SUI for gas.
+  Our keypair (0x8a271c5a…) has 0 mainnet SUI.
+- Commits: 279da53 feat(F18-partial): MemWalMemory implementation ready; blocked on mainnet SUI
+- Current state: init.sh green. 17/28 features passing (F01–F17). typecheck clean.
+- Next session should: EITHER
+    Option A (unblock F18): Acquire some mainnet SUI for the signer address
+      (0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57),
+      find the MemWal contract registryId on mainnet (check
+      https://github.com/MystenLabs/MemWal or Sui mainnet explorer),
+      run `npx tsx scripts/create-memwal-account.ts`, add MEMWAL_PRIVATE_KEY
+      and MEMWAL_ACCOUNT_ID to .env, run `npx tsx test/f18-verify.ts`.
+    Option B (skip F18 for now): Move to F19 — Audit API (POST starts async job,
+      GET polls status). Task 7.1 in IMPLEMENTATION.md. Create src/app/api/audit/
+      route.ts and src/lib/store/audits.ts. F18 stays passes:false.
+  NOTE: With deadline June 21, Option B is safer — F19/F20/F21 are the judging-facing features.
+- Issues found: MemWal SDK is ESM-only (@type:module), requires dynamic import in tsx CJS context.
+  MemWal account is a mainnet Sui object — no testnet deployment exists.
+  MemWal packageId on mainnet: 0xcee7a6fd8de52ce645c38332bde23d4a30fd9426bc4681409733dd50958a24c6
+  MEMWAL_REGISTRY_ID: unknown — need to find from MemWal mainnet deployment or docs.
+- Artifacts: none (no on-chain TXs this sub-session)
