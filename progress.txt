@@ -74,3 +74,12 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Next session should: implement F08 — Layer 1 deterministic rule engine (src/lib/audit/layer1.ts). Task 2.2 in IMPLEMENTATION.md. Run all 65 REGEX rules over each fixture, emit schema-valid Finding objects (confidence=1.0, source="layer1"), verify against expected.json. Steps: (1) run on vulnerable_cap.move → ML-ACC-008+UPG-001 appear; (2) run on missing_signer.move+overflow.move → expected IDs appear; (3) run on clean.move → zero critical/high; (4) every finding validates against FindingSchema.
 - Issues found: ML-ACC-001 pattern uses [^{]* which crosses newlines (not dotAll-dependent) — any comment containing "public fun" followed by a { elsewhere in the same file will false-positive. Documented in fixture comments. Layer 1 engine must apply patterns line-by-line or use the same gm flags to match the expected behavior.
 - Artifacts: none
+
+[2026-06-12] Session 8
+- Worked on: F08 — Layer 1 deterministic rule engine
+- Completed (tested end-to-end): F08 PASSES. Created src/lib/audit/layer1.ts (runLayer1, matchPattern with binary-search line numbers, deduplicateFindings). ML-INT-001 runs first. 65 REGEX rules run; AST/SKIP_MVP skipped. Every Finding validated through FindingSchema. test/f08-verify.ts: 4/4 steps pass. 36 findings across all 4 fixtures; clean.move produces zero critical/high (6 medium/low: ML-INT-004 false positive on comment slashes, ML-UPG-004 on "UpgradeCap" in a comment). TypeCheck clean. init.sh green.
+- Commits: 2eeceaa feat(F08): Layer 1 deterministic rule engine
+- Current state: init.sh green. 8/28 features passing (F01–F08). typecheck clean.
+- Next session should: implement F09 — fault tolerance + timing budget (src/lib/audit/engine.ts stub). Steps: (1) make Layer 4 sidecar unreachable → audit completes with L1+L2 findings; (2) time Layers 1+2 on a fixture → under 5s; (3) deduplicate findings (same rule_id+module+line → keep highest confidence). Requires also creating a minimal engine.ts that calls runLayer1 and returns findings. Note: Layer 2 (layer2.ts) is also needed for F09 step 2 (time L1+L2 together).
+- Issues found: ML-INT-004 pattern fires on comment lines containing "/" (e.g., "// FIXTURE: ..."). ML-UPG-004 fires on comment "no UpgradeCap misuse". Both are medium/low severity false positives — acceptable per F08 criteria (zero critical/high on clean). Will not fix until F09/polish phase.
+- Artifacts: none
