@@ -91,9 +91,11 @@ function patchSuiClientForSeal(client: SuiGraphQLClient): SuiGraphQLClient {
   (client.core as any).getObject = async (options: Parameters<typeof originalGetObject>[0]) => {
     const result = await originalGetObject(options);
     // Pre-resolve the lazy content Promise so the Seal SDK can read it synchronously.
-    if (result?.object?.content instanceof Promise) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const contentMaybePromise = result?.object?.content as any;
+    if (contentMaybePromise && typeof contentMaybePromise.then === "function") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (result.object as any).content = await result.object.content;
+      (result.object as any).content = await contentMaybePromise;
     }
     return result;
   };
@@ -136,7 +138,7 @@ export async function encryptReport(
     // GraphQL client — no JSON-RPC (hard rule).
     // Patched to pre-resolve the lazy content Promise for Seal SDK compatibility.
     const suiClient = patchSuiClientForSeal(
-      new SuiGraphQLClient({ url: env.SUI_GRAPHQL_URL }),
+      new SuiGraphQLClient({ url: env.SUI_GRAPHQL_URL, network: env.SUI_NETWORK }),
     );
 
     const sealClient = new SealClient({

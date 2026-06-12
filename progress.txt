@@ -151,3 +151,34 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   The user must provide a real SUI_KEYPAIR_B64 before F14 can be verified.
 - Issues found: none (F13 is pure bundling, no network required)
 - Artifacts: none
+
+[2026-06-12] Session 13
+- Worked on: F14 — Walrus blob upload (src/lib/walrus/upload.ts)
+- Completed (tested end-to-end): F14 PASSES. 4/4 steps.
+  Created src/lib/walrus/upload.ts: WalrusUploadError, loadKeypair() (bech32 + raw base64 formats),
+  patchSuiClientForWalrus() (chunks getObjects to 30-item batches to stay under 5000B GraphQL limit),
+  createWalrusClient(), uploadAuditQuilt(entries): retries once on failure, fetchAuditBlob(blobId).
+  Created test/f14-verify.ts: 4/4 steps — upload → verify blobId → fetch → re-fetch byte-identical.
+  Real keypair funded: address 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57.
+  Key debug findings: (1) getMetadataStatus in writeEncodedBlobToNode uses empty catch, so 400 errors
+  on some nodes are silently swallowed; (2) 29/101 testnet storage nodes are unreachable due to
+  DEPTH_ZERO_SELF_SIGNED_CERT, ENOTFOUND, CERT_HAS_EXPIRED, ECONNRESET, ECONNREFUSED — but 72+
+  nodes succeed, which is above the 333-shard quorum threshold; (3) n_shards=1000, maxFaulty=333,
+  101 nodes, avg 9.9 shards/node — enough nodes are reachable to always hit quorum.
+- Commits: TBD (committing this session)
+- Current state: init.sh green. 14/28 features passing (F01–F14). typecheck clean.
+- Next session should: implement F15 — Demo Move package published on testnet + MVR registration.
+  Task 5.1 in IMPLEMENTATION.md. Write minimal Move package (<150 lines) in move/ directory.
+  Build + publish to testnet using `sui client publish --gas-budget 200000000`.
+  Register in MVR testnet: create PackageInfo object via MVR CLI or PTB.
+  Steps: (1) build+publish → package ID + tx digest; (2) verify on Sui explorer; (3) register in MVR.
+- Issues found: Walrus testnet has 29/101 unreachable nodes (TLS/DNS/timeout), but quorum is still
+  achievable. Uploads may occasionally fail if failing nodes control too many shards — retry logic
+  in uploadAuditQuilt() (2 attempts) handles this. The 400 "not registered" error on a few nodes
+  is a timing issue (nodes haven't yet processed the on-chain event); retry resolves it.
+- Artifacts:
+    blobId: pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zA (audit quilt, 5 epochs, permanent)
+    quiltPatchIds: { "findings.enc": "pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zABAQALAA",
+                     "report.json":  "pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zABCwAMAA",
+                     "summary.md":   "pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zABDAANAA" }
+    signer address: 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
