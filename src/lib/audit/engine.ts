@@ -11,7 +11,11 @@
 
 import { runLayer1 } from "./layer1";
 import { runLayer2 } from "./layer2";
-import type { Finding } from "./schema";
+import {
+  AuditReportSchema,
+  WATERMARK,
+} from "./schema";
+import type { Finding, AuditReport, SeverityCounts } from "./schema";
 import type { PackageContext } from "../sui/queries";
 import { env } from "../env";
 
@@ -30,13 +34,84 @@ const NOOP_MEMORY: AuditMemory = {
 };
 
 // ──────────────────────────────────────────────────────────────
-// Engine result type (Phase 3 will add full AuditReport assembly)
+// Engine result type
 // ──────────────────────────────────────────────────────────────
 
 export interface EngineResult {
   findings:   Finding[];
   layersRun:  string[];
   durationMs: { layer1: number; layer2: number; layer4: number; total: number };
+}
+
+// ──────────────────────────────────────────────────────────────
+// Report assembly (Phase 3 / F11)
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * Count findings by severity.
+ */
+export function computeSeverityCounts(findings: Finding[]): SeverityCounts {
+  return {
+    critical: findings.filter((f) => f.severity === "critical").length,
+    high:     findings.filter((f) => f.severity === "high").length,
+    medium:   findings.filter((f) => f.severity === "medium").length,
+    low:      findings.filter((f) => f.severity === "low").length,
+  };
+}
+
+/**
+ * Compute A–F risk grade from severity counts.
+ *
+ * Mapping (documented in IMPLEMENTATION.md Task 3.1):
+ *   F — any critical finding
+ *   D — ≥ 2 high findings
+ *   C — exactly 1 high finding
+ *   B — medium findings only (no high/critical)
+ *   A — only low / info findings (or none)
+ */
+export function computeRiskGrade(
+  counts: SeverityCounts
+): "A" | "B" | "C" | "D" | "F" {
+  if (counts.critical > 0) return "F";
+  if (counts.high >= 2)    return "D";
+  if (counts.high === 1)   return "C";
+  if (counts.medium > 0)   return "B";
+  return "A";
+}
+
+/**
+ * Produce a complete, schema-validated AuditReport from a PackageContext and
+ * the raw EngineResult.  Findings are expected to be already sorted (runAudit
+ * returns them sorted); this function does not re-sort.
+ *
+ * HARD RULE: watermark is hardcoded here — never configurable.
+ */
+export function assembleReport(
+  ctx: PackageContext,
+  result: EngineResult,
+  opts: { memoryContextUsed?: boolean } = {},
+): AuditReport {
+  const severity_counts = computeSeverityCounts(result.findings);
+
+  return AuditReportSchema.parse({
+    report_id:   crypto.randomUUID(),
+    generated_at: new Date().toISOString(),
+    package: {
+      packageId:   ctx.packageId,
+      network:     ctx.network,
+      mvrName:     ctx.mvrName,
+      version:     ctx.version,
+      moduleCount: ctx.modules.length,
+      fetchedAt:   ctx.fetchedAt,
+    },
+    findings:            result.findings,
+    severity_counts,
+    risk_grade:          computeRiskGrade(severity_counts),
+    watermark:           WATERMARK,
+    memory_context_used: opts.memoryContextUsed ?? false,
+    layer4_used:         result.layersRun.includes("layer4"),
+    sealed:              false,
+  });
 }
 
 // ──────────────────────────────────────────────────────────────
