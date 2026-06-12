@@ -226,7 +226,7 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   Updated src/lib/audit/engine.ts: imports AuditMemory from memory/index instead of inline
   definition; NOOP_MEMORY = new NoopMemory(). Re-exports AuditMemory type for callers.
   All prior tests (F09, F11, etc.) still pass after refactor.
-- Commits: TBD (committing now)
+- Commits: 11340cb feat(F17): AuditMemory abstraction layer with noop fallback — 3/3 steps pass
 - Current state: init.sh green (expected). 17/28 features passing (F01–F17). typecheck clean.
 - Next session should: implement F18 — MemWal remember/recall loop.
   Task 6.2 in IMPLEMENTATION.md. src/lib/memory/memwal.ts: real MemWalMemory implementation.
