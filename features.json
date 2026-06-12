@@ -162,7 +162,7 @@
         "Decrypt with the owner identity, verify byte-identical report recovered",
         "Disable Seal endpoint, verify pipeline falls back to plaintext with sealed=false and a loud warning (fallback works but this feature only passes with real Seal encryption)"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F13",

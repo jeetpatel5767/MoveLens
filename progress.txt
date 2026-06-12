@@ -108,3 +108,23 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   (3) severity counts + risk grade; (4) watermark present verbatim.
 - Issues found: none
 - Artifacts: none
+
+[2026-06-12] Session 11
+- Worked on: F11 (report assembler) — already done in prior session; F12 (Seal encryption)
+- Completed (tested end-to-end): F12 PASSES. 4/4 steps.
+  Key discoveries: (1) @mysten/seal@1.1.3 requires aggregatorUrl for Committee key servers;
+  testnet decentralized server: 0xb012378...e98, aggregatorUrl: https://seal-aggregator-testnet.mystenlabs.com
+  (2) SuiGraphQLClient.core.getObject() returns content as a lazy Promise, not Uint8Array.
+  Seal SDK BCS-parses it synchronously → fails. Fix: patchSuiClientForSeal() pre-awaits content.
+  (3) SEAL_TESTNET_PACKAGE_ID 0xc5ce2742...07 (Seal example package, v1 on testnet).
+  encrypt: real IBE ciphertext (sealed=true), sealId=ownerAddress. decrypt: backup DEM key via
+  AES-256-GCM with Seal's hardcoded IV. fallback: sealed=false, plaintext, console.warn.
+- Commits: 43b03b5 feat(F12): Seal threshold encryption round-trip — 4/4 steps pass
+- Current state: init.sh green. 12/28 features passing (F01–F12). typecheck clean.
+- Next session should: implement F13 — Quilt bundler (src/lib/walrus/quilt.ts).
+  Task 4.1 in IMPLEMENTATION.md. buildQuilt(report, encryptedBytes, sealed): QuiltEntry[]
+  with 3 entries: report.json (public metadata only), findings.enc (encrypted bytes), summary.md.
+  test/f13-verify.ts: (1) build quilt from fixture report; (2) verify 3 entries with correct
+  identifiers; (3) verify report.json has no decrypted findings; (4) findings.enc = encryptedBytes.
+- Issues found: none
+- Artifacts: none
