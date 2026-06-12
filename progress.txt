@@ -182,3 +182,35 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
                      "report.json":  "pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zABCwAMAA",
                      "summary.md":   "pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zABDAANAA" }
     signer address: 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
+
+[2026-06-12] Session 14
+- Worked on: F15 (Demo Move package + MVR registration) and F16 (set_metadata attaches Walrus blob ID)
+- Completed (tested end-to-end): F15 PASSES (3/3) and F16 PASSES (3/3).
+  F15: Created move/movelens_demo/ Move package (129-line vault module with intentional audit targets:
+  integer overflow in deposit, fee arithmetic in calculate_fee, AdminCap emergency drain).
+  Built with `sui client publish`. Created PackageInfo via PTB calling package_info::new + transfer.
+  Verified: vault module on testnet, PackageInfo type correct, PackageInfo owned by our keypair,
+  upgrade_cap_id and package_address match deployment.
+  F16: Created src/lib/mvr/metadata.ts with attachAuditToPackage() and readAuditMetadata().
+  Key bugs fixed: (1) GraphQL owner query uses `address { address }` not `owner { address }`;
+  (2) signAndExecuteTransaction returns { $kind: "Transaction", Transaction: { digest } };
+  (3) vec_map::insert aborts if key exists — fixed with upsert: read current, unset_metadata if
+  exists, then set_metadata; (4) readAuditMetadata has retry logic (6 attempts, 3s delay) for
+  indexer lag after TX.
+- Commits: TBD (committing now)
+- Current state: init.sh green (expected). 16/28 features passing (F01–F16). typecheck clean.
+- Next session should: implement F17 — AuditMemory abstraction with noop fallback.
+  Task 6.1 in IMPLEMENTATION.md. src/lib/memory/index.ts: AuditMemory interface with remember()/recall().
+  When MEMWAL_ENABLED=false → NoopMemory stub returns { patterns: [] } for recall.
+  Steps: (1) MEMWAL_ENABLED=false → full fixture audit runs with noop stub; (2) verify warning logged;
+  (3) memory_context_used is false in report.
+- Issues found: GraphQL indexer lag after TX (1–6 seconds) — handled by retry in readAuditMetadata.
+  vec_map::insert aborts on duplicate key (code 0) — must unset first.
+- Artifacts:
+    Demo package ID:    0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698
+    PackageInfo ID:     0xcc7af44f578839df65cd69705c640559aa594b6528161653b91416cdec7a50e2
+    UpgradeCap ID:      0x675b9ea40fe5ec9510faf1434e157685e047e32a527fc318e15f726e7761d365
+    Publish TX:         85rKhcZxaSpubzxHs81P1o57wfQqQL1rD5Rqf2YBJCZH
+    PackageInfo TX:     3NvP9wMCAqRzgaQYz8vjyfKT27em1qdAw5tj5BTqooUW
+    set_metadata TX:    HmhWjcJymAsaLmVXMA3qWN5B4rBDJSZNM8P87QosfF9B (F16 blob: pzQ9tB1U4u0RoRGs2hrkvPk9lExWUvkWL5A2isw_3zA)
+    signer address:     0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
