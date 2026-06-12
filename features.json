@@ -80,7 +80,7 @@
         "Verify Finding schema rejects an unknown rule_id",
         "Verify AuditReport schema requires the exact watermark string"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F07",
