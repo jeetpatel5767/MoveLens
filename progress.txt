@@ -165,7 +165,7 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   DEPTH_ZERO_SELF_SIGNED_CERT, ENOTFOUND, CERT_HAS_EXPIRED, ECONNRESET, ECONNREFUSED — but 72+
   nodes succeed, which is above the 333-shard quorum threshold; (3) n_shards=1000, maxFaulty=333,
   101 nodes, avg 9.9 shards/node — enough nodes are reachable to always hit quorum.
-- Commits: TBD (committing this session)
+- Commits: 34743d8 feat(F14): Walrus blob upload — 4/4 steps pass (real testnet upload)
 - Current state: init.sh green. 14/28 features passing (F01–F14). typecheck clean.
 - Next session should: implement F15 — Demo Move package published on testnet + MVR registration.
   Task 5.1 in IMPLEMENTATION.md. Write minimal Move package (<150 lines) in move/ directory.
