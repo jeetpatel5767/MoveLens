@@ -75,11 +75,36 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Issues found: ML-ACC-001 pattern uses [^{]* which crosses newlines (not dotAll-dependent) — any comment containing "public fun" followed by a { elsewhere in the same file will false-positive. Documented in fixture comments. Layer 1 engine must apply patterns line-by-line or use the same gm flags to match the expected behavior.
 - Artifacts: none
 
-[2026-06-12] Session 8
+[2026-06-12] Session 8 (continued below)
 - Worked on: F08 — Layer 1 deterministic rule engine
 - Completed (tested end-to-end): F08 PASSES. Created src/lib/audit/layer1.ts (runLayer1, matchPattern with binary-search line numbers, deduplicateFindings). ML-INT-001 runs first. 65 REGEX rules run; AST/SKIP_MVP skipped. Every Finding validated through FindingSchema. test/f08-verify.ts: 4/4 steps pass. 36 findings across all 4 fixtures; clean.move produces zero critical/high (6 medium/low: ML-INT-004 false positive on comment slashes, ML-UPG-004 on "UpgradeCap" in a comment). TypeCheck clean. init.sh green.
 - Commits: 2eeceaa feat(F08): Layer 1 deterministic rule engine
 - Current state: init.sh green. 8/28 features passing (F01–F08). typecheck clean.
 - Next session should: implement F09 — fault tolerance + timing budget (src/lib/audit/engine.ts stub). Steps: (1) make Layer 4 sidecar unreachable → audit completes with L1+L2 findings; (2) time Layers 1+2 on a fixture → under 5s; (3) deduplicate findings (same rule_id+module+line → keep highest confidence). Requires also creating a minimal engine.ts that calls runLayer1 and returns findings. Note: Layer 2 (layer2.ts) is also needed for F09 step 2 (time L1+L2 together).
 - Issues found: ML-INT-004 pattern fires on comment lines containing "/" (e.g., "// FIXTURE: ..."). ML-UPG-004 fires on comment "no UpgradeCap misuse". Both are medium/low severity false positives — acceptable per F08 criteria (zero critical/high on clean). Will not fix until F09/polish phase.
+- Artifacts: none
+
+[2026-06-12] Session 9
+- Worked on: F09 (fault tolerance + timing), F10 (Layer 2 OZ benchmark)
+- Completed (tested end-to-end): F09 PASSES (3/3 steps). F10 PASSES (4/4 steps).
+  F09: Added ML-OZ-001..010 to rule-ids.ts (OZ_RULE_COUNT=10; total VALID_RULE_IDS=103).
+       Created src/lib/audit/layer2.ts — 10 OZ rules, runLayer2(), ML-OZ-001 first,
+       confidence=0.95, source="layer2". Fires on overflow.move (ML-OZ-001 ×2 @ L5, L18).
+       Created src/lib/audit/engine.ts — runAudit(), sidecarHealthy(), mergeAndDedupe()
+       (keeps highest confidence per key), sortFindings() (Cetus-class absolute first).
+       Layer 4 sidecar unreachable → audit completes with L1+L2 in <5ms per fixture.
+  F10: test/f10-verify.ts 4/4: ML-OZ-001 critical/0.95 on overflow.move; Cetus sort;
+       all 10 OZ rules fire on deviation snippets.
+  Updated f06-verify.ts size check → 103 (93 L1 + 10 OZ); still 3/3.
+- Commits: df1843c feat(F09) fault tolerance + engine orchestrator
+           a787dea feat(F10) Layer 2 OZ benchmark — 10 rules, Cetus-class first
+- Current state: init.sh green. 10/28 features passing (F01–F10). typecheck clean.
+- Next session should: implement F11 — report assembler (src/lib/audit/engine.ts extend).
+  Task 3.1 in IMPLEMENTATION.md. assembleReport() that returns full AuditReport:
+  findings sorted (Cetus first, severity desc, confidence desc), severity counts,
+  A-F risk grade (F=any critical, D=≥2 high, C=1 high, B=mediums only, A=low/info),
+  hardcoded watermark, report_id UUID, generated_at ISO datetime.
+  test/f11-verify.ts: (1) assemble from fixture findings; (2) sorted critical-first;
+  (3) severity counts + risk grade; (4) watermark present verbatim.
+- Issues found: none
 - Artifacts: none
