@@ -148,7 +148,7 @@
         "Verify severity counts and A-F risk grade computed per the documented mapping",
         "Verify watermark string present verbatim"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F12",
