@@ -107,7 +107,7 @@
         "Run on clean.move, verify zero critical or high findings",
         "Verify every emitted finding validates against the zod schema"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F09",
