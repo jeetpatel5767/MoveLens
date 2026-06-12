@@ -1,6 +1,9 @@
 import { z } from "zod";
+import { config } from "dotenv";
 
 // No paid-AI API keys belong here. See CLAUDE.md hard rules.
+// Load .env for tsx scripts/tests. Next.js loads it automatically at runtime.
+config();
 
 const EnvSchema = z.object({
   SUI_GRAPHQL_URL: z.string().url(),
