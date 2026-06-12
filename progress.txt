@@ -56,3 +56,12 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Next session should: start F06 — Finding/AuditReport zod schemas + rule registry (93 rules, 13 sectors). Requires movelens_vuln_corpus_classified.md which was noted missing from the repo. MUST locate/recreate that file before F06 can proceed. Task 2.0 in IMPLEMENTATION.md.
 - Issues found: movelens_vuln_corpus_classified.md still missing — blocks F06. Must be provided before Phase 2 work begins.
 - Artifacts: none
+
+[2026-06-12] Session 6
+- Worked on: F06 — Finding/AuditReport zod schemas + 93-rule registry
+- Completed (tested end-to-end): F06 PASSES. Created src/lib/audit/rule-ids.ts (93 canonical IDs, 13 sectors), src/lib/audit/schema.ts (Finding with registry-validated rule_id + z.literal watermark, AuditReport), src/lib/audit/rules.ts (65 REGEX rules with compiled patterns, 19 AST stubs, 9 SKIP_MVP; RULE_REGISTRY Map; integrity check on module load). test/f06-verify.ts: 3/3 steps pass. Fixed tsconfig.json target ES2017→ES2018 (dotAll s flag compat; later dropped s flag, used gm only). Typecheck clean. init.sh green.
+- Commits: 1bcb8bf feat(F06): Finding/AuditReport schemas + 93-rule registry (65 REGEX + 19 AST + 9 SKIP_MVP)
+- Current state: init.sh green. 6/28 features passing (F01–F06). Phase 2 started.
+- Next session should: implement F07 — four Move test fixture files (vulnerable_cap.move, missing_signer.move, overflow.move, clean.move) with expected.json ground truth in test/fixtures/. Each under 80 lines, contains module declaration, lists required rule_ids that F06+F08 rules should catch.
+- Issues found: none
+- Artifacts: none
