@@ -14,6 +14,12 @@ const EnvSchema = z.object({
   GROQ_API_KEY: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
   MEMWAL_ENABLED: z.coerce.boolean().default(true),
+  // MemWal account credentials (required when MEMWAL_ENABLED=true + MemWal is available)
+  // MEMWAL_PRIVATE_KEY: Ed25519 private key hex (delegate key from generateDelegateKey())
+  // MEMWAL_ACCOUNT_ID: Sui mainnet object ID of the MemWalAccount (from createAccount())
+  // Both are optional — if absent, createMemory() falls back to NoopMemory with a warning.
+  MEMWAL_PRIVATE_KEY: z.string().optional(),
+  MEMWAL_ACCOUNT_ID: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

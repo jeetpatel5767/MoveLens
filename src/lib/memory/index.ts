@@ -68,7 +68,11 @@ export { NoopMemory };
  */
 export async function createMemory(): Promise<AuditMemory> {
   if (env.MEMWAL_ENABLED) {
-    // MemWal implementation is Phase 6 (F18). Attempt dynamic import.
+    // Try the real MemWal implementation (Phase 6 / F18).
+    // Falls back to NoopMemory when:
+    //   - MEMWAL_PRIVATE_KEY or MEMWAL_ACCOUNT_ID are not set
+    //   - The MemWal server is unreachable
+    //   - healthy() returns false for any other reason
     try {
       const { MemWalMemory } = await import("./memwal");
       const memwal = new MemWalMemory();
@@ -76,10 +80,9 @@ export async function createMemory(): Promise<AuditMemory> {
       console.warn(
         "[memory] MemWal healthy() returned false — falling back to noop memory",
       );
-    } catch {
-      // memwal.ts not yet implemented (F18) or SDK unavailable
+    } catch (err) {
       console.warn(
-        "[memory] MemWal SDK unavailable — falling back to noop memory",
+        `[memory] MemWal init failed (${err}) — falling back to noop memory`,
       );
     }
   } else {
