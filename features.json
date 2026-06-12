@@ -67,7 +67,7 @@
         "Verify non-.move files and >1MB payloads are rejected with 400",
         "Verify a valid upload produces a PackageContext with modules populated"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F06",
