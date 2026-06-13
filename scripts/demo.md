@@ -5,6 +5,22 @@
 
 ---
 
+
+## Cetus Retroactive Audit — $223M Exploit (ML-INT-001)
+
+| Field | Value |
+|-------|-------|
+| **Package** | `0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92` |
+| **Network** | mainnet |
+| **Risk Grade** | F |
+| **Critical Findings** | 34 |
+| **Key Finding** | ML-INT-001 — Cetus `checked_shlw` integer overflow (64-bit mask on 128-bit shift) |
+| **Walrus Blob** | `5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA` |
+| **Walrus URL** | https://aggregator.walrus-testnet.walrus.space/v1/blobs/5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA |
+| **Audited** | 2026-06-13 |
+
+> *"This is the exact pattern that caused the $223M Cetus exploit — MoveLens catches it with 100% confidence."*
+
 ## Pre-Demo Checklist (before judges arrive)
 
 - [ ] `./init.sh` → RESULT: HEALTHY

@@ -393,7 +393,7 @@
                 "Verify the blob is fetchable from the Walrus aggregator URL",
                 "Verify scripts/demo.md updated with the Cetus opener and backup blob ID"
             ],
-            "passes": false
+            "passes": true
         },
         {
             "id": "F30",

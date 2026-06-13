@@ -1,0 +1,228 @@
+{
+  "packageId": "0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92",
+  "network": "mainnet",
+  "mvrName": "@cetus/clmm",
+  "auditedAt": "2026-06-13T11:42:55.562Z",
+  "riskGrade": "F",
+  "severityCounts": {
+    "critical": 34,
+    "high": 66,
+    "medium": 22,
+    "low": 7
+  },
+  "cetusFindings": 34,
+  "totalFindings": 129,
+  "layersRun": [
+    "layer1",
+    "layer2",
+    "layer4"
+  ],
+  "blobId": "5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+  "walrusUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+  "findings": [
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    },
+    {
+      "rule_id": "ML-INT-L4-001",
+      "severity": "critical",
+      "confidence": 0.88,
+      "description": "[Layer 4] Potential integer overflow or unsafe bitwise operation (Cetus-class pattern)"
+    }
+  ]
+}
