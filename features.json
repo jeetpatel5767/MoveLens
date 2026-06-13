@@ -255,7 +255,7 @@
         "Poll GET and observe status progressing through fetching/auditing/uploading to done",
         "Verify a failed stage produces status failed with a human-readable error"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F20",
@@ -269,7 +269,7 @@
         "Paste fixture source in the source tab and submit",
         "Verify navigation to /audit/[id]"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F21",
