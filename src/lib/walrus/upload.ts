@@ -168,9 +168,10 @@ export async function uploadAuditQuilt(
   const signer = loadKeypair(); // throws WalrusUploadError for placeholder
   const client = createWalrusClient();
 
+  const MAX_ATTEMPTS = 4;
   let lastError: Error | undefined;
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     try {
       const result = await client.writeQuilt({
         blobs: entries,
@@ -192,16 +193,21 @@ export async function uploadAuditQuilt(
       return { blobId: result.blobId, quiltPatchIds };
     } catch (e) {
       lastError = e instanceof Error ? e : new Error(String(e));
-      if (attempt === 0) {
+      if (attempt < MAX_ATTEMPTS - 1) {
+        // Exponential backoff: 5s, 10s, 20s between retries.
+        // Walrus testnet has ~30% unreachable nodes; brief pauses let the SDK
+        // pick different nodes on retry.
+        const delayMs = 5_000 * Math.pow(2, attempt);
         console.warn(
-          `[upload] Walrus upload attempt 1 failed, retrying once… (${lastError.message})`,
+          `[upload] Walrus upload attempt ${attempt + 1} failed, retrying in ${delayMs / 1000}s… (${lastError.message})`,
         );
+        await new Promise<void>((r) => setTimeout(r, delayMs));
       }
     }
   }
 
   throw new WalrusUploadError(
-    `Walrus upload failed after 2 attempts: ${lastError?.message ?? "unknown error"}`,
+    `Walrus upload failed after ${MAX_ATTEMPTS} attempts: ${lastError?.message ?? "unknown error"}`,
     { cause: lastError },
   );
 }
