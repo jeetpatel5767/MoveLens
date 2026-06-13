@@ -323,7 +323,7 @@
         "Run ./init.sh and verify health checks pass",
         "Run a fixture audit from the browser and verify a report with blob id renders"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F25",
