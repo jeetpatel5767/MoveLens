@@ -6,10 +6,10 @@ Exposes three endpoints used by the TypeScript audit engine:
   POST /embed-raw   { code }  → { vector: float[768] }             (used by seedLanceDB.ts)
   POST /embed       { code }  → { similar_to: str|null, score: float }  (Model A similarity)
   POST /classify    { code }  → { vulnerable: bool, category: str, confidence: float, reason: str }  (Model B)
-  GET  /health                → { status: "ok", models_loaded: bool }
+  GET  /health                → { status: "ok", models_loaded: bool, ollama_available: bool }
 
 Model A: jinaai/jina-embeddings-v2-base-code (161 MB, 768-dim) via sentence-transformers — local.
-Model B: Keyword-based heuristic classifier — instantaneous, no model download needed.
+Model B: DeepSeek-1.3B via Ollama (:11434) — keyword heuristic kept as fallback when unreachable.
 Model C: Groq free tier (GROQ_API_KEY env var) — called by TypeScript layer4.ts, NOT here.
 
 HARD RULE: Never import or reference ANTHROPIC_API_KEY, OPENAI_API_KEY, or callClaude.
@@ -21,6 +21,8 @@ import sys
 import json
 import logging
 import threading
+import urllib.request
+import urllib.error
 from pathlib import Path
 
 from flask import Flask, request, jsonify
@@ -77,7 +79,132 @@ def load_models():
 
 
 # ──────────────────────────────────────────────────────────────
-# Model B: keyword heuristic classifier
+# Comment stripping — prevents injection via Move comments
+# ──────────────────────────────────────────────────────────────
+
+def _strip_move_comments(code: str) -> str:
+    """Strip // and /* */ comments from Move source before LLM classification."""
+    code = re.sub(r'/\*.*?\*/', '', code, flags=re.DOTALL)
+    code = re.sub(r'//[^\n]*', '', code)
+    return code.strip()
+
+
+# ──────────────────────────────────────────────────────────────
+# Model B primary: DeepSeek-1.3B via Ollama
+# ──────────────────────────────────────────────────────────────
+
+OLLAMA_URL     = "http://localhost:11434/api/generate"
+OLLAMA_MODEL   = "deepseek-coder:1.3b"
+OLLAMA_TIMEOUT = 30  # seconds — 1.3B is fast but give headroom for cold starts
+
+_FEW_SHOT_PROMPT = """\
+You are a Sui Move smart-contract security classifier.
+Move is resource-oriented: `has key`/`has store` = abilities; `acquires` = reads
+global resource; capabilities (AdminCap) are access-control objects passed as params;
+a "hot potato" struct has NO abilities and MUST be consumed in the same tx.
+Overflow aborts EXCEPT on bit-shifts — a wrong mask before a bit-shift is a critical bug.
+
+Classify the SNIPPET into exactly one category:
+ML-ACC, ML-INT, ML-HOT, ML-OWN, ML-ARI, ML-UPG, ML-RAC, ML-RET,
+ML-TOK, ML-WRP, ML-DOS, ML-DEP, ML-LOG.
+If not vulnerable, set vulnerable: false.
+Output ONLY JSON — no markdown, no explanation outside the JSON object.
+
+EXAMPLE 1:
+let mask = 0xffffffffffffffff << 192;
+if (n > mask) abort; let r = n << 64;
+OUTPUT: {{"vulnerable": true, "category": "ML-INT", "confidence": 0.95, "reason": "64-bit overflow mask before bit-shift — values above 2^64 bypass the guard (Cetus checked_shlw class)"}}
+
+EXAMPLE 2:
+public fun create_admin_cap(_u: &UpgradeCap, to: address) {{ }}
+OUTPUT: {{"vulnerable": true, "category": "ML-ACC", "confidence": 0.9, "reason": "Capability minted without validating UpgradeCap package ID (Pawtato class)"}}
+
+EXAMPLE 3:
+public fun get_price(pool: &Pool): u64 {{ pool.price }}
+OUTPUT: {{"vulnerable": false, "category": "ML-LOG", "confidence": 0.1, "reason": "No vulnerability detected"}}
+
+SNIPPET:
+{code}
+
+OUTPUT JSON:"""
+
+
+def _ollama_available() -> bool:
+    """Quick check: is Ollama running on :11434?"""
+    try:
+        req = urllib.request.Request("http://localhost:11434/api/tags")
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
+
+
+def _ollama_classify(code: str) -> dict | None:
+    """
+    Classify code via DeepSeek-1.3B through Ollama.
+    Strips Move comments first to prevent prompt injection via code comments.
+    Returns parsed result dict, or None if Ollama is unreachable or parse fails.
+    """
+    clean_code = _strip_move_comments(code)
+    prompt = _FEW_SHOT_PROMPT.format(code=clean_code[:1200])
+
+    payload = json.dumps({
+        "model":   OLLAMA_MODEL,
+        "prompt":  prompt,
+        "stream":  False,
+        "options": {"temperature": 0, "num_predict": 150},
+    }).encode("utf-8")
+
+    try:
+        req = urllib.request.Request(
+            OLLAMA_URL,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=OLLAMA_TIMEOUT) as resp:
+            raw = resp.read().decode("utf-8")
+
+        outer = json.loads(raw)
+        response_text = outer.get("response", "")
+
+        # Extract JSON object from model output — model may emit surrounding text
+        match = re.search(r'\{[^{}]*\}', response_text, re.DOTALL)
+        if not match:
+            log.warning("Ollama response contained no JSON object: %s", response_text[:200])
+            return None
+
+        result = json.loads(match.group(0))
+
+        if not isinstance(result.get("vulnerable"), bool):
+            log.warning("Ollama result missing 'vulnerable' bool: %s", result)
+            return None
+        if not isinstance(result.get("category"), str):
+            log.warning("Ollama result missing 'category' string: %s", result)
+            return None
+
+        vulnerable = bool(result["vulnerable"])
+        confidence = float(result.get("confidence", 0.7 if vulnerable else 0.1))
+        confidence = max(0.0, min(1.0, confidence))
+
+        return {
+            "vulnerable": vulnerable,
+            "category":   str(result["category"]),
+            "severity":   "high" if vulnerable else "info",
+            "confidence": confidence,
+            "reason":     str(result.get("reason", "DeepSeek classification")),
+        }
+
+    except urllib.error.URLError as exc:
+        log.info("Ollama unreachable — falling back to heuristic: %s", exc)
+        return None
+    except Exception as exc:
+        log.warning("Ollama classify error — falling back to heuristic: %s", exc)
+        return None
+
+
+# ──────────────────────────────────────────────────────────────
+# Model B fallback: keyword heuristic classifier
 # ──────────────────────────────────────────────────────────────
 
 # Patterns ordered by specificity — first match wins.
@@ -131,7 +258,7 @@ HEURISTIC_RULES = [
 
 def heuristic_classify(code: str) -> dict:
     """
-    Rule-based classifier — Model B substitute.
+    Rule-based classifier — Model B fallback when Ollama is unreachable.
     Returns { vulnerable, category, confidence, reason }
     """
     for pattern, category, severity, base_conf, reason in HEURISTIC_RULES:
@@ -166,9 +293,10 @@ def health():
         except Exception:
             pass
     return jsonify({
-        "status": "ok",
-        "models_loaded": models_loaded,
-        "corpus_rows": rows,
+        "status":           "ok",
+        "models_loaded":    models_loaded,
+        "corpus_rows":      rows,
+        "ollama_available": _ollama_available(),
     }), 200
 
 
@@ -254,7 +382,8 @@ def embed():
 @app.route("/classify", methods=["POST"])
 def classify():
     """
-    Classify a code snippet using the heuristic Model B.
+    Classify a code snippet using DeepSeek-1.3B via Ollama (primary),
+    falling back to keyword heuristic when Ollama is unreachable.
     Returns { vulnerable: bool, category: str, confidence: float, reason: str }.
     """
     body = request.get_json(force=True, silent=True) or {}
@@ -263,8 +392,18 @@ def classify():
         return jsonify({"error": "missing 'code' or 'prompt' field"}), 400
 
     try:
+        # Primary: DeepSeek-1.3B via Ollama
+        result = _ollama_classify(code)
+        if result is not None:
+            log.info("/classify via Ollama DeepSeek: vulnerable=%s category=%s conf=%.2f",
+                     result["vulnerable"], result["category"], result["confidence"])
+            return jsonify(result)
+
+        # Fallback: keyword heuristic
+        log.info("/classify via heuristic fallback (Ollama unavailable or parse error)")
         result = heuristic_classify(code)
         return jsonify(result)
+
     except Exception as exc:
         log.error("/classify error: %s", exc)
         return jsonify({"error": str(exc)}), 500

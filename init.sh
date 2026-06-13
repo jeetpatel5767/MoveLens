@@ -93,6 +93,11 @@ if [ -f scripts/layer4_server.py ]; then
     bad "Layer 4 sidecar NOT running — start it: python scripts/layer4_server.py (required before any audit once Layer 4 exists)"
   fi
   [ -d lancedb_store ] && ok "lancedb_store/ seeded" || bad "lancedb_store/ missing — run: npx tsx scripts/seedLanceDB.ts"
+  if curl -s -o /dev/null http://localhost:11434/api/tags 2>/dev/null; then
+    ok "Ollama running on :11434"
+  else
+    bad "Ollama NOT running on :11434 — start it: ollama serve (required for DeepSeek Model B; heuristic fallback active but Ollama must be running)"
+  fi
 else
   ok "Layer 4 not built yet (deferred until Phases 1-5 green per BRIEFING.md)"
 fi
