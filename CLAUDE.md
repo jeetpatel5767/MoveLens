@@ -14,7 +14,7 @@ You are working on MoveLens: an AI-powered Sui Move security auditor for Sui Ove
    - If init.sh fails: fixing that breakage IS your task for this session. Do not start a new feature on a broken base.
 6. Pick exactly ONE feature from features.json: lowest phase number first, then priority 1 before priority 2, and `passes: false`. Read its task details in `IMPLEMENTATION.md` before writing code.
    - **Exception (per BRIEFING.md):** Layer 4 features F25, F26, F27, F28 are deferred until ALL Phase 1–5 features pass, regardless of their phase number. Layers 1+2+3 alone are enough to win the track; Layer 4 is a bonus.
-
+6b. If the failing feature is F29–F35, read CHANGES.md instead of IMPLEMENTATION.md for task details.
 ## DURING WORK
 
 - ONE feature per session. Never two. If you finish early and the session is still fresh, you may pick the next feature — but only after fully committing and logging the first.
