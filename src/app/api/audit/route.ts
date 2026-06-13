@@ -65,6 +65,8 @@ interface AuditInput {
   packageId?: string;
   network?: "testnet" | "mainnet";
   files?: { name: string; content: string }[];
+  /** If false (default), skip MVR set_metadata — no on-chain tx sent. */
+  publishOnChain?: boolean;
 }
 
 async function buildPackageContext(input: AuditInput): Promise<PackageContext> {
@@ -142,9 +144,11 @@ async function runPipeline(job: AuditJob, input: AuditInput): Promise<void> {
     const quilt = buildQuilt(report, sealed.encryptedBytes, sealed.sealed);
     const { blobId } = await uploadAuditQuilt(quilt);
 
-    // ── Stage 5: MVR linking (best-effort, demo package only) ─────────────────
+    // ── Stage 5: MVR linking (opt-in — only when publishOnChain=true) ───────────
     updateJob(job, { status: "linking", blobId });
-    const txDigest = await tryAttachToMvr(ctx.packageId, blobId);
+    const txDigest = input.publishOnChain === true
+      ? await tryAttachToMvr(ctx.packageId, blobId)
+      : null;
 
     // ── Done ───────────────────────────────────────────────────────────────────
     updateJob(job, {
@@ -191,9 +195,10 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const auditInput: AuditInput = {
-      mode:    "source",
-      files:   src.files,
-      network: (input.network as "testnet" | "mainnet") ?? "testnet",
+      mode:           "source",
+      files:          src.files,
+      network:        (input.network as "testnet" | "mainnet") ?? "testnet",
+      publishOnChain: input.publishOnChain === true,
     };
 
     const job = createJob();
@@ -213,7 +218,12 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     }
 
     const network = (input.network as "testnet" | "mainnet") ?? "testnet";
-    const auditInput: AuditInput = { mode: "packageId", packageId, network };
+    const auditInput: AuditInput = {
+      mode:           "packageId",
+      packageId,
+      network,
+      publishOnChain: input.publishOnChain === true,
+    };
 
     const job = createJob();
     void runPipeline(job, auditInput);

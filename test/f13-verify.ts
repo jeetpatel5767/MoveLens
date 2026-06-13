@@ -133,7 +133,7 @@ async function main() {
 
   // Must have required public fields
   const requiredFields: (keyof QuiltPublicMeta)[] = [
-    "package_id", "generated_at", "risk_grade", "severity_counts", "sealed", "watermark",
+    "package_ref", "generated_at", "risk_grade", "severity_counts", "sealed", "watermark",
   ];
   for (const field of requiredFields) {
     if (!(field in publicMeta)) {
@@ -199,7 +199,7 @@ async function main() {
   }
 
   console.log(
-    `       report.json: package_id="${publicMeta.package_id}", ` +
+    `       report.json: package_ref="${publicMeta.package_ref}", ` +
     `risk_grade="${publicMeta.risk_grade}", sealed=${publicMeta.sealed}, ` +
     `watermark present ✓, no findings ✓`
   );

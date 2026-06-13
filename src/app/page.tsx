@@ -50,6 +50,9 @@ export default function HomePage() {
   const [fileName, setFileName] = useState("contract.move");
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Privacy consent
+  const [publishOnChain, setPublishOnChain] = useState(false);
+
   // Submit state
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -102,8 +105,8 @@ export default function HomePage() {
     try {
       const body =
         tab === "address"
-          ? { packageId: address.trim(), network }
-          : { source: { files: [{ name: fileName, content: sourceText }] }, network };
+          ? { packageId: address.trim(), network, publishOnChain }
+          : { source: { files: [{ name: fileName, content: sourceText }] }, network, publishOnChain };
 
       const res = await fetch("/api/audit", {
         method: "POST",
@@ -282,6 +285,22 @@ export default function HomePage() {
                 <span className="text-xs text-amber-400">⚠ mainnet — uses real SUI gas</span>
               )}
             </div>
+
+            {/* Privacy consent */}
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={publishOnChain}
+                onChange={(e) => setPublishOnChain(e.target.checked)}
+                className="mt-0.5 accent-cyan-500 w-4 h-4 shrink-0"
+              />
+              <span className="text-xs text-gray-400 group-hover:text-gray-300 transition-colors">
+                <span className="font-medium text-gray-300">Publish audit on-chain</span> — write the
+                Walrus blob ID to the MoveLens PackageInfo object via an MVR transaction.
+                Your package address will be included in the on-chain record.
+                Leave unchecked to keep the audit report off-chain only.
+              </span>
+            </label>
 
             {/* API error */}
             {apiError && (
