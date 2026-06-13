@@ -550,6 +550,14 @@ export default function AuditPage() {
                       <span className="text-xs text-gray-400">{new Date(report.generated_at).toLocaleString()}</span>
                     </div>
                   )}
+                  <div className="flex items-start gap-3">
+                    <span className="text-gray-500 w-28 flex-shrink-0 text-xs pt-0.5">Ownership</span>
+                    <p className="text-xs text-gray-400">
+                      PackageInfo object owned by auditor&apos;s keypair — verified on Sui testnet.
+                      Package address is hashed (SHA-256) in the public quilt; raw ID stored only
+                      in Seal-encrypted findings.enc.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}

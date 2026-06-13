@@ -7,6 +7,7 @@
 //   - NEVER call any paid LLM API. No AI-provider keys belong in this file.
 //   - NEVER use Sui JSON-RPC. (Not needed in this file — no network calls.)
 
+import { createHash } from "crypto";
 import type { AuditReport } from "../audit/schema";
 import { WATERMARK } from "../audit/schema";
 
@@ -29,7 +30,8 @@ export interface QuiltEntry {
 
 export interface QuiltPublicMeta {
   report_id:        string;
-  package_id:       string;
+  /** SHA-256 hex hash of the package address — raw address never stored publicly. */
+  package_ref:      string;
   mvr_name:         string | null;
   network:          string;
   version:          number;
@@ -47,6 +49,10 @@ export interface QuiltPublicMeta {
   watermark:        typeof WATERMARK;
 }
 
+function hashPackageId(id: string): string {
+  return createHash("sha256").update(id.toLowerCase()).digest("hex");
+}
+
 // ──────────────────────────────────────────────────────────────
 // Helpers
 // ──────────────────────────────────────────────────────────────
@@ -60,12 +66,12 @@ function utf8(s: string): Uint8Array {
  * Public-facing — contains severity counts and risk grade, no individual findings.
  */
 function renderSummaryMd(meta: QuiltPublicMeta): string {
-  const { package_id, mvr_name, generated_at, risk_grade, severity_counts, sealed, watermark } =
+  const { package_ref, mvr_name, generated_at, risk_grade, severity_counts, sealed, watermark } =
     meta;
 
   const pkgLine = mvr_name
-    ? `**Package:** ${mvr_name} (\`${package_id}\`)`
-    : `**Package:** \`${package_id}\``;
+    ? `**Package:** ${mvr_name} (ref: \`${package_ref.slice(0, 16)}…\`)`
+    : `**Package:** ref \`${package_ref.slice(0, 16)}…\` (raw ID in findings.enc)`;
 
   const sealLine = sealed
     ? "**Encrypted:** Yes — findings are Seal-encrypted. Owner decrypts privately."
@@ -119,7 +125,7 @@ export function buildQuilt(
 ): QuiltEntry[] {
   const publicMeta: QuiltPublicMeta = {
     report_id:       report.report_id,
-    package_id:      report.package.packageId,
+    package_ref:     hashPackageId(report.package.packageId),
     mvr_name:        report.package.mvrName,
     network:         report.package.network,
     version:         report.package.version,
