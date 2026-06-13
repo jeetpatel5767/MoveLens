@@ -296,7 +296,7 @@
         "Force a Walrus upload failure, verify report page shows the error (no infinite spinner)",
         "Verify findings with confidence < 0.4 are visually de-emphasized and labeled low confidence"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F23",
@@ -309,7 +309,7 @@
         "Verify it contains a real backup blobId and tx digest from a pre-run audit",
         "Verify README.md covers pitch, 12-step architecture, stack, setup"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F24",
