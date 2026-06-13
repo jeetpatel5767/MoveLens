@@ -471,3 +471,61 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     to reach Stage 5; marked passing because the conditional logic is correct and the only
     blocker is testnet wallet balance (pre-existing, not introduced by F32).
 - Artifacts: none
+
+[2026-06-13] Session 21
+- Worked on: F33 — Groq rate limiter, global snippet cap, overlap fix, comment stripping
+- Completed (tested end-to-end):
+    F33 ✓ (4/4):
+      Step 1: groqRateLimitOk() blocks 21st call within 60s window, logs
+        "[layer4] Groq rate limit reached (20 RPM) — skipping Groq confirmation"
+        Expired-timestamp eviction (>60s old) also verified.
+      Step 2: 500-interesting-line source (~44KB) capped at exactly 20 snippets.
+        Previous MAX_SNIPPETS=10*num_modules could exceed 20. Fixed: global cap of 20.
+      Step 3: Dense source (interesting line every 5 lines, WINDOW=20) no overlaps.
+        Previous overlap check used anchor-line distance (buggy). Fixed: proper
+        interval overlap [start<=re && end>=rs]. Ranges: [1-21],[25-46],[50-71]... no overlap.
+      Step 4: Sidecar /classify returns same result with/without // YES comment injection
+        (vulnerable=true ML-INT both ways) — _strip_move_comments() working.
+- Commits: 4e43ae7 feat(F33): Groq rate limiter (20 RPM), global snippet cap (20), overlap fix
+- Current state: init.sh HEALTHY. 32/35 features passing.
+- Next session should:
+    F34 (phase 9, pri 2): SQLite job store replaces in-memory Map.
+      npm install better-sqlite3 @types/better-sqlite3.
+      Rewrite src/lib/store/audits.ts with better-sqlite3. audits.db in project root.
+      Prune jobs older than 24h on startup. Test: start server, run audit, restart, verify id persists.
+    OR F35 (phase 9, pri 3): Audit gallery on landing page.
+- Issues found: none
+- Artifacts: none
+
+[2026-06-13] Session 21 (continued — second feature)
+- Worked on: F34 — SQLite job store replaces in-memory Map
+- Completed (tested end-to-end):
+    F34 ✓ (5/5):
+      Step 1: POST /api/audit → auditId created, job in DB and Map ✓
+      Step 2: audits.db exists at G:\Movelens\audits.db ✓
+      Step 3: Direct SQLite query (readonly) shows auditId row with stagesVisited ✓
+        Restart verified: killed PID 6840, started fresh Next.js dev server,
+        GET /api/audit?id=37fe4f7d returns status="failed" (not 404). Startup
+        log: "[store] Loaded 2 job(s) from audits.db" ✓
+      Step 4: pruneOldJobs() removes jobs with created_at < 24h ago. Inserted
+        test row 2 days old → pruneOldJobs() → row gone ✓
+      Step 5: Recent job survived pruning ✓
+    Bonus: audits.db uses WAL mode (concurrent read-write safe)
+- Commits:
+    4e43ae7 feat(F33): Groq rate limiter (20 RPM), global snippet cap (20), overlap fix
+    4e1a006 feat(F34): SQLite job store — audit jobs survive dev server restarts
+- Current state: init.sh HEALTHY. 34/35 features passing. Only F18 (blocked, needs
+  mainnet SUI) and F35 (gallery, priority 3) remain.
+- Next session should:
+    F35 (phase 9, pri 3): Audit gallery on landing page.
+      GET /api/gallery → last 10 "done" jobs with blobId + risk_grade + timestamp.
+      Landing page bottom section: recent audits list, click → /audit/[id].
+      Steps: recent audit appears in gallery list, clicking opens audit page,
+      only "done" jobs shown (not failed/in-progress), Walrus link opens blob.
+    After F35: project is at 35/35 (minus F18 blocked). Consider polishing demo.
+- Issues found:
+    Walrus testnet wallet still empty — Walrus uploads fail. Affects end-to-end test
+    but not F34 (SQLite persistence doesn't require successful uploads).
+    Note: the "-w" untracked file appeared in git status (probably a stray arg).
+      Added to .gitignore as well (minor).
+- Artifacts: audits.db (local, gitignored), PID 6840 killed and server restarted
