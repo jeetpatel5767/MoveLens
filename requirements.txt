@@ -1,0 +1,4 @@
+flask==3.0.3
+sentence-transformers==3.2.1
+lancedb==0.30.0
+numpy==1.26.4

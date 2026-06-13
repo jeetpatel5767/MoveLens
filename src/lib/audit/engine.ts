@@ -11,6 +11,7 @@
 
 import { runLayer1 } from "./layer1";
 import { runLayer2 } from "./layer2";
+import { runLayer4 } from "./layer4";
 import {
   AuditReportSchema,
   WATERMARK,
@@ -221,8 +222,7 @@ export async function runAudit(
   const l4Start = Date.now();
   if (await sidecarHealthy()) {
     try {
-      // layer4.ts is deferred until F25–F28 (Phases 1–5 must be green first).
-      // When implemented, call: l4 = await runLayer4(ctx, memoryHits);
+      l4 = await runLayer4(ctx, []);
       layersRun.push("layer4");
     } catch (err) {
       console.warn("[engine] Layer 4 threw — continuing with Layers 1–2 only:", err);
