@@ -121,6 +121,7 @@ async function main() {
     const idMatch = finalUrl.match(/\/audit\/([a-f0-9-]{36})/);
     if (!idMatch) {
       fail(`step4: expected navigation to /audit/<uuid> but got: ${finalUrl}`);
+      return;
     }
 
     const auditId = idMatch[1];
