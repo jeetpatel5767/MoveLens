@@ -267,3 +267,46 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   MemWal packageId on mainnet: 0xcee7a6fd8de52ce645c38332bde23d4a30fd9426bc4681409733dd50958a24c6
   MEMWAL_REGISTRY_ID: unknown — need to find from MemWal mainnet deployment or docs.
 - Artifacts: none (no on-chain TXs this sub-session)
+
+[2026-06-13] Session 15
+- Worked on: F19 (Audit API), F20 (Landing page), F21 (Report page), F24 (Cold-start), F22 (Failure honesty), F23 (Demo assets)
+- Completed (tested end-to-end):
+    F19 ✓ (3/3): POST starts async job, GET polls stagesVisited[], Walrus retries 2→4 with backoff.
+       blobId: lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8 (real testnet upload)
+    F20 ✓ (4/4): Landing page — address/source tabs, inline validation, Run Audit → /audit/[id].
+       Playwright verified: invalid address no API call, source submit navigates correctly.
+    F21 ✓ (5/5): Report page — 6-stage animated stepper, risk grade, severity chips, expandable
+       findings (rule_id, confidence bar, recommendation, line range), trust panel, watermark,
+       hard-refresh state recovery.
+    F24 ✓ (4/4): Cold-start integrity — README.md created with full setup instructions, .env.example
+       complete, init.sh HEALTHY, fixture audit runs in 4.0 min total.
+    F22 ✓ (2/2): Failure honesty — pipeline error shown readably, confidence<0.4 findings have
+       opacity-60 + "low confidence" label (verified via Playwright route interception).
+    F23 ✓ (3/3): Demo assets — scripts/demo.md (3-min flow, judging criteria table, backup blob/TX),
+       README.md verified with 10/10 required sections.
+- Commits:
+    73b3944 feat(F19): Audit API — POST starts async job, GET polls all pipeline stages
+    b5039d5 feat(F19+F20): Audit API + landing page — 7/7 steps pass
+    5503216 feat(F21): full report page — stepper, risk grade, findings, trust panel, watermark
+    d677a1f feat(F24): cold-start integrity — README + verification in under 5 minutes
+    5bb64ad feat(F22+F23): failure honesty, low-confidence de-emphasis, demo assets
+- Current state: init.sh green. 23/28 features passing (F01–F17, F19–F24). typecheck clean.
+  dev server running on :3000. Walrus testnet is flaky (~50% upload failure rate) but 4 retries
+  with backoff handle it; stagesVisited[] ensures pipeline stages are always recorded.
+- Next session should:
+    Option A (if Layer 4 worth doing): start F25 — LanceDB corpus seeding.
+      Requires: creating scripts/seedLanceDB.ts that embeds the 93-rule corpus into LanceDB,
+      and creating lancedb_store/ directory. CAREFUL: creating scripts/layer4_server.py will
+      cause init.sh to start checking for sidecar on :8765 — only create it when ready to run it.
+      Order: F25 (LanceDB seed) → F26 (Python sidecar) → F27 (TS caller) → F28 (full 4-layer).
+    Option B (safer with deadline June 21): F18 needs mainnet SUI for MemWal account.
+      Check if user can fund 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
+      with any mainnet SUI. Then: find MEMWAL_REGISTRY_ID on mainnet, run create-memwal-account.ts.
+    Layer 4 features (F25-F28) are now UNBLOCKED — all Phase 1-5 non-Layer-4 features pass.
+- Issues found:
+    Walrus testnet ~50% upload failure rate. 4 retries with 5s/10s/20s backoff helps but not 100%.
+    The in-memory job store (Map) resets on server restart — any in-flight job is lost.
+    F18 still blocked: MemWal is mainnet-only, signer address has 0 mainnet SUI.
+- Artifacts:
+    blobId: lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8 (F19 test upload)
+    signer: 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
