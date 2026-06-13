@@ -59,36 +59,40 @@ export { NoopMemory };
  * Create the best available AuditMemory for this process.
  *
  * Priority:
- *   1. If MEMWAL_ENABLED=true and MemWal is healthy → MemWalMemory
- *   2. Otherwise → NoopMemory (with a warning)
+ *   1. LanceDB memory (backed by Python sidecar /recall) — Layer 3 real implementation
+ *   2. If MEMWAL_ENABLED=true and MemWal is healthy → MemWalMemory (Phase 6 / F18)
+ *   3. Otherwise → NoopMemory (with a warning)
  *
  * The caller (API route or test) should call this once and pass the result into
  * runAudit(). The AuditReport's `memory_context_used` field reflects whether
  * recall returned any hits.
  */
 export async function createMemory(): Promise<AuditMemory> {
+  // Priority 1: LanceDB memory via sidecar (Layer 3 real)
+  try {
+    const { LanceDBMemory } = await import("./lancedb-memory");
+    const mem = new LanceDBMemory();
+    if (await mem.healthy()) {
+      console.log("[memory] Using LanceDB memory (Layer 3 active)");
+      return mem;
+    }
+    console.warn("[memory] LanceDB sidecar unhealthy — trying next option");
+  } catch (err) {
+    console.warn(`[memory] LanceDB memory init failed (${err}) — trying next option`);
+  }
+
+  // Priority 2: MemWal (Phase 6 / F18 — requires funded mainnet account)
   if (env.MEMWAL_ENABLED) {
-    // Try the real MemWal implementation (Phase 6 / F18).
-    // Falls back to NoopMemory when:
-    //   - MEMWAL_PRIVATE_KEY or MEMWAL_ACCOUNT_ID are not set
-    //   - The MemWal server is unreachable
-    //   - healthy() returns false for any other reason
     try {
       const { MemWalMemory } = await import("./memwal");
       const memwal = new MemWalMemory();
       if (await memwal.healthy()) return memwal;
-      console.warn(
-        "[memory] MemWal healthy() returned false — falling back to noop memory",
-      );
+      console.warn("[memory] MemWal healthy() returned false — falling back to noop memory");
     } catch (err) {
-      console.warn(
-        `[memory] MemWal init failed (${err}) — falling back to noop memory`,
-      );
+      console.warn(`[memory] MemWal init failed (${err}) — falling back to noop memory`);
     }
-  } else {
-    console.warn(
-      "[memory] MEMWAL_ENABLED=false — using noop memory (memory_context_used will be false)",
-    );
   }
+
+  console.warn("[memory] Using noop memory (memory_context_used will be false)");
   return new NoopMemory();
 }

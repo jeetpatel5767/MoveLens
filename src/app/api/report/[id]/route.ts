@@ -68,6 +68,7 @@ export async function GET(
     severity_counts:  r.severity_counts,
     layer4_used:      r.layer4_used,
     memory_context_used: r.memory_context_used,
+    layer3_hits:      r.layer3_hits ?? 0,
     sealed:           r.sealed,
     // Findings — included for demo display
     findings:         r.findings,

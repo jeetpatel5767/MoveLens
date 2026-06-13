@@ -87,6 +87,7 @@ export const AuditReportSchema = z.object({
   risk_grade: z.enum(["A", "B", "C", "D", "F"]),
   watermark: z.literal(WATERMARK),
   memory_context_used: z.boolean(),
+  layer3_hits: z.number().int().nonnegative().optional(),
   layer4_used: z.boolean(),
   walrus_blob_id: z.string().optional(),
   sealed: z.boolean(),

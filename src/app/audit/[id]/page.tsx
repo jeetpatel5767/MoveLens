@@ -48,6 +48,7 @@ interface FullReport {
   severity_counts: SeverityCounts;
   layer4_used: boolean;
   memory_context_used: boolean;
+  layer3_hits?: number;
   sealed: boolean;
   findings: Finding[];
   blobId?: string | null;
@@ -435,7 +436,9 @@ export default function AuditPage() {
                     <span className="text-xs bg-pink-900/40 text-pink-300 rounded-full px-2 py-0.5">Layer 4 · ML</span>
                   )}
                   {report.memory_context_used && (
-                    <span className="text-xs bg-green-900/40 text-green-300 rounded-full px-2 py-0.5">Memory context used</span>
+                    <span className="text-xs bg-green-900/40 text-green-300 rounded-full px-2 py-0.5">
+                      Layer 3 · Memory · {report.layer3_hits ?? 0} hit{(report.layer3_hits ?? 0) !== 1 ? "s" : ""}
+                    </span>
                   )}
                   {report.sealed && (
                     <span className="text-xs bg-emerald-900/40 text-emerald-300 rounded-full px-2 py-0.5">🔒 Seal encrypted</span>

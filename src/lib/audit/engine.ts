@@ -1,5 +1,5 @@
-// Audit engine — orchestrates Layers 1, 2, and (optionally) 4.
-// Layer 3 (MemWal) hooks are wired here but use a noop stub until Phase 6.
+// Audit engine — orchestrates Layers 1, 2, 3, and (optionally) 4.
+// Layer 3 uses LanceDB-backed semantic recall via the Python sidecar.
 //
 // HARD RULES:
 //   - Layer 4 failure MUST NEVER kill the audit — log warning and continue.
@@ -19,7 +19,7 @@ import {
 import type { Finding, AuditReport, SeverityCounts } from "./schema";
 import type { PackageContext } from "../sui/queries";
 import { env } from "../env";
-import type { AuditMemory } from "../memory/index";
+import type { AuditMemory, MemoryHit } from "../memory/index";
 import { NoopMemory } from "../memory/noop";
 
 // Re-export so callers can use the type from either location.
@@ -34,9 +34,10 @@ const NOOP_MEMORY: AuditMemory = new NoopMemory();
 // ──────────────────────────────────────────────────────────────
 
 export interface EngineResult {
-  findings:   Finding[];
-  layersRun:  string[];
-  durationMs: { layer1: number; layer2: number; layer4: number; total: number };
+  findings:    Finding[];
+  layersRun:   string[];
+  durationMs:  { layer1: number; layer2: number; layer4: number; total: number };
+  layer3Hits:  number;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -85,7 +86,7 @@ export function computeRiskGrade(
 export function assembleReport(
   ctx: PackageContext,
   result: EngineResult,
-  opts: { memoryContextUsed?: boolean } = {},
+  opts: { memoryContextUsed?: boolean; layer3Hits?: number } = {},
 ): AuditReport {
   const severity_counts = computeSeverityCounts(result.findings);
 
@@ -105,6 +106,7 @@ export function assembleReport(
     risk_grade:          computeRiskGrade(severity_counts),
     watermark:           WATERMARK,
     memory_context_used: opts.memoryContextUsed ?? false,
+    layer3_hits:         opts.layer3Hits ?? 0,
     layer4_used:         result.layersRun.includes("layer4"),
     sealed:              false,
   });
@@ -213,8 +215,24 @@ export async function runAudit(
   const l2Ms = Date.now() - l2Start;
   layersRun.push("layer2");
 
-  // ── Layer 3 recall stub (noop until Phase 6) ─────────────────
-  await memory.recall("", "movelens/all");
+  // ── Layer 3: LanceDB semantic recall ─────────────────────────
+  // Concatenate module source/disassembly and query the corpus for similar patterns.
+  let memHits: MemoryHit[] = [];
+  try {
+    const codeForRecall = ctx.modules
+      .map((m) => (m.source ?? m.disassembly ?? "").slice(0, 600))
+      .join("\n---\n")
+      .slice(0, 2000);
+    if (codeForRecall.trim()) {
+      memHits = await memory.recall(codeForRecall, `movelens/${ctx.packageId}`);
+      if (memHits.length > 0) {
+        layersRun.push("layer3");
+        console.log(`[engine] Layer 3 recall: ${memHits.length} hit(s) from corpus`);
+      }
+    }
+  } catch (err) {
+    console.warn("[engine] Layer 3 recall failed (continuing without memory context):", err);
+  }
 
   // ── Layer 4 (optional — never kills the audit) ───────────────
   let l4: Finding[] = [];
@@ -222,7 +240,7 @@ export async function runAudit(
   const l4Start = Date.now();
   if (await sidecarHealthy()) {
     try {
-      l4 = await runLayer4(ctx, []);
+      l4 = await runLayer4(ctx, memHits);
       layersRun.push("layer4");
     } catch (err) {
       console.warn("[engine] Layer 4 threw — continuing with Layers 1–2 only:", err);
@@ -236,7 +254,7 @@ export async function runAudit(
   const merged  = mergeAndDedupe([...l1, ...l2, ...l4]);
   const findings = sortFindings(merged);
 
-  // ── Layer 3 remember stub ────────────────────────────────────
+  // ── Layer 3 remember: persist high-confidence findings for future recall ─
   for (const f of findings.filter((f) => f.confidence >= 0.8)) {
     await memory.remember(f, `movelens/${f.category}`);
   }
@@ -250,5 +268,6 @@ export async function runAudit(
       layer4: l4Ms,
       total:  Date.now() - totalStart,
     },
+    layer3Hits: memHits.length,
   };
 }
