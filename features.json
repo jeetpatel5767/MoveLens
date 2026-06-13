@@ -452,7 +452,7 @@
                 "Verify no snippet range overlaps in extracted set",
                 "Verify comment stripping works — snippet with '// YES' comment still classified correctly"
             ],
-            "passes": false
+            "passes": true
         },
         {
             "id": "F34",
@@ -467,7 +467,7 @@
                 "audits.db file exists in project root after first audit",
                 "Jobs older than 24h are pruned on startup"
             ],
-            "passes": false
+            "passes": true
         },
         {
             "id": "F35",
