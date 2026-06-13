@@ -5,6 +5,23 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import galleryData from "./gallery.json";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface GalleryEntry {
+  id:             string;
+  packageName:    string;
+  packageId:      string;
+  network:        string;
+  riskGrade:      string;
+  blobId:         string;
+  walrusUrl:      string;
+  severityCounts: { critical: number; high: number; medium: number; low: number };
+  totalFindings:  number;
+  auditedAt:      string;
+  layersRun:      string[];
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -346,6 +363,94 @@ export default function HomePage() {
               <div className="text-xs text-gray-500 mt-0.5">{label}</div>
             </div>
           ))}
+        </div>
+
+        {/* ── Audit Gallery ───────────────────────────────────────────────── */}
+        <div className="mt-16 w-full max-w-4xl">
+          <h2 className="text-lg font-semibold text-gray-300 mb-4 text-center tracking-tight">
+            Recent Public Audits
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {(galleryData as GalleryEntry[]).map((entry) => (
+              <div
+                key={entry.id}
+                className="bg-gray-900 border border-gray-700 rounded-xl p-4 flex flex-col gap-3"
+              >
+                {/* Header row */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <div className="text-sm font-semibold text-white truncate">
+                      {entry.packageName}
+                    </div>
+                    <span
+                      className={`inline-block mt-0.5 text-xs px-2 py-0.5 rounded-full font-medium ${
+                        entry.network === "mainnet"
+                          ? "bg-amber-900/40 text-amber-300"
+                          : "bg-cyan-900/40 text-cyan-300"
+                      }`}
+                    >
+                      {entry.network}
+                    </span>
+                  </div>
+                  {/* Risk grade badge */}
+                  <span
+                    className={`shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl text-lg font-extrabold border ${
+                      entry.riskGrade === "F"
+                        ? "bg-red-950/60 border-red-700 text-red-400"
+                        : entry.riskGrade === "D"
+                        ? "bg-orange-950/60 border-orange-700 text-orange-400"
+                        : entry.riskGrade === "C"
+                        ? "bg-yellow-950/60 border-yellow-700 text-yellow-400"
+                        : "bg-green-950/60 border-green-700 text-green-400"
+                    }`}
+                  >
+                    {entry.riskGrade}
+                  </span>
+                </div>
+
+                {/* Severity counts */}
+                <div className="flex gap-2 text-xs">
+                  <span className="text-red-400 font-semibold">
+                    {entry.severityCounts.critical}C
+                  </span>
+                  <span className="text-orange-400 font-semibold">
+                    {entry.severityCounts.high}H
+                  </span>
+                  <span className="text-yellow-400 font-semibold">
+                    {entry.severityCounts.medium}M
+                  </span>
+                  <span className="text-gray-400 font-semibold">
+                    {entry.severityCounts.low}L
+                  </span>
+                  <span className="ml-auto text-gray-500">
+                    {entry.totalFindings} findings
+                  </span>
+                </div>
+
+                {/* Layers run */}
+                <div className="flex flex-wrap gap-1">
+                  {entry.layersRun.map((l) => (
+                    <span
+                      key={l}
+                      className="text-xs bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded"
+                    >
+                      {l}
+                    </span>
+                  ))}
+                </div>
+
+                {/* Walrus blob link */}
+                <a
+                  href={entry.walrusUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-auto text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2 break-all transition-colors"
+                >
+                  View on Walrus ↗
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
 
       </section>
