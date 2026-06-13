@@ -423,7 +423,7 @@
                 "UI badge shows 'Layer 3 · Memory · N hits' on a corpus-matching audit",
                 "Set sidecar to unhealthy; verify fallback to noop, pipeline still completes"
             ],
-            "passes": false
+            "passes": true
         },
         {
             "id": "F32",

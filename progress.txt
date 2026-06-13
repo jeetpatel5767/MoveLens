@@ -403,3 +403,35 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     a dead port (http://localhost:19999) which correctly returns None and fires heuristic.
     Windows ollama.exe PID varies — always check `netstat -ano | grep :11434` for actual PID.
 - Artifacts: none (F30 is code-only, no blob IDs or tx digests)
+
+[2026-06-13] Session 19
+- Worked on: F31 — Layer 3 real via LanceDB-backed memory
+- Completed (tested end-to-end):
+    F31 ✓ (5/5):
+      Step 1: createMemory() logs "Using LanceDB memory (Layer 3 active)" when sidecar
+        healthy (models_loaded=true, corpus_rows=52) ✓
+      Step 2: overflow.move audit → layer3Hits=4, memory_context_used=true,
+        layer3_hits=4 in AuditReport ✓
+      Step 3: recall() on Cetus checked_shlw snippet → cetus_checked_shlw hit at
+        score=0.984 (top result, 5 total hits above 0.5 threshold) ✓
+      Step 4: UI badge updated to "Layer 3 · Memory · N hits" in
+        src/app/audit/[id]/page.tsx ✓
+      Step 5: Dead sidecar (port 19999) → healthy()=false, pipeline completes
+        with layer1+layer2 only, layer3Hits=0 ✓
+- Commits: e4cadeb feat(F31): Layer 3 real via LanceDB-backed memory
+- Current state: init.sh HEALTHY. 30/35 features passing. Sidecar + Ollama running.
+- Issues found:
+    IPv6/IPv4 localhost mismatch on Windows: Node.js fetch resolves 'localhost' to '::1'
+    but Flask sidecar only binds 0.0.0.0 (IPv4). Fix: changed .env LAYER4_SIDECAR_URL
+    from http://localhost:8765 to http://127.0.0.1:8765. Also affects Layer 4 calls.
+    LanceDBMemory.healthy() needs 5s timeout (not 2s) on this Windows machine.
+    remember() table.add() adds in-memory (not persisted to disk) — fine for demo.
+- Next session should:
+    F33 (phase 9, pri 2): Groq rate limiter (20 RPM cap) + global snippet cap (20 max).
+      Also fixes comment stripping already done in F30. Main work: rate limiter in
+      layer4.ts and snippet cap in engine.ts.
+    OR F34 (phase 9, pri 2): SQLite job store — replaces in-memory Map, audit jobs
+      survive dev server restarts. Needs 'better-sqlite3' package.
+    OR F32 (phase 9, pri 2): Privacy fix — package_id hashed in report.json, consent
+      checkbox before MVR write.
+- Artifacts: none (F31 is code-only)
