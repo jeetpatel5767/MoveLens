@@ -1,29 +1,17 @@
 // src/lib/store/audits.ts
-// In-process audit job store — no database for MVP hackathon demo.
+// SQLite-backed audit job store — jobs survive dev server restarts.
 //
 // HARD RULES:
 //   - No paid AI API calls anywhere.
 //   - No JSON-RPC.
-//   - Jobs live in a Map for the lifetime of the server process.
 //   - A failed stage MUST set status="failed" and error=<readable string>.
 
+import Database from "better-sqlite3";
+import path from "path";
 import type { AuditReport } from "../audit/schema";
 
 // ── Status machine ────────────────────────────────────────────────────────────
 
-/**
- * Linear pipeline stages. Each stage is set BEFORE the corresponding async
- * work starts, so the frontend always sees forward progress.
- *
- * queued    — job created, pipeline not yet started
- * fetching  — fetching package from Sui GraphQL (or parsing source upload)
- * auditing  — running 4-layer audit engine
- * encrypting— Seal threshold encryption
- * uploading — uploading quilt to Walrus
- * linking   — attaching blob ID to MVR PackageInfo (demo pkg only)
- * done      — all stages complete; report + blobId available
- * failed    — a stage threw; error contains the human-readable reason
- */
 export type AuditStatus =
   | "queued"
   | "fetching"
@@ -37,36 +25,148 @@ export type AuditStatus =
 // ── Job record ─────────────────────────────────────────────────────────────────
 
 export interface AuditJob {
-  /** UUID v4 */
   id: string;
   status: AuditStatus;
-  /**
-   * Every status this job has ever been in, in order.
-   * Allows clients that start polling after early fast stages have already
-   * completed to still verify those stages ran.
-   */
   stagesVisited: AuditStatus[];
-  /** Populated once status="done" */
   report?: AuditReport;
-  /** Walrus blob ID, set once uploading completes */
   blobId?: string;
-  /** MVR set_metadata TX digest, set once linking completes (may be null) */
   txDigest?: string | null;
-  /** Human-readable error message (only when status="failed") */
   error?: string;
-  /** ISO timestamp when the job was created */
   createdAt: string;
-  /** ISO timestamp when the job last changed status */
   updatedAt: string;
 }
 
-// ── In-process store ──────────────────────────────────────────────────────────
+// ── SQLite schema ──────────────────────────────────────────────────────────────
+
+interface DbRow {
+  id:             string;
+  status:         string;
+  stages_visited: string;
+  report:         string | null;
+  blob_id:        string | null;
+  tx_digest:      string | null;
+  error:          string | null;
+  created_at:     string;
+  updated_at:     string;
+}
+
+const DDL = `
+  CREATE TABLE IF NOT EXISTS audit_jobs (
+    id             TEXT PRIMARY KEY,
+    status         TEXT NOT NULL,
+    stages_visited TEXT NOT NULL,
+    report         TEXT,
+    blob_id        TEXT,
+    tx_digest      TEXT,
+    error          TEXT,
+    created_at     TEXT NOT NULL,
+    updated_at     TEXT NOT NULL
+  )
+`;
+
+// ── DB path (exported for tests) ──────────────────────────────────────────────
+
+export const DB_PATH = path.join(process.cwd(), "audits.db");
+const MAX_AGE_MS   = 24 * 60 * 60 * 1000;
+
+// ── Serialisation helpers ─────────────────────────────────────────────────────
+
+function rowToJob(row: DbRow): AuditJob {
+  return {
+    id:            row.id,
+    status:        row.status as AuditStatus,
+    stagesVisited: JSON.parse(row.stages_visited) as AuditStatus[],
+    report:        row.report ? (JSON.parse(row.report) as AuditReport) : undefined,
+    blobId:        row.blob_id  ?? undefined,
+    txDigest:      row.tx_digest ?? undefined,
+    error:         row.error    ?? undefined,
+    createdAt:     row.created_at,
+    updatedAt:     row.updated_at,
+  };
+}
+
+function jobToValues(job: AuditJob): DbRow {
+  return {
+    id:             job.id,
+    status:         job.status,
+    stages_visited: JSON.stringify(job.stagesVisited),
+    report:         job.report    ? JSON.stringify(job.report) : null,
+    blob_id:        job.blobId    ?? null,
+    tx_digest:      job.txDigest  ?? null,
+    error:          job.error     ?? null,
+    created_at:     job.createdAt,
+    updated_at:     job.updatedAt,
+  };
+}
+
+// ── SQLite singleton ───────────────────────────────────────────────────────────
+
+let _db: Database.Database | null = null;
+
+function openDb(dbPath = DB_PATH): Database.Database {
+  if (_db) return _db;
+  _db = new Database(dbPath);
+  _db.pragma("journal_mode = WAL");
+  _db.exec(DDL);
+  return _db;
+}
+
+// Prepared statements (lazily created after openDb())
+let _upsert:   Database.Statement | null = null;
+let _getById:  Database.Statement | null = null;
+let _getAll:   Database.Statement | null = null;
+let _prune:    Database.Statement | null = null;
+
+function stmts(d: Database.Database) {
+  if (!_upsert) {
+    _upsert = d.prepare(`
+      INSERT OR REPLACE INTO audit_jobs
+        (id, status, stages_visited, report, blob_id, tx_digest, error, created_at, updated_at)
+      VALUES
+        ($id, $status, $stages_visited, $report, $blob_id, $tx_digest, $error, $created_at, $updated_at)
+    `);
+    _getById = d.prepare("SELECT * FROM audit_jobs WHERE id = ?");
+    _getAll  = d.prepare("SELECT * FROM audit_jobs");
+    _prune   = d.prepare("DELETE FROM audit_jobs WHERE created_at < ?");
+  }
+  return { upsert: _upsert!, getById: _getById!, getAll: _getAll!, prune: _prune! };
+}
+
+// ── In-memory mirror (fast reads) ────────────────────────────────────────────
 
 const jobs = new Map<string, AuditJob>();
 
+// ── Pruning (exported for tests) ──────────────────────────────────────────────
+
 /**
- * Create a new queued job and add it to the store.
+ * Delete jobs older than 24 hours from the given database.
+ * Exported for test/f34-verify.ts.
  */
+export function pruneOldJobs(d: Database.Database): number {
+  const cutoff = new Date(Date.now() - MAX_AGE_MS).toISOString();
+  return d.prepare("DELETE FROM audit_jobs WHERE created_at < ?").run(cutoff).changes;
+}
+
+// ── Startup ───────────────────────────────────────────────────────────────────
+
+function initStore(): void {
+  const d = openDb();
+  const { getAll } = stmts(d);
+
+  const pruned = pruneOldJobs(d);
+  if (pruned > 0) console.log(`[store] Pruned ${pruned} old audit job(s) (>24h)`);
+
+  jobs.clear();
+  for (const row of getAll.all() as DbRow[]) {
+    jobs.set(row.id, rowToJob(row));
+  }
+  console.log(`[store] Loaded ${jobs.size} job(s) from audits.db`);
+}
+
+initStore();
+
+// ── Public API ────────────────────────────────────────────────────────────────
+
 export function createJob(): AuditJob {
   const now = new Date().toISOString();
   const job: AuditJob = {
@@ -77,35 +177,27 @@ export function createJob(): AuditJob {
     updatedAt:     now,
   };
   jobs.set(job.id, job);
+  const d = openDb();
+  stmts(d).upsert.run(jobToValues(job));
   return job;
 }
 
-/**
- * Retrieve a job by id. Returns undefined if not found.
- */
 export function getJob(id: string): AuditJob | undefined {
   return jobs.get(id);
 }
 
-/**
- * Update a job's status (and optional extra fields).
- * Also stamps updatedAt and appends the new status to stagesVisited
- * (so polling clients that miss fast early stages can still verify them).
- */
 export function updateJob(
   job: AuditJob,
   patch: Partial<Omit<AuditJob, "id" | "createdAt">>,
 ): void {
-  // Append the new status to stagesVisited before applying the patch
   if (patch.status && patch.status !== job.status) {
     job.stagesVisited = [...job.stagesVisited, patch.status];
   }
   Object.assign(job, { ...patch, updatedAt: new Date().toISOString() });
+  const d = openDb();
+  stmts(d).upsert.run(jobToValues(job));
 }
 
-/**
- * Return all job IDs (for health/debug endpoints).
- */
 export function listJobIds(): string[] {
   return [...jobs.keys()];
 }

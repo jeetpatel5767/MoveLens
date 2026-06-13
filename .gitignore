@@ -10,3 +10,6 @@ __pycache__/
 .python-version
 /tmp/
 *.log
+audits.db
+audits.db-shm
+audits.db-wal
