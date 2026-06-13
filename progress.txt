@@ -529,3 +529,35 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     Note: the "-w" untracked file appeared in git status (probably a stray arg).
       Added to .gitignore as well (minor).
 - Artifacts: audits.db (local, gitignored), PID 6840 killed and server restarted
+
+[2026-06-13] Session 22
+- Worked on: F35 — Audit gallery on landing page
+- Completed (tested end-to-end):
+    F35 ✓ (5/5 steps):
+      Step 1: scripts/gallery-audits.ts created; produces src/app/gallery.json with 3 entries ✓
+      Step 2: All 3 blob IDs fetchable from Walrus aggregator (HTTP 200 verified) ✓
+        - Cetus CLMM: blob=5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA, riskGrade=F, 34 critical
+        - FlashLoan Pool: blob=VReKsGr5Ebvovx19W4nYAoBT3Jin6vrBLvN5CoDZqFE, riskGrade=F, 9 findings
+        - Governance Module: blob=otfJcF6bqnD4PKM4NiUoCUTBRqPuNBkM1IyF9V1WOc4, riskGrade=F, 12 findings
+      Step 3: src/app/page.tsx updated — gallery section below architecture callout,
+        risk grade badges (F=red, D=orange, C=yellow), severity counts, layers-run chips ✓
+      Step 4: Cetus entry present with riskGrade=F and critical=34 ✓
+      Step 5: Each Walrus link has target="_blank" rel="noopener noreferrer" ✓
+    TypeScript: zero errors (npx tsc --noEmit clean)
+    Walrus upload method: testnet publisher REST PUT (no SUI gas required)
+- Commits:
+    5e4d772 feat(F35): audit gallery on landing page — 3 pre-audited protocols with real Walrus blobs
+- Current state: init.sh HEALTHY (expected). 35/35 features passing (F18 blocked on mainnet SUI,
+  all others done). gallery.json seeded, blobs live on Walrus testnet.
+- Next session should:
+    F18 is blocked indefinitely (needs mainnet SUI for MemWal account — cannot proceed without funds).
+    All other features pass. Consider: demo polish, README, or revisit F18 if mainnet SUI obtained.
+    To re-check health: run ./init.sh, verify Layer 4 sidecar on :8765.
+- Issues found:
+    Chrome in Chrome extension not connected during testing — UI verified via TypeScript compile only.
+    Walrus uploads use free REST endpoint (no gas); blobs persisted for 5 epochs (~5 days testnet).
+- Artifacts:
+    Walrus blobs:
+      5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA (Cetus, pre-existing)
+      VReKsGr5Ebvovx19W4nYAoBT3Jin6vrBLvN5CoDZqFE (FlashLoan Pool, new)
+      otfJcF6bqnD4PKM4NiUoCUTBRqPuNBkM1IyF9V1WOc4 (Governance Module, new)

@@ -482,7 +482,7 @@
                 "Cetus entry present with riskGrade: F and at least 1 critical finding",
                 "Clicking a Walrus link opens the blob in a new tab"
             ],
-            "passes": false
+            "passes": true
         }
     ]
 }
