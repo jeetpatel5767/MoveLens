@@ -29,6 +29,34 @@ import { VALID_RULE_IDS } from "./rule-ids";
 const SIDECAR = env.LAYER4_SIDECAR_URL ?? "http://localhost:8765";
 
 // ──────────────────────────────────────────────────────────────
+// Groq rate limiter — 20 RPM (free tier hard cap)
+// Exported so test/f33-verify.ts can reset state between tests.
+// ──────────────────────────────────────────────────────────────
+
+export const groqCallTimestamps: number[] = [];
+const GROQ_RPM        = 20;
+const GROQ_WINDOW_MS  = 60_000;
+
+/**
+ * Check whether a Groq call is allowed under the 20 RPM cap.
+ * Records the call if allowed; logs and returns false if at limit.
+ * Exported for testing.
+ */
+export function groqRateLimitOk(): boolean {
+  const now = Date.now();
+  // Evict timestamps outside the rolling window
+  while (groqCallTimestamps.length > 0 && now - groqCallTimestamps[0] > GROQ_WINDOW_MS) {
+    groqCallTimestamps.shift();
+  }
+  if (groqCallTimestamps.length >= GROQ_RPM) {
+    console.warn("[layer4] Groq rate limit reached (20 RPM) — skipping Groq confirmation");
+    return false;
+  }
+  groqCallTimestamps.push(now);
+  return true;
+}
+
+// ──────────────────────────────────────────────────────────────
 // Types
 // ──────────────────────────────────────────────────────────────
 
@@ -131,34 +159,43 @@ ${code.slice(0, 800)}`;
 
 const INTERESTING_RE = /(?:public|entry|fun\s+\w+|<<|>>|0x[0-9a-fA-F]{8,}|AdminCap|UpgradeCap|coin::|balance::|struct\s+\w+\s*\{)/;
 
-function extractSuspiciousSnippets(ctx: PackageContext): Snippet[] {
-  const snippets: Snippet[] = [];
-  const MAX_SNIPPETS = 10;   // per module
-  const WINDOW = 20;         // lines per snippet
+const MAX_SNIPPETS_TOTAL = 20;  // hard global cap across all modules
+const WINDOW = 20;              // lines per snippet
 
+/**
+ * Extract up to MAX_SNIPPETS_TOTAL suspicious 20-line windows from all modules.
+ * No two returned snippets have overlapping [line_start, line_end] ranges.
+ * Exported for testing.
+ */
+export function extractSuspiciousSnippets(ctx: PackageContext): Snippet[] {
+  const snippets: Snippet[] = [];
+
+  outer:
   for (const mod of ctx.modules) {
     const src = mod.source ?? mod.disassembly ?? "";
     if (!src) continue;
 
     const lines = src.split("\n");
-    const added = new Set<number>();
+    // Track [start, end] ranges already added for this module (0-indexed)
+    const addedRanges: [number, number][] = [];
 
-    for (let i = 0; i < lines.length && snippets.length < MAX_SNIPPETS * ctx.modules.length; i++) {
+    for (let i = 0; i < lines.length; i++) {
+      if (snippets.length >= MAX_SNIPPETS_TOTAL) break outer;
+
       const line = lines[i];
       if (!INTERESTING_RE.test(line)) continue;
-      if (added.has(i)) continue;
 
       const start = Math.max(0, i - 2);
       const end   = Math.min(lines.length - 1, i + WINDOW - 1);
 
-      // Skip if this window overlaps one we already added
+      // Skip if [start, end] overlaps any range already added for this module
       let overlap = false;
-      for (const prev of added) {
-        if (Math.abs(prev - i) < WINDOW / 2) { overlap = true; break; }
+      for (const [rs, re] of addedRanges) {
+        if (start <= re && end >= rs) { overlap = true; break; }
       }
       if (overlap) continue;
 
-      added.add(i);
+      addedRanges.push([start, end]);
       snippets.push({
         code:       lines.slice(start, end + 1).join("\n"),
         module:     mod.name,
@@ -271,13 +308,17 @@ export async function runLayer4(
         confidence = Math.min(1.0, confidence + 0.2);
       }
 
-      // ── Model C: Groq confirmation (only in uncertain range) ───
-      if (confidence >= 0.4 && confidence <= 0.7) {
-        const confirmed = await confirmWithGroq(snippet.code, classResult.category);
-        confidence = confirmed
-          ? Math.min(1.0, confidence + 0.1)
-          : Math.max(0.0, confidence - 0.1);
-        console.log(`[layer4] Groq confirmation for ${ruleId}: ${confirmed} → confidence=${confidence.toFixed(2)}`);
+      // ── Model C: Groq confirmation (only in uncertain range, rate-limited) ──
+      if (confidence >= 0.4 && confidence <= 0.7 && env.GROQ_API_KEY) {
+        if (!groqRateLimitOk()) {
+          // rate limit logged inside groqRateLimitOk(); treat as unconfirmed
+        } else {
+          const confirmed = await confirmWithGroq(snippet.code, classResult.category);
+          confidence = confirmed
+            ? Math.min(1.0, confidence + 0.1)
+            : Math.max(0.0, confidence - 0.1);
+          console.log(`[layer4] Groq confirmation for ${ruleId}: ${confirmed} → confidence=${confidence.toFixed(2)}`);
+        }
       }
 
       // Below threshold — skip
