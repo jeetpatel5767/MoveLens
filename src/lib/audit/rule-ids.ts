@@ -42,6 +42,11 @@ export const VALID_RULE_IDS: ReadonlySet<string> = new Set([
   // LAYER 2 — OpenZeppelin benchmark deviations (10)
   "ML-OZ-001", "ML-OZ-002", "ML-OZ-003", "ML-OZ-004", "ML-OZ-005",
   "ML-OZ-006", "ML-OZ-007", "ML-OZ-008", "ML-OZ-009", "ML-OZ-010",
+  // LAYER 4 — ML model ensemble findings (one marker per sector, 13 total)
+  "ML-ACC-L4-001", "ML-INT-L4-001", "ML-HOT-L4-001", "ML-OWN-L4-001",
+  "ML-ARI-L4-001", "ML-UPG-L4-001", "ML-RAC-L4-001", "ML-RET-L4-001",
+  "ML-TOK-L4-001", "ML-WRP-L4-001", "ML-DOS-L4-001", "ML-DEP-L4-001",
+  "ML-LOG-L4-001",
 ]);
 
 /** Layer 1 corpus size — must always be 93. Checked at runtime in rules.ts. */
