@@ -125,10 +125,12 @@ async function runPipeline(job: AuditJob, input: AuditInput): Promise<void> {
     updateJob(job, { status: "auditing" });
     const memory = await createMemory();
     const engineResult = await runAudit(ctx, memory);
-    // memoryContextUsed = true only if recall returned any hits
-    const memoryContextUsed =
-      engineResult.layersRun.includes("layer3_recall");
-    const report = assembleReport(ctx, engineResult, { memoryContextUsed });
+    // memoryContextUsed = true when Layer 3 recall returned corpus hits
+    const memoryContextUsed = engineResult.layersRun.includes("layer3");
+    const report = assembleReport(ctx, engineResult, {
+      memoryContextUsed,
+      layer3Hits: engineResult.layer3Hits,
+    });
 
     // ── Stage 3: encrypt ─────────────────────────────────────────────────────
     updateJob(job, { status: "encrypting" });

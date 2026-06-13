@@ -379,6 +379,73 @@ def embed():
         return jsonify({"error": str(exc)}), 500
 
 
+@app.route("/recall", methods=["POST"])
+def recall():
+    """
+    Layer 3 semantic recall: embed query code and search LanceDB corpus.
+    Returns top-5 corpus hits above 0.5 similarity threshold.
+    Never errors — returns empty hits on any failure.
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    code = body.get("code", "")
+    if not code or not models_loaded or lance_table is None:
+        return jsonify({"hits": []}), 200
+
+    try:
+        clean = _strip_move_comments(code)
+        vec = embed_model.encode(clean[:1200], normalize_embeddings=True).tolist()
+        results = lance_table.search(vec).limit(5).to_list()
+
+        hits = []
+        for r in results:
+            dist = r.get("_distance", 1.0)
+            sim = max(0.0, 1.0 - dist * dist / 2.0)
+            if sim < 0.5:
+                continue
+            hits.append({
+                "name":     r.get("name", "unknown"),
+                "sector":   r.get("sector", "ML-LOG"),
+                "severity": r.get("severity", "medium"),
+                "score":    round(sim, 4),
+            })
+
+        hits.sort(key=lambda h: h["score"], reverse=True)
+        log.info("/recall: %d hits above 0.5 threshold", len(hits))
+        return jsonify({"hits": hits})
+
+    except Exception as exc:
+        log.error("/recall error: %s", exc)
+        return jsonify({"hits": []}), 200
+
+
+@app.route("/remember", methods=["POST"])
+def remember():
+    """
+    Layer 3 remember: embed a new finding and add it to the corpus for future recall.
+    Adds to in-memory table (survives until sidecar restart).
+    """
+    if not models_loaded or lance_table is None:
+        return jsonify({"status": "skip", "reason": "models not loaded"}), 200
+
+    body = request.get_json(force=True, silent=True) or {}
+    code = body.get("code", "")
+    name = body.get("name", "dynamic_entry")
+    sector = body.get("sector", "ML-LOG")
+    severity = body.get("severity", "medium")
+
+    if not code:
+        return jsonify({"status": "skip", "reason": "no code provided"}), 200
+
+    try:
+        vec = embed_model.encode(code[:1200], normalize_embeddings=True).tolist()
+        lance_table.add([{"name": name, "sector": sector, "severity": severity, "vector": vec}])
+        log.info("/remember: added '%s' (%s)", name, sector)
+        return jsonify({"status": "ok", "name": name})
+    except Exception as exc:
+        log.warning("/remember error (non-fatal): %s", exc)
+        return jsonify({"status": "skip", "reason": str(exc)}), 200
+
+
 @app.route("/classify", methods=["POST"])
 def classify():
     """
