@@ -336,7 +336,7 @@
         "Verify lancedb_store/ directory exists",
         "Query with a Cetus-like snippet and confirm similarity > 0.75 returned"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F26",
@@ -350,7 +350,7 @@
         "POST /embed with Cetus snippet → similar_to: cetus_checked_shlw",
         "POST /classify with overflow snippet → vulnerable: true, category: ML-INT"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F27",
@@ -364,7 +364,7 @@
         "Verify confidence score is composite (embed + classify + optional groq)",
         "Verify Model C (Groq) only called when confidence is 0.4-0.7"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "F28",
@@ -378,7 +378,7 @@
         "grep -ri 'anthropic\\|openai_api_key\\|callClaude' src/ returns ZERO matches",
         "Verify findings from all 4 layers present in output"
       ],
-      "passes": false
+      "passes": true
     }
   ]
 }

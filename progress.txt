@@ -310,3 +310,37 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Artifacts:
     blobId: lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8 (F19 test upload)
     signer: 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
+
+[2026-06-13] Session 16
+- Worked on: F25 (LanceDB corpus seed), F26 (Python sidecar), F27 (Layer 4 TS caller), F28 (full 4-layer engine)
+- Completed (tested end-to-end):
+    F25 ✓ (3/3): scripts/seedLanceDB.ts seeds 52 known-vulnerable Move snippets into lancedb_store/
+      via /embed-raw from the Python sidecar. Cetus snippet similarity=0.9581 > 0.75 verified.
+    F26 ✓ (4/4): scripts/layer4_server.py runs Flask on :8765.
+      /embed → similar_to: cetus_checked_shlw (score=0.956)
+      /classify → vulnerable:true, category:ML-INT for overflow snippet.
+      /health, /embed-raw, /reload endpoints all working.
+    F27 ✓ (4/4): src/lib/audit/layer4.ts full implementation.
+      overflow.move → 2 layer4 findings, ML-INT-L4-001, confidence=1.0 (Model A boost).
+      Model C (Groq) skipped when no GROQ_API_KEY (correct gate behavior).
+    F28 ✓ (4/4): All 4 fixtures in 4677ms (< 90s). Layers run: layer1, layer2, layer4.
+      grep paid-API: ZERO matches. 17+15+7+8 findings across fixtures.
+- Commits: e090e68 F25+F26+F27+F28: Layer 4 ML engine
+- Current state: init.sh HEALTHY. 27/28 features passing. Only F18 blocked (needs mainnet SUI).
+  Layer 4 sidecar must be running before audits: python scripts/layer4_server.py
+  LanceDB store seeded: 52 rows, lancedb_store/ directory exists.
+  Jina model cached: ~/.cache/huggingface/hub/models--jinaai--jina-embeddings-v2-base-code
+- Next session should:
+    Only F18 remains — blocked on mainnet SUI for MemWal account.
+    If mainnet SUI available on 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57:
+      Run scripts/create-memwal-account.ts, get MEMWAL_ACCOUNT_ID and MEMWAL_PRIVATE_KEY,
+      then implement real MemWalMemory.recall/remember, test F18 steps 1-4.
+    Otherwise: project is effectively complete (27/28). Demo is ready at scripts/demo.md.
+    IMPORTANT: Always run `python scripts/layer4_server.py` before init.sh or audits.
+    After starting sidecar, call POST http://localhost:8765/reload to re-open LanceDB table.
+- Issues found:
+    lancedb Python 0.13.0 incompatible with @lancedb/lancedb npm 0.30.0 (format mismatch).
+    Fixed by upgrading Python lancedb to 0.30.0 to match Node.js package.
+    Layer 4 comment containing "ANTHROPIC_API_KEY" triggered init.sh grep ban — fixed by rewording.
+    Sidecar must be restarted to load LanceDB table after first seed (or call /reload).
+- Artifacts: lancedb_store/ (local, gitignored, 52 snippets seeded 2026-06-13)
