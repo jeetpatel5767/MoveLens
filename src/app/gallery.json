@@ -1,0 +1,68 @@
+[
+  {
+    "id": "cetus-clmm",
+    "packageName": "@cetus/clmm",
+    "packageId": "0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92",
+    "network": "mainnet",
+    "riskGrade": "F",
+    "blobId": "5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+    "walrusUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+    "severityCounts": {
+      "critical": 34,
+      "high": 66,
+      "medium": 22,
+      "low": 7
+    },
+    "totalFindings": 129,
+    "auditedAt": "2026-06-13T11:42:55.562Z",
+    "layersRun": [
+      "layer1",
+      "layer2",
+      "layer4"
+    ]
+  },
+  {
+    "id": "flashloan-pool",
+    "packageName": "FlashLoan Pool",
+    "packageId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "network": "testnet",
+    "riskGrade": "F",
+    "blobId": "VReKsGr5Ebvovx19W4nYAoBT3Jin6vrBLvN5CoDZqFE",
+    "walrusUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/VReKsGr5Ebvovx19W4nYAoBT3Jin6vrBLvN5CoDZqFE",
+    "severityCounts": {
+      "critical": 5,
+      "high": 1,
+      "medium": 3,
+      "low": 0
+    },
+    "totalFindings": 9,
+    "auditedAt": "2026-06-13T17:12:45.804Z",
+    "layersRun": [
+      "layer1",
+      "layer2",
+      "layer3"
+    ]
+  },
+  {
+    "id": "governance",
+    "packageName": "Governance Module",
+    "packageId": "0x1111111111111111111111111111111111111111111111111111111111111111",
+    "network": "testnet",
+    "riskGrade": "F",
+    "blobId": "otfJcF6bqnD4PKM4NiUoCUTBRqPuNBkM1IyF9V1WOc4",
+    "walrusUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/otfJcF6bqnD4PKM4NiUoCUTBRqPuNBkM1IyF9V1WOc4",
+    "severityCounts": {
+      "critical": 6,
+      "high": 2,
+      "medium": 4,
+      "low": 0
+    },
+    "totalFindings": 12,
+    "auditedAt": "2026-06-13T17:13:02.405Z",
+    "layersRun": [
+      "layer1",
+      "layer2",
+      "layer3"
+    ]
+  }
+]
