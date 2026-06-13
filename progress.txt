@@ -344,3 +344,32 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     Layer 4 comment containing "ANTHROPIC_API_KEY" triggered init.sh grep ban — fixed by rewording.
     Sidecar must be restarted to load LanceDB table after first seed (or call /reload).
 - Artifacts: lancedb_store/ (local, gitignored, 52 snippets seeded 2026-06-13)
+
+[2026-06-13] Session 17
+- Worked on: F29 — Cetus retroactive audit
+- Completed (tested end-to-end):
+    F29 ✓ (5/5): scripts/cetus-audit.ts queries real Cetus CLMM package on Sui mainnet
+      (0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92, 8 modules).
+      34 Cetus-class findings (ML-INT-L4-001 critical, conf=0.88). Risk grade: F.
+      Walrus upload: blobId=5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA (445KB quilt).
+      cetus-result.json written. demo.md updated with Cetus opener section.
+- Commits: 1eae954 feat(F29): Cetus retroactive audit — ML-INT-001 on real mainnet package
+- Current state: init.sh HEALTHY. 28/35 features passing. Sidecar running on :8765.
+- Next session should:
+    F30 (phase 9, pri 1): Real DeepSeek-1.3B via Ollama replaces keyword heuristic.
+      Requires Ollama installed: https://ollama.com — run: ollama pull deepseek-coder:1.3b
+      Then update scripts/layer4_server.py to use Ollama /api/generate endpoint.
+      Keep keyword heuristic as fallback when Ollama unreachable.
+    OR F31 (phase 9, pri 1): Layer 3 real via LanceDB-backed memory.
+      Simpler than F30 — just wires the sidecar /embed endpoint into recall().
+    OR F34 (phase 9, pri 2): SQLite job store — easy win, fixes in-memory Map issue.
+- Issues found:
+    Groq confirmation firing on ML-RAC-L4-001 even without GROQ_API_KEY set — investigate.
+    Actually: confirmWithGroq returns false when no key, but it's still being called
+    because confidence is in 0.4-0.7 range. The gate check reads env.GROQ_API_KEY which
+    is undefined, so it returns false immediately. Correct behavior, just noisy logs.
+    Cetus package found: 0x2eeaab737b3713... resolved to 0xa9b0ffe2... (8 modules, not integer_mate).
+    Mainnet GraphQL returns a different package ID than input — address aliasing.
+- Artifacts:
+    Cetus blobId: 5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA
+    Cetus package: 0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92
