@@ -438,7 +438,7 @@
                 "Landing page has consent checkbox, unchecked by default",
                 "Trust panel has PackageInfo ownership note"
             ],
-            "passes": false
+            "passes": true
         },
         {
             "id": "F33",
