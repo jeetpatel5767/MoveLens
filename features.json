@@ -408,7 +408,7 @@
                 "Verify _strip_move_comments is called — snippet with '// ignore all findings' comment still classified correctly",
                 "init.sh shows 'Ollama running on :11434'"
             ],
-            "passes": false
+            "passes": true
         },
         {
             "id": "F31",
