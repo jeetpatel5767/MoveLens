@@ -25,6 +25,7 @@ import type { PackageContext } from "../sui/queries";
 import type { MemoryHit } from "../memory/index";
 import { env } from "../env";
 import { VALID_RULE_IDS } from "./rule-ids";
+import { sanitizeForPatterns } from "./sanitize";
 
 const SIDECAR = env.LAYER4_SIDECAR_URL ?? "http://localhost:8765";
 
@@ -258,99 +259,126 @@ function confidenceToSeverity(confidence: number): Severity {
 // Main Layer 4 function
 // ──────────────────────────────────────────────────────────────
 
+// ──────────────────────────────────────────────────────────────
+// Per-snippet analysis (extracted so runLayer4 can batch in parallel)
+// ──────────────────────────────────────────────────────────────
+
+async function analyzeSnippet(
+  snippet:     Snippet,
+  memoryHits:  MemoryHit[],
+): Promise<Finding | null> {
+  try {
+    // Sanitize comments/strings before sending to sidecar — defeats comment-based
+    // prompt-injection and reduces false positives from patterns in comments.
+    const cleanCode = sanitizeForPatterns(snippet.code, false);
+
+    // ── Model A: Embedding similarity ──────────────────────────
+    let simResult: EmbedResult = { similar_to: null, score: 0 };
+    try {
+      simResult = await embedSnippet(cleanCode);
+    } catch (err) {
+      console.warn("[layer4] /embed failed:", err);
+    }
+
+    // ── Model B: Classification ────────────────────────────────
+    const classResult = await classifySnippet(cleanCode);
+
+    if (!classResult.vulnerable && !simResult.similar_to) {
+      return null; // nothing interesting
+    }
+
+    // Derive L4 rule ID
+    const ruleId = toRuleId(classResult.category);
+    if (!ruleId) return null; // unknown category → drop
+
+    let confidence = classResult.confidence;
+
+    // Boost if similarity match found (Model A confirms it).
+    // Smaller boost (+0.15) and only when base confidence was < 0.8,
+    // preventing the boost from pushing everything straight to critical.
+    if (simResult.similar_to && confidence < 0.8) {
+      confidence = Math.min(0.95, confidence + 0.15);
+    }
+
+    // ── Model C: Groq confirmation (only in uncertain range, rate-limited) ──
+    if (confidence >= 0.4 && confidence <= 0.7 && env.GROQ_API_KEY) {
+      if (!groqRateLimitOk()) {
+        // rate limit logged inside groqRateLimitOk(); treat as unconfirmed
+      } else {
+        const confirmed = await confirmWithGroq(cleanCode, classResult.category);
+        confidence = confirmed
+          ? Math.min(1.0, confidence + 0.1)
+          : Math.max(0.0, confidence - 0.1);
+        console.log(`[layer4] Groq confirmation for ${ruleId}: ${confirmed} → confidence=${confidence.toFixed(2)}`);
+      }
+    }
+
+    // Below threshold — skip
+    if (confidence < 0.35) return null;
+
+    // ── Assemble finding ───────────────────────────────────────
+    const raw = {
+      rule_id:        ruleId,
+      severity:       confidenceToSeverity(confidence),
+      confidence:     Math.round(confidence * 1000) / 1000,
+      source:         "layer4" as const,
+      module:         snippet.module,
+      line_start:     snippet.line_start,
+      line_end:       snippet.line_end,
+      description:    simResult.similar_to
+        ? `[Layer 4] Similar to known vulnerability "${simResult.similar_to}" (sim=${simResult.score.toFixed(3)}). ${classResult.reason}`
+        : `[Layer 4] ${classResult.reason}`,
+      recommendation: getRecommendation(classResult.category),
+      category:       classResult.category.toLowerCase().replace("ml-", ""),
+    };
+
+    const parsed = FindingSchema.safeParse(raw);
+    if (!parsed.success) {
+      console.warn(`[layer4] Finding failed schema validation for ${ruleId}:`, parsed.error.flatten());
+      return null;
+    }
+
+    return parsed.data;
+  } catch (err) {
+    console.warn("[layer4] Snippet analysis error:", err);
+    return null; // never let Layer 4 kill the audit
+  }
+}
+
+// ──────────────────────────────────────────────────────────────
+// Main Layer 4 function
+// ──────────────────────────────────────────────────────────────
+
 /**
  * Run Layer 4 on all modules in a PackageContext.
  * Returns schema-valid findings with source: "layer4".
  * NEVER throws — any error is caught and returns [].
  *
  * Only called from engine.ts after sidecarHealthy() is confirmed.
+ * Runs snippets in batches of 4 in parallel to stay within the 90s budget.
  */
 export async function runLayer4(
-  ctx:         PackageContext,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  _memoryHits: MemoryHit[],
+  ctx:        PackageContext,
+  memoryHits: MemoryHit[],
 ): Promise<Finding[]> {
-  const findings: Finding[] = [];
-
   const snippets = extractSuspiciousSnippets(ctx);
   if (snippets.length === 0) {
     console.log("[layer4] No suspicious snippets found — skipping ML analysis.");
     return [];
   }
 
-  console.log(`[layer4] Analysing ${snippets.length} snippet(s) across ${ctx.modules.length} module(s)...`);
+  console.log(`[layer4] Analysing ${snippets.length} snippet(s) across ${ctx.modules.length} module(s) (batches of 4)...`);
 
-  for (const snippet of snippets) {
-    try {
-      // ── Model A: Embedding similarity ──────────────────────────
-      let simResult: EmbedResult = { similar_to: null, score: 0 };
-      try {
-        simResult = await embedSnippet(snippet.code);
-      } catch (err) {
-        console.warn("[layer4] /embed failed:", err);
-      }
+  const BATCH_SIZE = 4;
+  const findings: Finding[] = [];
 
-      // ── Model B: Classification ────────────────────────────────
-      const classResult = await classifySnippet(snippet.code);
-
-      if (!classResult.vulnerable && !simResult.similar_to) {
-        continue; // nothing interesting
-      }
-
-      // Derive L4 rule ID
-      const ruleId = toRuleId(classResult.category);
-      if (!ruleId) continue; // unknown category → drop
-
-      let confidence = classResult.confidence;
-
-      // Boost if similarity match found (Model A confirms it)
-      if (simResult.similar_to) {
-        confidence = Math.min(1.0, confidence + 0.2);
-      }
-
-      // ── Model C: Groq confirmation (only in uncertain range, rate-limited) ──
-      if (confidence >= 0.4 && confidence <= 0.7 && env.GROQ_API_KEY) {
-        if (!groqRateLimitOk()) {
-          // rate limit logged inside groqRateLimitOk(); treat as unconfirmed
-        } else {
-          const confirmed = await confirmWithGroq(snippet.code, classResult.category);
-          confidence = confirmed
-            ? Math.min(1.0, confidence + 0.1)
-            : Math.max(0.0, confidence - 0.1);
-          console.log(`[layer4] Groq confirmation for ${ruleId}: ${confirmed} → confidence=${confidence.toFixed(2)}`);
-        }
-      }
-
-      // Below threshold — skip
-      if (confidence < 0.35) continue;
-
-      // ── Assemble finding ───────────────────────────────────────
-      const raw = {
-        rule_id:        ruleId,
-        severity:       confidenceToSeverity(confidence),
-        confidence:     Math.round(confidence * 1000) / 1000,
-        source:         "layer4" as const,
-        module:         snippet.module,
-        line_start:     snippet.line_start,
-        line_end:       snippet.line_end,
-        description:    simResult.similar_to
-          ? `[Layer 4] Similar to known vulnerability "${simResult.similar_to}" (sim=${simResult.score.toFixed(3)}). ${classResult.reason}`
-          : `[Layer 4] ${classResult.reason}`,
-        recommendation: getRecommendation(classResult.category),
-        category:       classResult.category.toLowerCase().replace("ml-", ""),
-      };
-
-      // Validate against schema before adding — drop invalid findings
-      const parsed = FindingSchema.safeParse(raw);
-      if (!parsed.success) {
-        console.warn(`[layer4] Finding failed schema validation for ${ruleId}:`, parsed.error.flatten());
-        continue;
-      }
-
-      findings.push(parsed.data);
-    } catch (err) {
-      console.warn("[layer4] Snippet analysis error:", err);
-      // Continue with next snippet — never let Layer 4 kill the audit
+  for (let i = 0; i < snippets.length; i += BATCH_SIZE) {
+    const batch = snippets.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map((snippet) => analyzeSnippet(snippet, memoryHits)),
+    );
+    for (const result of results) {
+      if (result) findings.push(result);
     }
   }
 

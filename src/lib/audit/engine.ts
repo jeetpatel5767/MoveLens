@@ -25,6 +25,35 @@ import { NoopMemory } from "../memory/noop";
 // Re-export so callers can use the type from either location.
 export type { AuditMemory };
 
+// ──────────────────────────────────────────────────────────────
+// Severity floor — prevents Layer 4 from silently downgrading a
+// Layer 1 / Layer 2 finding for the same vuln class.
+// ──────────────────────────────────────────────────────────────
+
+import type { Severity } from "./schema";
+
+const SEVERITY_RANK: Record<Severity, number> = {
+  critical: 4,
+  high:     3,
+  medium:   2,
+  low:      1,
+};
+
+const CATEGORY_SEVERITY_FLOOR: Record<string, Severity> = {
+  "ML-INT": "high",   // integer overflow / bitwise — never below high
+  "ML-OZ":  "high",   // OZ math deviations — never below high
+  "ML-ACC": "medium", // access control — never below medium
+};
+
+function applySeverityFloor(finding: Finding): Finding {
+  const sector = finding.rule_id.split("-").slice(0, 2).join("-"); // e.g. "ML-INT"
+  const floor = CATEGORY_SEVERITY_FLOOR[sector];
+  if (floor && SEVERITY_RANK[finding.severity] < SEVERITY_RANK[floor]) {
+    return { ...finding, severity: floor };
+  }
+  return finding;
+}
+
 // Default memory — Phase 6 (F17/F18) wires the real MemWalMemory through createMemory().
 // Tests and the API route can pass a specific memory instance; this default is noop.
 const NOOP_MEMORY: AuditMemory = new NoopMemory();
@@ -142,10 +171,13 @@ export async function sidecarHealthy(): Promise<boolean> {
 export function mergeAndDedupe(findings: Finding[]): Finding[] {
   const best = new Map<string, Finding>();
   for (const f of findings) {
-    const key = `${f.rule_id}:${f.module}:${f.line_start}`;
+    // Apply severity floor before dedup so the floor wins regardless of which
+    // layer emitted the finding.
+    const floored = applySeverityFloor(f);
+    const key = `${floored.rule_id}:${floored.module}:${floored.line_start}`;
     const existing = best.get(key);
-    if (!existing || f.confidence > existing.confidence) {
-      best.set(key, f);
+    if (!existing || floored.confidence > existing.confidence) {
+      best.set(key, floored);
     }
   }
   return [...best.values()];
