@@ -18,12 +18,28 @@ These fields appear in the unencrypted portion of every Walrus quilt blob:
 
 ## What's Private (in `findings.enc`, Seal-encrypted)
 
-These fields are encrypted with [Seal IBE](https://github.com/MystenLabs/seal) and
-are only decryptable by the package owner's Sui identity:
+These fields are encrypted with [Seal IBE](https://github.com/MystenLabs/seal)
+and are only decryptable via the MoveLens Seal identity (see caveat below):
 
 - Full finding details: descriptions, impacted code snippets, line numbers
 - Recommendations and category labels
 - Layer 4 confidence scores and ML model reasoning
+
+## Encryption Identity (Current Limitation)
+
+Audit reports are Seal-encrypted to a MoveLens-operated identity. For the demo
+package (`@movelens/demo`), this identity coincides with the package owner,
+so the "owner-only decryption" property holds in the demo.
+
+For arbitrary third-party packages, owner-keyed encryption — where the actual
+package owner's address is used as the Seal IBE identity, derived automatically
+from on-chain ownership — is a v2 milestone. Today, MoveLens acts as a
+trusted escrow for encrypted findings rather than encrypting directly to an
+arbitrary owner's wallet.
+
+This is a deliberate scope decision for the hackathon timeline, not an
+oversight, and is tracked for the v2 roadmap alongside the disclosure-timer
+work already described above.
 
 ## On-Chain Publishing (opt-in, default OFF)
 
