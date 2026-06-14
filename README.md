@@ -176,6 +176,26 @@ python scripts/layer4_server.py
 
 ---
 
+## Beyond the Hackathon
+
+MoveLens is free for open-source Move projects today — all AI layers run locally
+(DeepSeek-1.3B via Ollama, Jina embeddings) or on free tiers (Groq). Zero marginal
+cost per audit.
+
+Potential paths to sustainability:
+
+- **CI integration**: a GitHub Action that runs MoveLens on every PR to a Move package,
+  posting Layer 1 findings as a review comment — the natural extension of the
+  "audit before you ship" workflow this tool already enables.
+- **Ecosystem infrastructure**: the Walrus + Seal + MVR combination used here is a
+  general pattern for on-chain-verifiable, privacy-respecting attestations — applicable
+  beyond security audits (code quality scores, compliance checks, dependency audits).
+- **Managed tier**: for teams wanting faster Layer 4 inference (larger models, dedicated
+  compute) or private corpora, a hosted option could fund continued development while
+  the local/free path remains available to all.
+
+---
+
 ## Watermark
 
 All audit reports carry the watermark:

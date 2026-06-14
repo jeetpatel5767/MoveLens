@@ -236,6 +236,40 @@ function toRuleId(category: string): string {
   return ruleId;
 }
 
+interface PatchSuggestion {
+  recommendation: string;
+  before: string;
+  after:  string;
+}
+
+const PATCH_SUGGESTIONS: Partial<Record<string, PatchSuggestion>> = {
+  "ML-INT": {
+    recommendation: "Use checked_shl instead of raw bit-shifts. The Cetus exploit lost $223M to this pattern.",
+    before: `let mask = 0xffffffffffffffff << 192;\nlet r = n << 64;`,
+    after:  `// Aborts on overflow instead of silently truncating\nlet r = u256::checked_shl(n, 64);\nassert!(option::is_some(&r), EOverflow);`,
+  },
+  "ML-ACC": {
+    recommendation: "Gate privileged functions with a typed capability argument instead of address checks.",
+    before: `public fun withdraw(vault: &mut Vault, amount: u64,\n    ctx: &mut TxContext) { ... }`,
+    after:  `public fun withdraw(_cap: &AdminCap, vault: &mut Vault,\n    amount: u64, ctx: &mut TxContext) { ... }`,
+  },
+  "ML-ARI": {
+    recommendation: "Multiply before dividing and use u128 intermediates for fee calculations.",
+    before: `let fee = amount / 10000 * fee_bps;`,
+    after:  `// Multiply first to avoid precision loss\nlet fee = (amount as u128) * (fee_bps as u128) / 10000;\nlet fee = fee as u64;`,
+  },
+  "ML-HOT": {
+    recommendation: "Hot-potato structs must have no abilities and a matched consume function.",
+    before: `struct Receipt has copy, drop { amount: u64 }`,
+    after:  `// No abilities — forces caller to consume it\nstruct Receipt { amount: u64 }\npublic fun consume(r: Receipt) {\n    let Receipt { amount: _ } = r;\n}`,
+  },
+  "ML-UPG": {
+    recommendation: "Validate the UpgradeCap's package ID before authorizing upgrades.",
+    before: `public fun upgrade(cap: &UpgradeCap, policy: u8,\n    digest: vector<u8>): UpgradeTicket {\n    package::authorize_upgrade(cap, policy, digest)\n}`,
+    after:  `public fun upgrade(cap: &UpgradeCap, policy: u8,\n    digest: vector<u8>): UpgradeTicket {\n    assert!(package::upgrade_package(cap) == EXPECTED_PKG_ID,\n            EWrongPackage);\n    package::authorize_upgrade(cap, policy, digest)\n}`,
+  },
+};
+
 const RECOMMENDATIONS: Record<string, string> = {
   "ML-INT":  "Use u128 intermediate arithmetic and validate overflow masks before bit-shifts. See Cetus checked_shlw post-mortem.",
   "ML-ACC":  "Replace address-based checks with typed capabilities (AdminCap, OwnerCap). Verify ctx.sender() never implicitly granted.",
@@ -253,7 +287,16 @@ const RECOMMENDATIONS: Record<string, string> = {
 };
 
 function getRecommendation(category: string): string {
-  return RECOMMENDATIONS[category] ?? "Review the code for security vulnerabilities identified by the ML model.";
+  return (
+    PATCH_SUGGESTIONS[category]?.recommendation ??
+    RECOMMENDATIONS[category] ??
+    "Review the code for security vulnerabilities identified by the ML model."
+  );
+}
+
+function getPatch(category: string): { patch_before: string; patch_after: string } | null {
+  const p = PATCH_SUGGESTIONS[category];
+  return p ? { patch_before: p.before, patch_after: p.after } : null;
 }
 
 function confidenceToSeverity(confidence: number): Severity {
@@ -325,6 +368,7 @@ async function analyzeSnippet(
     if (confidence < 0.35) return null;
 
     // ── Assemble finding ───────────────────────────────────────
+    const patch = getPatch(classResult.category);
     const raw = {
       rule_id:        ruleId,
       severity:       confidenceToSeverity(confidence),
@@ -338,7 +382,9 @@ async function analyzeSnippet(
         : `[Layer 4] ${classResult.reason}`,
       recommendation: getRecommendation(classResult.category),
       category:       classResult.category.toLowerCase().replace("ml-", ""),
-      impacted_code:  cleanCode.slice(0, 1000), // stored for LanceDB corpus (D2.2)
+      impacted_code:  cleanCode.slice(0, 1000),
+      patch_before:   patch?.patch_before ?? null,
+      patch_after:    patch?.patch_after  ?? null,
     };
 
     const parsed = FindingSchema.safeParse(raw);

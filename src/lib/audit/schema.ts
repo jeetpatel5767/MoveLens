@@ -64,6 +64,10 @@ export const FindingSchema = z.object({
   category: z.string().min(1),
   /** Raw code snippet that triggered this finding — used to embed in LanceDB corpus. */
   impacted_code: z.string().nullable().optional(),
+  /** Vulnerable pattern (before fix) — shown in UI side-by-side diff for top categories. */
+  patch_before: z.string().nullable().optional(),
+  /** Fixed pattern (after fix) — shown in UI with "Copy fix" button. */
+  patch_after: z.string().nullable().optional(),
 });
 export type Finding = z.infer<typeof FindingSchema>;
 
