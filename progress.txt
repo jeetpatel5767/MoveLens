@@ -640,3 +640,22 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   - Verify: README has section, ML-INT-001 finding has patch fields, UI renders diff, Copy fix works
 - Issues found: DEMO_MODE_BLOB_ID needs to be set in .env manually (not auto-populated) — remind user
 - Artifacts: SECURITY.md and PRIVACY.md created at project root
+
+[2026-06-14] Session 24 (continued) — D5
+- Worked on: D5 — README Business Model + Patch Before/After Snippets (CHANGES_2.md)
+- Completed (tested end-to-end): all 20 D5 steps verified with test/d5-verify.ts
+  - D5.1: README.md "Beyond the Hackathon" section — CI integration (GitHub Action), ecosystem infrastructure (Walrus+Seal+MVR attestation pattern), managed tier path.
+  - D5.2: PatchSuggestion interface + PATCH_SUGGESTIONS map in layer4.ts — 5 categories: ML-INT (checked_shl vs raw <<), ML-ACC (AdminCap gate), ML-ARI (u128 multiply-first), ML-HOT (no-ability + consume), ML-UPG (package ID assert before upgrade). getPatch() helper; getRecommendation() prefers PATCH_SUGGESTIONS. analyzeSnippet sets patch_before/patch_after on assembled findings.
+  - D5.3: patch_before/patch_after nullable optional fields added to FindingSchema.
+  - D5.4: FindingCard in audit/[id]/page.tsx renders "Suggested Fix" side-by-side red/green panels when patch_after present; "Copy fix" button writes patch_after to clipboard.
+- Commits: 9c0f223 feat(D5): README business model + patch before/after snippets
+- Current state: init.sh green, tsc --noEmit clean, 20/20 D5 steps pass. All D1-D5 tasks complete (CHANGES_2.md fully done). Deadline June 21, 2026 — 7 days remaining.
+- Next session should: FINAL CHECKLIST from CHANGES_2.md
+  - Add DEMO_MODE_BLOB_ID to .env if not already there
+  - End-to-end dry run: ./init.sh → audit from browser → verify gallery, Cetus hero, findings with patches, trust panel all render
+  - Confirm Walrus testnet wallet balance (top up via faucet if needed)
+  - Test DEMO_MODE_BLOB_ID fallback by temporarily breaking Walrus config
+  - Read SECURITY.md and PRIVACY.md — verify no references to non-existent features
+  - git log — confirm D1-D5 each have their own commit (they do: 5a27bb4, f281869, 91025d3, 4546f42, 9c0f223)
+- Issues found: none
+- Artifacts: none new (all patch content is in-code)
