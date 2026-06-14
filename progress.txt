@@ -621,3 +621,22 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   - Test by setting DEMO_MODE_BLOB_ID + breaking Walrus intentionally → verify degraded flow
 - Issues found: none new
 - Artifacts: 3 gallery Walrus blobs confirmed fetchable (from Session 22)
+
+[2026-06-14] Session 24 (continued) — D4
+- Worked on: D4 — Demo Fallback + SECURITY.md + PRIVACY.md (CHANGES_2.md)
+- Completed (tested end-to-end): all 21 D4 steps verified with test/d4-verify.ts
+  - D4.1: DEMO_MODE_BLOB_ID fallback in route.ts — uploadAuditQuilt wrapped try/catch; on failure, falls back to env var, sets degraded=true; no env var = still fails normally. .env.example updated.
+  - D4.2: Degraded banner in audit/[id]/page.tsx — yellow warning "Cached reference audit shown" when job.degraded=true, explains findings are real but blob is fallback.
+  - D4.3: AuditJob.degraded?: boolean added to store; DbRow.degraded INTEGER DEFAULT 0; ALTER TABLE migration for existing tables; GET /api/audit returns degraded field.
+  - D4.4: SECURITY.md — threat model, mitigation table (sanitize, rule registry, severity floor, Groq rate limit, snippet cap, Seal, pkg hash, mvr_name gate), known limitations, responsible disclosure.
+  - D4.5: PRIVACY.md — public vs private fields, on-chain opt-in, data retention (Walrus epochs, 24h audits.db prune), processing location table (all local/own keys).
+- Commits: 4546f42 feat(D4): demo fallback, degraded banner, SECURITY.md, PRIVACY.md
+- Current state: init.sh green, tsc --noEmit clean, 21/21 D4 steps pass. DEMO_MODE_BLOB_ID not yet in .env (only .env.example) — user should add it for demo insurance.
+- Next session should: start D5 — README "Beyond the Hackathon" business model + patch before/after snippets
+  - D5.1: Add "Beyond the Hackathon" section to README.md (CI integration, ecosystem infra, managed tier)
+  - D5.2: Add PATCH_SUGGESTIONS map to layer4.ts with before/after for ML-INT, ML-ACC, ML-ARI, ML-HOT, ML-UPG
+  - D5.3: Add patch_before/patch_after optional fields to FindingSchema
+  - D5.4: Render before/after side-by-side diff in audit/[id]/page.tsx with "Copy fix" button
+  - Verify: README has section, ML-INT-001 finding has patch fields, UI renders diff, Copy fix works
+- Issues found: DEMO_MODE_BLOB_ID needs to be set in .env manually (not auto-populated) — remind user
+- Artifacts: SECURITY.md and PRIVACY.md created at project root
