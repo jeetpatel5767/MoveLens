@@ -41,7 +41,7 @@ You are working on MoveLens: an AI-powered Sui Move security auditor for Sui Ove
 - NEVER mark a feature as passing without executing its steps end-to-end.
 - NEVER declare the project complete. There is always a failing feature or the deadline has passed.
 - NEVER assume the previous session's work is correct — init.sh verifies it.
-- NEVER call the MemWal SDK directly from business logic — only through `src/lib/memory/index.ts`.
+- NEVER call the memory layer directly from business logic — only through `src/lib/memory/index.ts`.
 - NEVER call Layer 4 models directly from business logic — only through `src/lib/audit/layer4.ts`.
 - NEVER remove the watermark "Automated pre-screen — not a substitute for a human audit." from reports.
 - NEVER let any layer emit rule_ids that are not in `src/lib/audit/rules.ts` (Layer 4 uses its `ML-XXX-L4-001` marker format) — drop and log invalid findings.
