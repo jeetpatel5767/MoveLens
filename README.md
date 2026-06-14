@@ -14,10 +14,10 @@ Most security tools call an LLM and hope for the best. MoveLens uses a **determi
 hybrid engine that is cheap, fast, and auditable:
 
 ```
-Layer 1 — 93 deterministic regex + AST rules (confidence: 1.0, cost: $0)
+Layer 1 — 65 deterministic regex rules across 13 vulnerability sectors (confidence: 1.0, cost: $0)
 Layer 2 — 10 OpenZeppelin deviation checks, Cetus-class patterns (confidence: 0.95, cost: $0)
-Layer 3 — MemWal agent memory: recall similar past exploits (confidence: variable)
-Layer 4 — ML ensemble (Jina embeddings + DeepSeek classifier) via local sidecar (cost: $0)
+Layer 3 — LanceDB semantic recall: 52-snippet corpus, finds similar past exploits (confidence: variable)
+Layer 4 — DeepSeek-1.3B via Ollama + Groq confirmation (runs by default, cost: $0)
 ```
 
 Findings are **Seal-encrypted** so only the owner can read the full report.
@@ -38,10 +38,10 @@ POST /api/audit
     │       └─► resolvePackageName (MVR reverse-resolution)
     │
     ├─► runAudit
-    │       ├─► Layer 1: 93 deterministic rules
+    │       ├─► Layer 1: 65 regex rules (13 sectors)
     │       ├─► Layer 2: 10 OZ deviation checks
-    │       ├─► Layer 3: MemWal recall (past exploit patterns)
-    │       └─► Layer 4: ML sidecar (port 8765, deferred)
+    │       ├─► Layer 3: LanceDB recall (past exploit patterns)
+    │       └─► Layer 4: DeepSeek-1.3B via Ollama (port 8765, local inference)
     │
     ├─► encryptReport (Seal IBE threshold encryption)
     │
@@ -65,7 +65,7 @@ GET /api/report/[id] ─► full report JSON + findings
 | Storage | Walrus testnet (`@mysten/walrus@1.1.7`, WASM) |
 | Encryption | Seal IBE (`@mysten/seal`) |
 | Registry | MVR / PackageInfo on-chain metadata |
-| Memory | MemWal agent memory (`@mysten-incubation/memwal`) |
+| Memory | LanceDB-backed semantic recall (via Python sidecar) |
 | ML sidecar | Python · sentence-transformers · LanceDB (port 8765) |
 
 ---
@@ -158,19 +158,23 @@ npx tsx test/f14-verify.ts    # Walrus upload + fetch
 
 ---
 
-## Layer 4 (Optional — deferred)
+## Layer 4 Setup
 
-Layer 4 adds ML-powered vulnerability detection via a local Python sidecar.
-It is deferred until all Phases 1–5 pass (per `BRIEFING.md`).
+Layer 4 (DeepSeek-1.3B via Ollama + Groq confirmation) runs by default when
+`init.sh` detects the sidecar on port 8765. If not running, the audit completes
+with Layers 1–3 only.
 
 ```bash
 # Install Python deps
 pip install -r requirements.txt
 
-# Seed LanceDB corpus
+# Pull the DeepSeek model into Ollama
+ollama pull deepseek-coder:1.3b
+
+# Seed LanceDB corpus (52 reference snippets)
 npx tsx scripts/seedLanceDB.ts
 
-# Start sidecar
+# Start sidecar (keep running alongside the dev server)
 python scripts/layer4_server.py
 ```
 

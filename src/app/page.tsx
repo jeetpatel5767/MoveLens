@@ -281,7 +281,7 @@ export default function HomePage() {
           Zero-cost, 4-layer security analysis for Sui Move smart contracts.
         </p>
         <p className="text-sm text-gray-600 mb-8 text-center">
-          93 deterministic rules · OZ deviation checks · Walrus-stored encrypted reports · Seal-encrypted findings
+          65 regex rules · OZ deviation checks · Walrus-stored encrypted reports · Seal-encrypted findings
         </p>
 
         {/* ── Cetus hero ──────────────────────────────────────────────────── */}
@@ -462,7 +462,7 @@ export default function HomePage() {
         {/* ── Architecture callout ─────────────────────────────────────────── */}
         <div className="mt-10 grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl text-center">
           {[
-            { num: "93", label: "Deterministic rules", color: "text-cyan-400" },
+            { num: "65", label: "Regex rules (13 sectors)", color: "text-cyan-400" },
             { num: "10", label: "OZ deviation checks", color: "text-violet-400" },
             { num: "5", label: "Walrus storage epochs", color: "text-blue-400" },
             { num: "AES-256", label: "Seal encryption", color: "text-green-400" },
