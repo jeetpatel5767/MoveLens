@@ -95,9 +95,14 @@ function CetusHero({ entry, onRunLive }: CetusHeroProps) {
         <h2 className="text-xl font-bold text-white mb-1">
           $223,000,000 lost to one bit-shift overflow.
         </h2>
-        <p className="text-sm text-gray-400 mb-4">
+        <p className="text-sm text-gray-400 mb-1">
           ML-INT-001 fires on the real, deployed Cetus AMM contract with confidence 1.0.
           This deterministic rule runs in under 5 seconds and costs nothing.
+        </p>
+        <p className="text-xs text-orange-400/70 mb-4">
+          The 34 critical findings are all instances of{" "}
+          <code className="font-mono">integer_mate::checked_shlw</code> called across
+          deposit, withdraw, and swap functions — the exact pattern that was exploited.
         </p>
 
         {/* Side-by-side code panels */}
