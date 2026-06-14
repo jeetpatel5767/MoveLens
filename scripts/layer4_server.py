@@ -184,8 +184,13 @@ def _ollama_classify(code: str) -> dict | None:
             return None
 
         vulnerable = bool(result["vulnerable"])
-        confidence = float(result.get("confidence", 0.7 if vulnerable else 0.1))
-        confidence = max(0.0, min(1.0, confidence))
+        # When the model omits confidence, default into the Groq-gate range
+        # (0.4-0.7) so Model C actually fires rather than being bypassed.
+        raw_confidence = result.get("confidence")
+        if raw_confidence is None:
+            confidence = 0.55 if vulnerable else 0.15
+        else:
+            confidence = max(0.0, min(1.0, float(raw_confidence)))
 
         return {
             "vulnerable": vulnerable,

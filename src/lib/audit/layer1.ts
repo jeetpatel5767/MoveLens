@@ -13,6 +13,7 @@ import type { Rule } from "./rules";
 import { FindingSchema } from "./schema";
 import type { Finding } from "./schema";
 import type { PackageContext } from "../sui/queries";
+import { sanitizeForPatterns } from "./sanitize";
 
 // ──────────────────────────────────────────────────────────────
 // Priority-ordered REGEX rule list (ML-INT-001 first)
@@ -123,8 +124,11 @@ export function runLayer1(ctx: PackageContext): Finding[] {
   const raw: Finding[] = [];
 
   for (const mod of ctx.modules) {
-    const source = mod.source ?? mod.disassembly;
-    if (!source) continue;
+    const rawSource = mod.source ?? mod.disassembly;
+    if (!rawSource) continue;
+    // Sanitize comments and strings while preserving line structure so that
+    // line_start / line_end values computed by matchPattern remain correct.
+    const source = sanitizeForPatterns(rawSource, true);
 
     for (const rule of REGEX_RULES) {
       if (!rule.pattern) continue; // AST / SKIP_MVP — already filtered, but defensive
