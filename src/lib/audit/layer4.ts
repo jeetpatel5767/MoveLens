@@ -95,11 +95,17 @@ async function embedSnippet(code: string): Promise<EmbedResult> {
   return resp.json() as Promise<EmbedResult>;
 }
 
+// Only safe fields: rule_id (validated) and similarity (numeric).
+// NEVER interpolate hit.finding.description or any freeform text — it could
+// carry corpus-injected content straight into the sidecar model prompt.
 function buildMemoryContext(memoryHits: MemoryHit[]): string {
   if (memoryHits.length === 0) return "";
-  const examples = memoryHits.slice(0, 2).map((hit) =>
-    `KNOWN SIMILAR PATTERN: "${hit.finding.description.slice(0, 120)}" (similarity ${hit.similarity.toFixed(2)})`
-  ).join("\n");
+  const examples = memoryHits.slice(0, 2).map((hit) => {
+    // Strip everything except alphanumeric, hyphens, and underscores
+    const safeRuleId = hit.finding.rule_id.replace(/[^a-zA-Z0-9\-_]/g, "").slice(0, 32);
+    const safeScore  = hit.similarity.toFixed(2); // numeric, always safe
+    return `KNOWN SIMILAR PATTERN: rule=${safeRuleId} (similarity ${safeScore})`;
+  }).join("\n");
   return `\n\nADDITIONAL CONTEXT FROM PAST AUDITS:\n${examples}\n`;
 }
 
