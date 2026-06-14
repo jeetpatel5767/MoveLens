@@ -27,6 +27,8 @@ interface Finding {
   description: string;
   recommendation: string;
   category: string;
+  patch_before?: string | null;
+  patch_after?:  string | null;
 }
 
 interface SeverityCounts { critical: number; high: number; medium: number; low: number }
@@ -260,6 +262,32 @@ function FindingCard({ finding }: { finding: Finding }) {
             <div className="text-xs font-semibold text-gray-400 mb-1">Recommendation</div>
             <p className="text-sm text-gray-300">{finding.recommendation}</p>
           </div>
+
+          {/* Before / after patch */}
+          {finding.patch_after && (
+            <div>
+              <div className="text-xs font-semibold text-gray-400 mb-2">Suggested Fix</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {finding.patch_before && (
+                  <div>
+                    <p className="text-xs text-red-400/80 mb-1 font-medium">Before</p>
+                    <pre className="text-xs bg-red-950/40 border border-red-800/30 rounded-lg p-2.5 overflow-x-auto text-red-200 leading-relaxed whitespace-pre-wrap"><code>{finding.patch_before}</code></pre>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs text-green-400/80 mb-1 font-medium">After</p>
+                  <pre className="text-xs bg-green-950/40 border border-green-800/30 rounded-lg p-2.5 overflow-x-auto text-green-200 leading-relaxed whitespace-pre-wrap"><code>{finding.patch_after}</code></pre>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => void navigator.clipboard.writeText(finding.patch_after!)}
+                className="mt-2 text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors"
+              >
+                Copy fix
+              </button>
+            </div>
+          )}
 
           {/* Line range callout */}
           <div className="font-mono text-xs bg-gray-800 rounded-lg px-3 py-2 text-gray-400">
