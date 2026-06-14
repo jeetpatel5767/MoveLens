@@ -95,11 +95,19 @@ async function embedSnippet(code: string): Promise<EmbedResult> {
   return resp.json() as Promise<EmbedResult>;
 }
 
-async function classifySnippet(code: string): Promise<ClassifyResult> {
+function buildMemoryContext(memoryHits: MemoryHit[]): string {
+  if (memoryHits.length === 0) return "";
+  const examples = memoryHits.slice(0, 2).map((hit) =>
+    `KNOWN SIMILAR PATTERN: "${hit.finding.description.slice(0, 120)}" (similarity ${hit.similarity.toFixed(2)})`
+  ).join("\n");
+  return `\n\nADDITIONAL CONTEXT FROM PAST AUDITS:\n${examples}\n`;
+}
+
+async function classifySnippet(code: string, memoryContext = ""): Promise<ClassifyResult> {
   const resp = await fetch(`${SIDECAR}/classify`, {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ code }),
+    body:    JSON.stringify({ code, memory_context: memoryContext }),
     signal:  AbortSignal.timeout(15_000),
   });
   if (!resp.ok) throw new Error(`/classify ${resp.status}`);
@@ -280,8 +288,8 @@ async function analyzeSnippet(
       console.warn("[layer4] /embed failed:", err);
     }
 
-    // ── Model B: Classification ────────────────────────────────
-    const classResult = await classifySnippet(cleanCode);
+    // ── Model B: Classification (with Layer 3 memory context) ─────────────────
+    const classResult = await classifySnippet(cleanCode, buildMemoryContext(memoryHits));
 
     if (!classResult.vulnerable && !simResult.similar_to) {
       return null; // nothing interesting
@@ -330,6 +338,7 @@ async function analyzeSnippet(
         : `[Layer 4] ${classResult.reason}`,
       recommendation: getRecommendation(classResult.category),
       category:       classResult.category.toLowerCase().replace("ml-", ""),
+      impacted_code:  cleanCode.slice(0, 1000), // stored for LanceDB corpus (D2.2)
     };
 
     const parsed = FindingSchema.safeParse(raw);

@@ -71,7 +71,7 @@ function renderSummaryMd(meta: QuiltPublicMeta): string {
 
   const pkgLine = mvr_name
     ? `**Package:** ${mvr_name} (ref: \`${package_ref.slice(0, 16)}…\`)`
-    : `**Package:** ref \`${package_ref.slice(0, 16)}…\` (raw ID in findings.enc)`;
+    : `**Package:** [private — audit available to owner only]`;
 
   const sealLine = sealed
     ? "**Encrypted:** Yes — findings are Seal-encrypted. Owner decrypts privately."
@@ -126,7 +126,9 @@ export function buildQuilt(
   const publicMeta: QuiltPublicMeta = {
     report_id:       report.report_id,
     package_ref:     hashPackageId(report.package.packageId),
-    mvr_name:        report.package.mvrName,
+    // mvr_name is only included when the user explicitly opted into on-chain publishing.
+    // Default (publishOnChain=false) omits it to avoid leaking package identity.
+    mvr_name:        report.publishOnChain ? report.package.mvrName : null,
     network:         report.package.network,
     version:         report.package.version,
     generated_at:    report.generated_at,

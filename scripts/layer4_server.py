@@ -139,14 +139,14 @@ def _ollama_available() -> bool:
         return False
 
 
-def _ollama_classify(code: str) -> dict | None:
+def _ollama_classify(code: str, memory_context: str = "") -> dict | None:
     """
     Classify code via DeepSeek-1.3B through Ollama.
     Strips Move comments first to prevent prompt injection via code comments.
     Returns parsed result dict, or None if Ollama is unreachable or parse fails.
     """
     clean_code = _strip_move_comments(code)
-    prompt = _FEW_SHOT_PROMPT.format(code=clean_code[:1200])
+    prompt = _FEW_SHOT_PROMPT.format(code=clean_code[:1200]) + memory_context
 
     payload = json.dumps({
         "model":   OLLAMA_MODEL,
@@ -456,16 +456,21 @@ def classify():
     """
     Classify a code snippet using DeepSeek-1.3B via Ollama (primary),
     falling back to keyword heuristic when Ollama is unreachable.
+    Accepts optional memory_context (from Layer 3 recall) to improve accuracy.
     Returns { vulnerable: bool, category: str, confidence: float, reason: str }.
     """
     body = request.get_json(force=True, silent=True) or {}
     code = body.get("code", "") or body.get("prompt", "")
+    memory_context = body.get("memory_context", "")  # D2.1 — Layer 3 context addendum
     if not code:
         return jsonify({"error": "missing 'code' or 'prompt' field"}), 400
 
+    # Defense-in-depth: strip comments on received code too (D1.2)
+    clean_code = _strip_move_comments(code)
+
     try:
         # Primary: DeepSeek-1.3B via Ollama
-        result = _ollama_classify(code)
+        result = _ollama_classify(clean_code, memory_context)
         if result is not None:
             log.info("/classify via Ollama DeepSeek: vulnerable=%s category=%s conf=%.2f",
                      result["vulnerable"], result["category"], result["confidence"])
@@ -473,7 +478,7 @@ def classify():
 
         # Fallback: keyword heuristic
         log.info("/classify via heuristic fallback (Ollama unavailable or parse error)")
-        result = heuristic_classify(code)
+        result = heuristic_classify(clean_code)
         return jsonify(result)
 
     except Exception as exc:

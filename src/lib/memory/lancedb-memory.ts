@@ -92,18 +92,25 @@ export class LanceDBMemory implements AuditMemory {
     }
   }
 
-  async remember(finding: Finding, _namespace: string): Promise<void> {
+  async remember(finding: Finding, namespace: string): Promise<void> {
+    // Only embed actual code — descriptions are natural language and don't
+    // produce useful code-similarity embeddings.
+    const codeToStore = finding.impacted_code ?? null;
+    if (!codeToStore) return; // nothing useful to store — skip silently
+
     try {
       await fetch(`${SIDECAR}/remember`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name:     `${finding.rule_id}-${finding.module}-${finding.line_start}`,
-          sector:   `ML-${finding.category.toUpperCase()}`,
-          severity: finding.severity,
-          code:     finding.description,
+          name:      `audit_finding_${finding.rule_id}_${Date.now()}`,
+          sector:    `ML-${finding.category.toUpperCase()}`,
+          severity:  finding.severity,
+          code:      codeToStore,
+          from_audit: true,
+          namespace,
         }),
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(8_000),
       });
     } catch (err) {
       console.warn("[memory/lancedb] remember() failed (non-fatal):", err);
