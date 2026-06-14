@@ -143,7 +143,20 @@ async function runPipeline(job: AuditJob, input: AuditInput): Promise<void> {
     // ── Stage 4: upload to Walrus ─────────────────────────────────────────────
     updateJob(job, { status: "uploading" });
     const quilt = buildQuilt(report, sealed.encryptedBytes, sealed.sealed);
-    const { blobId } = await uploadAuditQuilt(quilt);
+    let blobId: string;
+    let degraded = false;
+    try {
+      ({ blobId } = await uploadAuditQuilt(quilt));
+    } catch (uploadErr) {
+      const fallbackBlobId = process.env.DEMO_MODE_BLOB_ID;
+      if (fallbackBlobId) {
+        console.warn("[pipeline] Walrus upload failed — using DEMO_MODE_BLOB_ID fallback:", humanReadable(uploadErr));
+        blobId = fallbackBlobId;
+        degraded = true;
+      } else {
+        throw uploadErr;
+      }
+    }
 
     // ── Stage 5: MVR linking (opt-in — only when publishOnChain=true) ───────────
     updateJob(job, { status: "linking", blobId });
@@ -153,10 +166,11 @@ async function runPipeline(job: AuditJob, input: AuditInput): Promise<void> {
 
     // ── Done ───────────────────────────────────────────────────────────────────
     updateJob(job, {
-      status:    "done",
+      status:   "done",
       report,
       blobId,
       txDigest,
+      degraded: degraded || undefined,
     });
 
     console.log(
@@ -265,9 +279,10 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     id:            job.id,
     status:        job.status,
     stagesVisited: job.stagesVisited,
-    blobId:        job.blobId   ?? null,
-    txDigest:      job.txDigest ?? null,
-    error:         job.error    ?? null,
+    blobId:        job.blobId    ?? null,
+    txDigest:      job.txDigest  ?? null,
+    error:         job.error     ?? null,
+    degraded:      job.degraded  ?? false,
     updatedAt:     job.updatedAt,
   });
 }

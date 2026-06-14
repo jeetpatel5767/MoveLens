@@ -32,6 +32,8 @@ export interface AuditJob {
   blobId?: string;
   txDigest?: string | null;
   error?: string;
+  /** True when Walrus upload failed and a cached DEMO_MODE_BLOB_ID was used instead. */
+  degraded?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +48,7 @@ interface DbRow {
   blob_id:        string | null;
   tx_digest:      string | null;
   error:          string | null;
+  degraded:       number | null;
   created_at:     string;
   updated_at:     string;
 }
@@ -59,6 +62,7 @@ const DDL = `
     blob_id        TEXT,
     tx_digest      TEXT,
     error          TEXT,
+    degraded       INTEGER DEFAULT 0,
     created_at     TEXT NOT NULL,
     updated_at     TEXT NOT NULL
   )
@@ -80,6 +84,7 @@ function rowToJob(row: DbRow): AuditJob {
     blobId:        row.blob_id  ?? undefined,
     txDigest:      row.tx_digest ?? undefined,
     error:         row.error    ?? undefined,
+    degraded:      row.degraded === 1 ? true : undefined,
     createdAt:     row.created_at,
     updatedAt:     row.updated_at,
   };
@@ -94,6 +99,7 @@ function jobToValues(job: AuditJob): DbRow {
     blob_id:        job.blobId    ?? null,
     tx_digest:      job.txDigest  ?? null,
     error:          job.error     ?? null,
+    degraded:       job.degraded  ? 1 : 0,
     created_at:     job.createdAt,
     updated_at:     job.updatedAt,
   };
@@ -108,6 +114,8 @@ function openDb(dbPath = DB_PATH): Database.Database {
   _db = new Database(dbPath);
   _db.pragma("journal_mode = WAL");
   _db.exec(DDL);
+  // Migration: add degraded column to existing tables created before D4
+  try { _db.exec("ALTER TABLE audit_jobs ADD COLUMN degraded INTEGER DEFAULT 0"); } catch { /* already exists */ }
   return _db;
 }
 
@@ -121,9 +129,9 @@ function stmts(d: Database.Database) {
   if (!_upsert) {
     _upsert = d.prepare(`
       INSERT OR REPLACE INTO audit_jobs
-        (id, status, stages_visited, report, blob_id, tx_digest, error, created_at, updated_at)
+        (id, status, stages_visited, report, blob_id, tx_digest, error, degraded, created_at, updated_at)
       VALUES
-        ($id, $status, $stages_visited, $report, $blob_id, $tx_digest, $error, $created_at, $updated_at)
+        ($id, $status, $stages_visited, $report, $blob_id, $tx_digest, $error, $degraded, $created_at, $updated_at)
     `);
     _getById = d.prepare("SELECT * FROM audit_jobs WHERE id = ?");
     _getAll  = d.prepare("SELECT * FROM audit_jobs");

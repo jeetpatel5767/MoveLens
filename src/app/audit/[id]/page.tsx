@@ -63,6 +63,7 @@ interface JobStatus {
   blobId?: string | null;
   txDigest?: string | null;
   error?: string | null;
+  degraded?: boolean;
   updatedAt: string;
 }
 
@@ -391,6 +392,22 @@ export default function AuditPage() {
             <div className="text-xs text-amber-700 border border-amber-900/40 rounded-lg px-4 py-2 text-center">
               Automated pre-screen — not a substitute for a human audit.
             </div>
+
+            {/* ── Degraded mode banner ──────────────────────────────────── */}
+            {isDone && job.degraded && (
+              <div className="bg-yellow-950/40 border border-yellow-600/50 rounded-xl px-5 py-4 text-sm">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-yellow-400 text-base">⚠</span>
+                  <span className="font-semibold text-yellow-300">Cached reference audit shown</span>
+                </div>
+                <p className="text-yellow-200/70 text-xs leading-relaxed">
+                  Live Walrus upload was temporarily unavailable — the blob link below points to a
+                  cached reference audit (Cetus retroactive) to demonstrate the report format.
+                  Your audit&apos;s findings above are real and accurate; only the on-chain storage step
+                  used a fallback.
+                </p>
+              </div>
+            )}
 
             {/* ── Status header ─────────────────────────────────────────── */}
             <div>
