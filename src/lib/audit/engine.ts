@@ -41,13 +41,28 @@ const SEVERITY_RANK: Record<Severity, number> = {
 };
 
 const CATEGORY_SEVERITY_FLOOR: Record<string, Severity> = {
-  "ML-INT": "high",   // integer overflow / bitwise — never below high
-  "ML-OZ":  "high",   // OZ math deviations — never below high
-  "ML-ACC": "medium", // access control — never below medium
+  // Existing (conservative — kept above rules.ts minimum for INT/OZ)
+  "ML-INT": "high",   // INT min = medium (INT-004), keeping high (critical sector)
+  "ML-OZ":  "high",   // Layer 2 only, no L1 rules — conservative floor
+  "ML-ACC": "medium", // ACC min = medium (ACC-003, ACC-013)
+  // New sectors — derived from minimum severity of Layer 1 rules in rules.ts
+  "ML-ARI": "medium", // ARI min = medium (ARI-002..006)
+  "ML-HOT": "high",   // HOT min = high (HOT-003, HOT-004)
+  "ML-OWN": "medium", // OBJ min = medium (OBJ-009, OBJ-012, OBJ-013)
+  "ML-UPG": "medium", // UPG min = medium (UPG-004)
+  "ML-RAC": "low",    // RAC min = low (RAC-003)
+  "ML-RET": "medium", // RET min = medium (RET-003)
+  "ML-TOK": "medium", // TOK min = medium (TOK-005, TOK-007, TOK-008)
+  "ML-WRP": "medium", // WRP min = medium (WRP-003)
+  "ML-DOS": "low",    // DOS min = low (DOS-003)
+  "ML-DEP": "medium", // EXT min = medium (EXT-002, EXT-003, EXT-004)
+  "ML-LOG": "low",    // LOG min = low (LOG-016)
 };
 
+const sectorOf = (ruleId: string) => ruleId.split("-").slice(0, 2).join("-"); // "ML-INT"
+
 function applySeverityFloor(finding: Finding): Finding {
-  const sector = finding.rule_id.split("-").slice(0, 2).join("-"); // e.g. "ML-INT"
+  const sector = sectorOf(finding.rule_id);
   const floor = CATEGORY_SEVERITY_FLOOR[sector];
   if (floor && SEVERITY_RANK[finding.severity] < SEVERITY_RANK[floor]) {
     return { ...finding, severity: floor };
@@ -169,12 +184,17 @@ export async function sidecarHealthy(): Promise<boolean> {
 /**
  * Merge findings from multiple layers, keeping the highest-confidence instance
  * when the same (rule_id, module, line_start) appears more than once.
+ *
+ * Pass 1: exact-key dedup (rule_id + module + line_start).
+ * Pass 2: sector-level dedup — drop Layer 4 heuristic-fallback findings that
+ *   duplicate a Layer 1/2 finding in the same sector, same module, and within
+ *   ±2 lines. Only removed when the Layer 4 finding has no LanceDB corpus match
+ *   (indicated by "Similar to known vulnerability" in the description).
  */
 export function mergeAndDedupe(findings: Finding[]): Finding[] {
+  // Pass 1 — exact dedup
   const best = new Map<string, Finding>();
   for (const f of findings) {
-    // Apply severity floor before dedup so the floor wins regardless of which
-    // layer emitted the finding.
     const floored = applySeverityFloor(f);
     const key = `${floored.rule_id}:${floored.module}:${floored.line_start}`;
     const existing = best.get(key);
@@ -182,7 +202,30 @@ export function mergeAndDedupe(findings: Finding[]): Finding[] {
       best.set(key, floored);
     }
   }
-  return [...best.values()];
+
+  // Pass 2 — sector-level cross-layer dedup
+  const deduped = [...best.values()];
+  const isL4 = (f: Finding) => f.rule_id.includes("-L4-");
+  const l1 = deduped.filter(f => !isL4(f));
+  const l4 = deduped.filter(f => isL4(f));
+
+  const toRemove = new Set<string>();
+  for (const f4 of l4) {
+    const hasCorpusMatch = f4.description.includes("Similar to known vulnerability");
+    if (hasCorpusMatch) continue; // LanceDB match adds unique context — keep it
+    const sector4 = sectorOf(f4.rule_id);
+    for (const f1 of l1) {
+      if (f1.module !== f4.module) continue;
+      if (sectorOf(f1.rule_id) !== sector4) continue;
+      if (Math.abs(f1.line_start - f4.line_start) > 2) continue;
+      console.log(`[engine] dedup L4 heuristic ${f4.rule_id}@${f4.module}:${f4.line_start} (L1 has ${f1.rule_id}@${f1.line_start})`);
+      toRemove.add(`${f4.rule_id}:${f4.module}:${f4.line_start}`);
+      break;
+    }
+  }
+  return toRemove.size === 0
+    ? deduped
+    : deduped.filter(f => !toRemove.has(`${f.rule_id}:${f.module}:${f.line_start}`));
 }
 
 // ──────────────────────────────────────────────────────────────
