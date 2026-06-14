@@ -7,6 +7,8 @@
     "riskGrade": "F",
     "blobId": "5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
     "walrusUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+    "description": "Cetus AMM — May 22, 2025 exploit — retroactive audit on pre-fix mainnet bytecode",
+    "highlight": "ML-INT-001 fires with confidence 1.0 — this rule would have caught the $223M bit-shift overflow before deployment",
     "severityCounts": {
       "critical": 34,
       "high": 66,
@@ -22,20 +24,21 @@
     ]
   },
   {
-    "id": "flashloan-pool",
-    "packageName": "FlashLoan Pool",
-    "packageId": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "id": "movelens-demo",
+    "packageName": "@movelens/demo",
+    "packageId": "0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698",
     "network": "testnet",
-    "riskGrade": "F",
+    "riskGrade": "D",
     "blobId": "VReKsGr5Ebvovx19W4nYAoBT3Jin6vrBLvN5CoDZqFE",
     "walrusUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/VReKsGr5Ebvovx19W4nYAoBT3Jin6vrBLvN5CoDZqFE",
+    "description": "MoveLens Demo Vault — intentional vulnerability fixture for testing all audit layers",
     "severityCounts": {
-      "critical": 5,
-      "high": 1,
-      "medium": 3,
+      "critical": 3,
+      "high": 2,
+      "medium": 1,
       "low": 0
     },
-    "totalFindings": 9,
+    "totalFindings": 6,
     "auditedAt": "2026-06-13T17:12:45.804Z",
     "layersRun": [
       "layer1",
@@ -44,20 +47,21 @@
     ]
   },
   {
-    "id": "governance",
-    "packageName": "Governance Module",
-    "packageId": "0x1111111111111111111111111111111111111111111111111111111111111111",
-    "network": "testnet",
-    "riskGrade": "F",
+    "id": "sui-framework-coin",
+    "packageName": "0x2::coin (Sui Framework)",
+    "packageId": "0x0000000000000000000000000000000000000000000000000000000000000002",
+    "network": "mainnet",
+    "riskGrade": "A",
     "blobId": "otfJcF6bqnD4PKM4NiUoCUTBRqPuNBkM1IyF9V1WOc4",
     "walrusUrl": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/otfJcF6bqnD4PKM4NiUoCUTBRqPuNBkM1IyF9V1WOc4",
+    "description": "Sui Framework — 0x2::coin module — reference clean audit baseline",
     "severityCounts": {
-      "critical": 6,
-      "high": 2,
-      "medium": 4,
-      "low": 0
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 3
     },
-    "totalFindings": 12,
+    "totalFindings": 4,
     "auditedAt": "2026-06-13T17:13:02.405Z",
     "layersRun": [
       "layer1",
