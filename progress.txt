@@ -587,3 +587,20 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     This is pre-existing — not caused by D1. D4 will add DEMO_MODE_BLOB_ID fallback.
     Layer 4 sidecar must be started manually before each session: python scripts/layer4_server.py
 - Artifacts: none (no new Walrus blobs this session)
+
+[2026-06-14] Session 24
+- Worked on: D2 — Memory Wiring + Privacy Quick Fix + init.sh (CHANGES_2.md)
+- Completed (tested end-to-end): all 8 D2 steps verified with test/d2-verify.ts
+  - D2.1: recall query now uses sanitizeForPatterns(firstModule.source, false).slice(0,500) with namespace "movelens/all"; memory_context built from hit descriptions threaded to sidecar /classify prompt; sidecar updated to accept and append memory_context to Ollama prompt
+  - D2.2: impacted_code optional field on FindingSchema; analyzeSnippet sets it to cleanCode.slice(0,1000); remember() skips findings without impacted_code (Layer 1 findings not stored), stores Layer 4 code directly — corpus row added 113→114 confirmed
+  - D2.3: mvr_name in quilt public metadata null unless publishOnChain=true; summary.md shows "[private — audit available to owner only]" when false; publishOnChain on AuditReport + AuditReportSchema; route.ts passes it through; buildQuilt gates on report.publishOnChain
+  - D2.4: init.sh 8/8→8/9 heading, new step 9: deepseek-coder model pulled check, corpus_rows>=50 via /health JSON, gallery.json valid JSON check
+- Commits: f281869 feat(D2): memory wiring, impacted_code field, publishOnChain privacy gate, init.sh step 9
+- Current state: init.sh green (step 9 passes), tsc --noEmit clean, 8/8 D2 verify steps pass. Walrus upload still fails (testnet balance — pre-existing, not caused by D2). Sidecar corpus_rows=114.
+- Next session should: start D3 — gallery overhaul + Cetus hero section
+  - D3.1: Replace 3 gallery.json entries with real/richer data from actual audits (keep Cetus CLMM, add real findings counts). Add Sui 0x2::coin flash-loan reference entry (use actual testnet blob). Add "highlight" field to Cetus entry.
+  - D3.2: Add Cetus hero section to page.tsx ABOVE the audit form — shows the dramatic "34 critical / Grade F" finding with a snippet call-out. Clickable → Walrus blob link. Styled with risk-grade badge.
+  - D3.3: Update gallery section on landing page to use the new gallery.json fields (highlight, richer metadata).
+  - Run test/d3-verify.ts (write it) — verify gallery renders in browser, Cetus hero visible, all Walrus links HTTP 200.
+- Issues found: Walrus upload consistently reaches "uploading"→"failed" (testnet SUI balance issue, pre-existing). D4 will add DEMO_MODE_BLOB_ID fallback.
+- Artifacts: sidecar /remember confirmed storing Layer 4 code to LanceDB corpus
