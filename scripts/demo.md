@@ -5,142 +5,142 @@
 
 ---
 
-
-## Cetus Retroactive Audit — $223M Exploit (ML-INT-001)
-
-| Field | Value |
-|-------|-------|
-| **Package** | `0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92` |
-| **Network** | mainnet |
-| **Risk Grade** | F |
-| **Critical Findings** | 34 |
-| **Key Finding** | ML-INT-001 — Cetus `checked_shlw` integer overflow (64-bit mask on 128-bit shift) |
-| **Walrus Blob** | `5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA` |
-| **Walrus URL** | https://aggregator.walrus-testnet.walrus.space/v1/blobs/5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA |
-| **Audited** | 2026-06-13 |
-
-> *"This is the exact pattern that caused the $223M Cetus exploit — MoveLens catches it with 100% confidence."*
-
 ## Pre-Demo Checklist (before judges arrive)
 
 - [ ] `./init.sh` → RESULT: HEALTHY
-- [ ] `http://localhost:3000` loads the landing page
-- [ ] Have the backup blob URL ready (below) in case Walrus testnet is slow
+- [ ] `http://localhost:3000` loads with the Cetus hero visible above the audit form
+- [ ] `DEMO_MODE_BLOB_ID` set in `.env` (Walrus fallback armed)
 - [ ] Browser DevTools closed; zoom = 100%
+- [ ] Backup blob URLs ready below in case Walrus testnet is slow
 
 ---
 
 ## The 3-Minute Flow
 
-### 0:00 — Open & Orient (20s)
+### 0:00–0:30 — The Cetus Hero (homepage, no clicks needed)
 
 Navigate to `http://localhost:3000`.
 
-> *"MoveLens is a zero-cost security auditor for Sui Move contracts.
-> Unlike tools that call an LLM and hope, we use a deterministic-first
-> 4-layer hybrid engine — 93 rules, OZ deviation checks, Seal encryption,
-> permanent Walrus storage. Judges can verify every finding on-chain."*
+> *"This is the homepage. The first thing you see is the actual $223 million
+> Cetus exploit from May 2025 — a single bit-shift bug, `checked_shlw`, with
+> the wrong overflow mask."*
 
-Point to the four badges in the top-right: **Layer 1**, **Layer 2**, **Walrus**, **Seal**.
+**[Point at the side-by-side panels: vulnerable code (red) vs OpenZeppelin-safe
+pattern (green)]**
 
-**→ Judging hit: Vision (10%)** — differentiator framing
+> *"MoveLens's rule ML-INT-001 — this exact regex — fires on this exact pattern,
+> with confidence 1.0, in under 5 seconds, for free."*
 
----
+**[Click "View permanent audit on Walrus" → opens the Cetus blob in a new tab]**
 
-### 0:20 — Package Address Audit (30s)
+> *"That's a permanent, publicly verifiable audit. Anyone, forever, can check this."*
 
-Stay on the **Package Address** tab. Paste the demo vault:
-
-```
-0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698
-```
-
-> *"This is a vault contract I deployed on testnet — it has intentional
-> vulnerabilities: integer overflow in the deposit function, an AdminCap
-> drain with no access control. Let's see what the engine finds."*
-
-Click **Run Audit**. You land on `/audit/<id>`.
+**→ Judging hit: Real-World (50%), Vision (10%)** — immediate proof of value, no setup
 
 ---
 
-### 0:50 — Watch the Pipeline Stepper (60s)
+### 0:30–1:00 — Re-run It Live
+
+**[Click "Re-run live" on the hero — pre-fills the Cetus package address + mainnet]**
+
+**[Click "Run Audit" — watch the pipeline stepper on `/audit/<id>`]**
+
+> *"Layer 1 catches it instantly — that's the deterministic rule engine, 65 regex
+> rules across 13 vulnerability sectors. Layers 2 through 4 add the OpenZeppelin
+> benchmark, semantic memory recall via LanceDB, and a local DeepSeek AI model —
+> all running with zero API cost."*
 
 Point to each stage lighting up:
 
 | Stage | What to say |
 |-------|-------------|
-| **Fetching Package** | "Fetching modules from Sui GraphQL — we never use JSON-RPC, it shuts down July 31." |
-| **Running 4-Layer Analysis** | "Layer 1 runs 93 deterministic regex rules — zero-cost, confidence 1.0. Layer 2 checks against OpenZeppelin safe math patterns. Cetus-class findings always sort first." |
-| **Encrypting Findings** | "Findings are Seal IBE-encrypted — only the package owner can decrypt. The public blob has counts but not the full descriptions." |
-| **Uploading to Walrus** | "The encrypted quilt goes to Walrus: report.json + findings.enc + summary.md. 5 epochs of guaranteed storage." |
-| **MVR Linking** | "Blob ID is attached to the package via MVR's set_metadata call — on-chain audit trail." |
+| **Fetching Package** | "Fetching from Sui GraphQL — we never use JSON-RPC, it shuts down July 31." |
+| **Running 4-Layer Analysis** | "Layer 1: 65 deterministic rules, confidence 1.0. Layer 2: OZ benchmark. Layer 3: LanceDB recall. Layer 4: DeepSeek local." |
+| **Encrypting Findings** | "Seal IBE encryption — findings go into findings.enc, only decryptable by the auditor." |
+| **Uploading to Walrus** | "Encrypted quilt: report.json + findings.enc + summary.md. 5 epochs of guaranteed storage." |
+| **MVR Linking** | "Blob ID attached on-chain to the package via MVR set_metadata." |
 
-**→ Judging hit: Technical (20%)** — live demo of all 4 layers + Walrus + Seal + MVR
-
----
-
-### 1:50 — Read the Report (30s)
-
-When the stepper finishes, scroll down.
-
-1. Point to the **risk grade** (should be **F** — it has critical findings)
-2. Point to the **severity chips**: Critical X, High X, Medium X, Low X
-3. Click the first **critical** finding to expand it:
-   - Show the `rule_id` tag (`ML-INT-001` or `ML-OZ-001`)
-   - Show the **confidence bar** (100% for deterministic rules)
-   - Read the **recommendation** aloud
-4. Scroll to the **Trust Panel** — show the Walrus blob ID link
-
-> *"Every judge can independently verify this blob exists on Walrus.
-> The blob ID is also attached on-chain to the package via MVR."*
-
-**→ Judging hit: Real-World (50%)** — genuine on-chain provenance
+**→ Judging hit: Technical (20%)** — all 4 layers + Walrus + Seal + MVR live
 
 ---
 
-### 2:20 — Trust Panel Deep Dive (30s)
+### 1:00–2:00 — A Real Audit: Findings → Fixes
 
-Click the **Walrus blob link** (or paste the backup URL below):
+**[Navigate to the gallery entry for `@movelens/demo` (or use the audit that just finished)]**
 
-```
-https://aggregator.walrus-testnet.walrus.space/v1/blobs/lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8
-```
+> *"Here's our own demo contract — it has intentional bugs. Let's look at a finding."*
 
-This opens `report.json` directly from Walrus — show:
+**[Expand 1–2 findings — show the before/after patch panels]**
+
+> *"Not just 'this is wrong' — a before/after code panel with a Copy Fix button.
+> MoveLens doesn't just diagnose; it prescribes the exact patch."*
+
+**[Click "Copy fix" on the ML-INT-001 finding]**
+
+> *"One click. The fix is in the clipboard."*
+
+**→ Judging hit: UX (20%), Real-World (50%)** — actionable output, not just a score
+
+---
+
+### 2:00–2:40 — The Trust Layer (Seal + Walrus + MVR)
+
+**[Scroll to the Trust Panel at the bottom of the report]**
+
+> *"The full report is Seal-encrypted, bundled as a Walrus Quilt, stored
+> permanently, and linked on-chain via MVR set_metadata — the audit becomes
+> part of the package's permanent identity."*
+
+**[Click the Walrus blob link → opens report.json from Walrus]**
+
+Show judges:
 - `watermark: "Automated pre-screen — not a substitute for a human audit."`
-- `risk_grade: "F"`
-- `severity_counts: { critical: ..., high: ... }`
+- `risk_grade`
+- `severity_counts`
 - `sealed: true`
 
-> *"The findings themselves are in findings.enc — IBE-encrypted.
-> You'd need the owner's wallet key to decrypt them via Seal."*
+> *"findings.enc is IBE-encrypted — you'd need the signer key to decrypt via Seal."*
 
-If time allows: show the **MVR TX** link on Suiscan.
-
-**→ Judging hit: Real-World (50%)** — verifiable Walrus storage + Seal privacy
+**→ Judging hit: Real-World (50%)** — verifiable on-chain provenance
 
 ---
 
-### 2:50 — Closing (10s)
+### 2:40–3:00 — Close
 
-> *"In summary: zero external API cost, fully on-chain provenance,
-> Seal-encrypted findings for privacy, 93 deterministic rules plus
-> OZ benchmarking. The full source is open — every judge can run
-> `./init.sh` and audit any testnet package in under 5 minutes."*
+**[Return to homepage, point to the gallery: F (Cetus) · D (demo vault) · A (0x2::coin)]**
+
+> *"Three audits. One catastrophic failure, one intentional bug fixture, one clean
+> reference. We don't just flag everything — here's the Sui Framework coin module
+> getting an A grade."*
+
+> *"Zero-cost. 90 seconds. Permanent. Verifiable. That's MoveLens."*
+
+**→ Judging hit: Vision (10%)** — differentiated positioning, not just another scanner
 
 ---
 
-## Backup Assets (if live infra fails)
+## Backup Plan
 
-### Pre-recorded Audit — overflow.move fixture
+If live Walrus upload fails during the demo, the UI automatically shows a cached
+reference audit (controlled by `DEMO_MODE_BLOB_ID` in `.env`, set to the Cetus blob)
+with a clear amber "Cached reference audit shown" banner. The findings displayed are
+still real and accurate — only the on-chain storage step used a fallback.
+
+The Cetus hero's "View permanent audit on Walrus" link always works regardless of
+live upload status (it points to the pre-stored blob `5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA`).
+
+---
+
+## Backup Assets
+
+### Cetus Retroactive Audit (pre-stored)
 
 | Field | Value |
 |-------|-------|
-| **Walrus Blob ID** | `lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8` |
-| **Walrus URL** | `https://aggregator.walrus-testnet.walrus.space/v1/blobs/lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8` |
-| **Audited** | 2026-06-13 (Session 15) |
-| **Risk grade** | F (critical findings found) |
-| **Findings** | ML-INT-001 (critical), ML-INT-002 (critical), ML-OZ-001 ×2 (critical), ML-INT-003 (high), ML-UPG-001 (medium) |
+| **Package** | `0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92` |
+| **Network** | mainnet |
+| **Walrus Blob** | `5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA` |
+| **Walrus URL** | https://aggregator.walrus-testnet.walrus.space/v1/blobs/5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA |
 
 ### Demo Package on Testnet
 
@@ -149,8 +149,7 @@ If time allows: show the **MVR TX** link on Suiscan.
 | **Package ID** | `0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698` |
 | **PackageInfo ID** | `0xcc7af44f578839df65cd69705c640559aa594b6528161653b91416cdec7a50e2` |
 | **Publish TX** | `85rKhcZxaSpubzxHs81P1o57wfQqQL1rD5Rqf2YBJCZH` |
-| **set_metadata TX** | `HmhWjcJymAsaLmVXMA3qWN5B4rBDJSZNM8P87QosfF9B` |
-| **Suiscan** | `https://suiscan.xyz/testnet/object/0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698` |
+| **Suiscan** | https://suiscan.xyz/testnet/object/0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698 |
 
 ### Signer Address
 
@@ -164,7 +163,7 @@ If time allows: show the **MVR TX** link on Suiscan.
 
 | Criterion | Weight | What to show |
 |-----------|--------|--------------|
-| **Real-World Utility** | 50% | Live audit of a deployed contract · Walrus blob verifiable by anyone · MVR on-chain linkage · Seal-encrypted findings |
-| **UX & Product** | 20% | 6-stage animated stepper · Risk grade + severity chips · Expandable findings with confidence bars · Trust panel |
-| **Technical Excellence** | 20% | 93 deterministic rules (zero cost) · OZ deviation checks · Seal IBE · Walrus quilt storage · MVR set_metadata PTB · GraphQL-only (JSON-RPC banned) |
-| **Vision** | 10% | "Zero-cost deterministic-first security engine" — no LLM dependency · Fully on-chain audit trail · Layer 4 ML as optional bonus |
+| **Real-World Utility** | 50% | Cetus hero: real $223M exploit caught live · Findings with patch panels · Walrus blob verifiable by anyone · MVR on-chain linkage · Seal-encrypted findings |
+| **UX & Product** | 20% | Cetus hero above the fold · 6-stage animated stepper · Risk grade + severity chips · Expandable findings with before/after patches + Copy Fix · Gallery (F/D/A grades) |
+| **Technical Excellence** | 20% | 65 deterministic regex rules (zero cost) · OZ deviation checks · LanceDB semantic recall · Seal IBE · Walrus quilt storage · MVR set_metadata PTB · GraphQL-only (JSON-RPC banned) |
+| **Vision** | 10% | "Zero-cost deterministic-first security engine" — no paid LLM dependency · Permanent on-chain audit trail · CI integration path documented in README |
