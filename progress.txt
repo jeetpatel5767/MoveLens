@@ -604,3 +604,20 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   - Run test/d3-verify.ts (write it) — verify gallery renders in browser, Cetus hero visible, all Walrus links HTTP 200.
 - Issues found: Walrus upload consistently reaches "uploading"→"failed" (testnet SUI balance issue, pre-existing). D4 will add DEMO_MODE_BLOB_ID fallback.
 - Artifacts: sidecar /remember confirmed storing Layer 4 code to LanceDB corpus
+
+[2026-06-14] Session 24 (continued) — D3
+- Worked on: D3 — Gallery Overhaul + Cetus Homepage Hero (CHANGES_2.md)
+- Completed (tested end-to-end): all 14 D3 steps verified with test/d3-verify.ts
+  - D3.1: gallery.json updated to 3 entries: Cetus CLMM (riskGrade=F, highlight=ML-INT-001), @movelens/demo (riskGrade=D, packageId=0x6bcb…demo), 0x2::coin Sui Framework (riskGrade=A, 4 low findings). All 3 blobIds HTTP 200 from Walrus aggregator.
+  - D3.2: CetusHero component added to page.tsx ABOVE the audit form. Shows F badge, 34C/66H counts, "$223M lost to one bit-shift" headline, side-by-side vulnerable/safe code panels, "View permanent audit on Walrus" link, "Re-run live" button that pre-fills address+mainnet. RiskGradeBadge component extracted and reused. Gallery cards show highlight field in amber callout.
+- Commits: 91025d3 feat(D3): gallery overhaul + Cetus homepage hero
+- Current state: init.sh green, tsc --noEmit clean, 14/14 D3 steps pass. Walrus upload still fails at runtime (testnet balance pre-existing). Gallery blobs all HTTP 200 (stored from Session 22).
+- Next session should: start D4 — demo fallback + SECURITY.md + PRIVACY.md
+  - D4.1: DEMO_MODE_BLOB_ID env fallback in upload pipeline (route.ts wraps uploadAuditQuilt with try/catch, falls back to env var, sets job.degraded=true)
+  - D4.2: Degraded banner in audit/[id]/page.tsx UI
+  - D4.3: Add degraded: boolean.default(false) to AuditJob store type
+  - D4.4: SECURITY.md at project root (threat model, mitigations, known limitations)
+  - D4.5: PRIVACY.md at project root (what's public, what's encrypted, on-chain publishing opt-in)
+  - Test by setting DEMO_MODE_BLOB_ID + breaking Walrus intentionally → verify degraded flow
+- Issues found: none new
+- Artifacts: 3 gallery Walrus blobs confirmed fetchable (from Session 22)
