@@ -17,6 +17,8 @@ interface GalleryEntry {
   riskGrade:      string;
   blobId:         string;
   walrusUrl:      string;
+  description?:   string;
+  highlight?:     string;
   severityCounts: { critical: number; high: number; medium: number; low: number };
   totalFindings:  number;
   auditedAt:      string;
@@ -51,6 +53,98 @@ function LayerBadge({ label, color }: { label: string; color: string }) {
   );
 }
 
+const CETUS_PACKAGE_ID = "0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92";
+
+function RiskGradeBadge({ grade }: { grade: string }) {
+  const colors: Record<string, string> = {
+    A: "bg-green-950/60 border-green-700 text-green-400",
+    B: "bg-teal-950/60 border-teal-700 text-teal-400",
+    C: "bg-yellow-950/60 border-yellow-700 text-yellow-400",
+    D: "bg-orange-950/60 border-orange-700 text-orange-400",
+    F: "bg-red-950/60 border-red-700 text-red-400",
+  };
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-10 h-10 rounded-xl text-lg font-extrabold border shrink-0 ${
+        colors[grade] ?? colors.C
+      }`}
+    >
+      {grade}
+    </span>
+  );
+}
+
+interface CetusHeroProps {
+  entry: GalleryEntry;
+  onRunLive: () => void;
+}
+
+function CetusHero({ entry, onRunLive }: CetusHeroProps) {
+  return (
+    <div className="w-full max-w-2xl mb-8">
+      <div className="border border-red-800/60 rounded-2xl p-5 bg-gradient-to-br from-red-950/60 to-orange-950/40">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-3">
+          <RiskGradeBadge grade="F" />
+          <div>
+            <p className="text-xs font-mono text-gray-400">@cetus/clmm · mainnet · May 22, 2025</p>
+            <p className="text-xs text-red-400/80 font-medium">34 critical · 66 high · 129 findings total</p>
+          </div>
+        </div>
+
+        <h2 className="text-xl font-bold text-white mb-1">
+          $223,000,000 lost to one bit-shift overflow.
+        </h2>
+        <p className="text-sm text-gray-400 mb-4">
+          ML-INT-001 fires on the real, deployed Cetus AMM contract with confidence 1.0.
+          This deterministic rule runs in under 5 seconds and costs nothing.
+        </p>
+
+        {/* Side-by-side code panels */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          <div className="bg-red-950/50 border border-red-800/40 rounded-lg p-3">
+            <p className="text-xs font-semibold text-red-400 mb-2 uppercase tracking-wide">
+              Vulnerable (deployed)
+            </p>
+            <pre className="text-xs text-red-200 overflow-x-auto leading-relaxed"><code>{`let mask = 0xffffffffffffffff
+      << 192;
+if (n > mask) { (0, true) }
+else { (n << 64, false) }`}</code></pre>
+          </div>
+          <div className="bg-green-950/50 border border-green-800/40 rounded-lg p-3">
+            <p className="text-xs font-semibold text-green-400 mb-2 uppercase tracking-wide">
+              OZ safe pattern
+            </p>
+            <pre className="text-xs text-green-200 overflow-x-auto leading-relaxed"><code>{`// Checked shift — aborts on overflow
+// instead of silently truncating
+u256::checked_shl(n, 64)
+  // returns None on overflow`}</code></pre>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap gap-3">
+          <a
+            href={entry.walrusUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-cyan-400 hover:text-cyan-300 underline underline-offset-2 transition-colors"
+          >
+            View permanent audit on Walrus ↗
+          </a>
+          <button
+            type="button"
+            onClick={onRunLive}
+            className="text-xs text-gray-300 hover:text-white underline underline-offset-2 transition-colors"
+          >
+            Re-run live →
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
@@ -73,6 +167,15 @@ export default function HomePage() {
   // Submit state
   const [submitting, setSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
+
+  // Cetus hero "Re-run live" — pre-fills the address tab with the Cetus package ID
+  function runLiveCetusAudit() {
+    setTab("address");
+    setAddress(CETUS_PACKAGE_ID);
+    setAddressError(null);
+    setApiError(null);
+    setNetwork("mainnet");
+  }
 
   // ── Validation ──────────────────────────────────────────────────────────────
 
@@ -177,9 +280,15 @@ export default function HomePage() {
         <p className="text-xl text-gray-400 mb-2 text-center max-w-xl">
           Zero-cost, 4-layer security analysis for Sui Move smart contracts.
         </p>
-        <p className="text-sm text-gray-600 mb-10 text-center">
+        <p className="text-sm text-gray-600 mb-8 text-center">
           93 deterministic rules · OZ deviation checks · Walrus-stored encrypted reports · Seal-encrypted findings
         </p>
+
+        {/* ── Cetus hero ──────────────────────────────────────────────────── */}
+        <CetusHero
+          entry={(galleryData as GalleryEntry[])[0]}
+          onRunLive={runLiveCetusAudit}
+        />
 
         {/* ── Input card ─────────────────────────────────────────────────── */}
         <div className="w-full max-w-2xl bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden">
@@ -393,19 +502,7 @@ export default function HomePage() {
                     </span>
                   </div>
                   {/* Risk grade badge */}
-                  <span
-                    className={`shrink-0 inline-flex items-center justify-center w-10 h-10 rounded-xl text-lg font-extrabold border ${
-                      entry.riskGrade === "F"
-                        ? "bg-red-950/60 border-red-700 text-red-400"
-                        : entry.riskGrade === "D"
-                        ? "bg-orange-950/60 border-orange-700 text-orange-400"
-                        : entry.riskGrade === "C"
-                        ? "bg-yellow-950/60 border-yellow-700 text-yellow-400"
-                        : "bg-green-950/60 border-green-700 text-green-400"
-                    }`}
-                  >
-                    {entry.riskGrade}
-                  </span>
+                  <RiskGradeBadge grade={entry.riskGrade} />
                 </div>
 
                 {/* Severity counts */}
@@ -426,6 +523,13 @@ export default function HomePage() {
                     {entry.totalFindings} findings
                   </span>
                 </div>
+
+                {/* Highlight (Cetus-specific call-out) */}
+                {entry.highlight && (
+                  <p className="text-xs text-amber-300/80 bg-amber-950/30 border border-amber-800/30 rounded px-2 py-1 leading-snug">
+                    {entry.highlight}
+                  </p>
+                )}
 
                 {/* Layers run */}
                 <div className="flex flex-wrap gap-1">
