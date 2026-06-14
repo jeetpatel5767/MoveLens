@@ -132,6 +132,7 @@ async function runPipeline(job: AuditJob, input: AuditInput): Promise<void> {
     const report = assembleReport(ctx, engineResult, {
       memoryContextUsed,
       layer3Hits: engineResult.layer3Hits,
+      publishOnChain: input.publishOnChain ?? false,
     });
 
     // ── Stage 3: encrypt ─────────────────────────────────────────────────────

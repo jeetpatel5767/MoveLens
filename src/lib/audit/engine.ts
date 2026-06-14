@@ -12,6 +12,7 @@
 import { runLayer1 } from "./layer1";
 import { runLayer2 } from "./layer2";
 import { runLayer4 } from "./layer4";
+import { sanitizeForPatterns } from "./sanitize";
 import {
   AuditReportSchema,
   WATERMARK,
@@ -115,7 +116,7 @@ export function computeRiskGrade(
 export function assembleReport(
   ctx: PackageContext,
   result: EngineResult,
-  opts: { memoryContextUsed?: boolean; layer3Hits?: number } = {},
+  opts: { memoryContextUsed?: boolean; layer3Hits?: number; publishOnChain?: boolean } = {},
 ): AuditReport {
   const severity_counts = computeSeverityCounts(result.findings);
 
@@ -138,6 +139,7 @@ export function assembleReport(
     layer3_hits:         opts.layer3Hits ?? 0,
     layer4_used:         result.layersRun.includes("layer4"),
     sealed:              false,
+    publishOnChain:      opts.publishOnChain ?? false,
   });
 }
 
@@ -248,15 +250,15 @@ export async function runAudit(
   layersRun.push("layer2");
 
   // ── Layer 3: LanceDB semantic recall ─────────────────────────
-  // Concatenate module source/disassembly and query the corpus for similar patterns.
+  // Use the first module's sanitized source (first 500 chars) as the recall query.
+  // Sanitizing before recall avoids embedding comment noise into the similarity search.
   let memHits: MemoryHit[] = [];
   try {
-    const codeForRecall = ctx.modules
-      .map((m) => (m.source ?? m.disassembly ?? "").slice(0, 600))
-      .join("\n---\n")
-      .slice(0, 2000);
-    if (codeForRecall.trim()) {
-      memHits = await memory.recall(codeForRecall, `movelens/${ctx.packageId}`);
+    const firstModule = ctx.modules[0];
+    const rawSrc = firstModule?.source ?? firstModule?.disassembly ?? "";
+    const recallQuery = sanitizeForPatterns(rawSrc, false).slice(0, 500);
+    if (recallQuery.trim()) {
+      memHits = await memory.recall(recallQuery, "movelens/all");
       if (memHits.length > 0) {
         layersRun.push("layer3");
         console.log(`[engine] Layer 3 recall: ${memHits.length} hit(s) from corpus`);

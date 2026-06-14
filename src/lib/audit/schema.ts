@@ -62,6 +62,8 @@ export const FindingSchema = z.object({
   description: z.string().min(1),
   recommendation: z.string().min(1),
   category: z.string().min(1),
+  /** Raw code snippet that triggered this finding — used to embed in LanceDB corpus. */
+  impacted_code: z.string().nullable().optional(),
 });
 export type Finding = z.infer<typeof FindingSchema>;
 
@@ -91,5 +93,7 @@ export const AuditReportSchema = z.object({
   layer4_used: z.boolean(),
   walrus_blob_id: z.string().optional(),
   sealed: z.boolean(),
+  /** Whether the user opted into on-chain publishing via MVR. Gates mvr_name in public metadata. */
+  publishOnChain: z.boolean().default(false),
 });
 export type AuditReport = z.infer<typeof AuditReportSchema>;

@@ -76,7 +76,7 @@ if [ -f package.json ] && grep -q '"dev"' package.json; then
   curl -s -o /dev/null -w "" http://localhost:3000 && ok "dev server responding on :3000" || bad "dev server not responding (see /tmp/movelens-dev.log)"
 fi
 
-step "8/8 Zero-paid-API ban + Layer 4 (BRIEFING.md)"
+step "8/9 Zero-paid-API ban + Layer 4 (BRIEFING.md)"
 if [ -d src ]; then
   if grep -rli "anthropic\|openai_api_key\|callClaude" src/ >/dev/null 2>&1; then
     bad "PAID API reference found in src/ — FORBIDDEN. Files:"; grep -rli "anthropic\|openai_api_key\|callClaude" src/
@@ -100,6 +100,35 @@ if [ -f scripts/layer4_server.py ]; then
   fi
 else
   ok "Layer 4 not built yet (deferred until Phases 1-5 green per BRIEFING.md)"
+fi
+
+step "9/9 Layer 3/4 readiness + gallery validity"
+
+# Ollama model check (not just port — verify deepseek-coder model is pulled)
+if command -v ollama >/dev/null 2>&1; then
+  if ollama list 2>/dev/null | grep -q "deepseek-coder"; then
+    ok "deepseek-coder model available in Ollama"
+  else
+    bad "deepseek-coder:1.3b not pulled — run: ollama pull deepseek-coder:1.3b"
+  fi
+fi
+
+# LanceDB corpus size check via sidecar /health
+if curl -s http://localhost:8765/health 2>/dev/null | grep -q '"corpus_rows"'; then
+  ROWS=$(curl -s http://localhost:8765/health 2>/dev/null | node -e "process.stdin.once('data',d=>console.log(JSON.parse(d).corpus_rows))" 2>/dev/null)
+  if [ -n "$ROWS" ] && [ "$ROWS" -ge 50 ] 2>/dev/null; then
+    ok "LanceDB corpus has $ROWS rows (>= 50)"
+  else
+    bad "LanceDB corpus has only ${ROWS:-0} rows (< 50) — run: npx tsx scripts/seedLanceDB.ts"
+  fi
+fi
+
+# Gallery validity
+if [ -f src/app/gallery.json ]; then
+  node -e "JSON.parse(require('fs').readFileSync('src/app/gallery.json','utf8'))" 2>/dev/null \
+    && ok "gallery.json valid JSON" || bad "gallery.json INVALID JSON"
+else
+  bad "src/app/gallery.json missing — run: npx tsx scripts/gallery-audits.ts"
 fi
 
 echo ""
