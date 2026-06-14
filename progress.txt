@@ -659,3 +659,28 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
   - git log — confirm D1-D5 each have their own commit (they do: 5a27bb4, f281869, 91025d3, 4546f42, 9c0f223)
 - Issues found: none
 - Artifacts: none new (all patch content is in-code)
+
+[2026-06-14] Session 25
+- Worked on: E1–E6 polish tasks from CHANGES_3.md
+- Completed (tested end-to-end):
+  E1 ✓: README + page.tsx stat tile corrected: "93 deterministic rules" → "65 regex rules across 13 vulnerability sectors"; Layer 3/4 descriptions updated (LanceDB 52-snippet corpus, DeepSeek-1.3B via Ollama).
+  E2 ✓: PRIVACY.md — "Encryption Identity (Current Limitation)" section added; explains Seal encrypted to MoveLens identity (not arbitrary owner), v2 milestone flagged.
+  E3 ✓: scripts/demo.md fully rewritten — Cetus-first 3-minute structure, pre-demo checklist, DEMO_MODE_BLOB_ID backup plan, updated judging criteria table (65 rules, LanceDB).
+  E4 ✓ (20/20): src/lib/audit/engine.ts:
+    - CATEGORY_SEVERITY_FLOOR expanded from 3 → 14 sectors (added ML-ARI, ML-HOT, ML-OWN, ML-UPG, ML-RAC, ML-RET, ML-TOK, ML-WRP, ML-DOS, ML-DEP, ML-LOG). Floors derived from minimum severity of Layer 1 rules in rules.ts.
+    - sectorOf() helper extracted.
+    - mergeAndDedupe() Pass 2: drops L4 heuristic-fallback duplicates at same sector+module±2 lines when no LanceDB corpus match.
+  E5 ✓ (14/14): src/lib/audit/layer4.ts buildMemoryContext() sanitized:
+    - Removed hit.finding.description interpolation (prompt injection risk).
+    - Now only uses rule_id (alphanumeric-stripped, max 32 chars) and similarity (toFixed(2)).
+  E6 ✓: src/app/page.tsx CetusHero — added <p> subtitle explaining "34 critical" = integer_mate::checked_shlw instances across deposit/withdraw/swap fns.
+- Commits:
+  11ccfa8 feat(E4): extend severity floor to 14 sectors, add cross-layer sector dedup
+  d286ec5 fix(E5): sanitize buildMemoryContext() against prompt injection
+  818b281 feat(E6): add checked_shlw subtitle to CetusHero explaining 34 critical count
+- Current state: init.sh green. tsc --noEmit clean. No features.json changes (E-tasks are polish, not new features). 34/35 features passing (F18 still blocked on mainnet SUI).
+- Next session should:
+    E7 (MANUAL — user must do): Top up Walrus testnet wallet at https://faucet.testnet.sui.io for address 0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57, then run npx tsx test/f14-verify.ts to confirm live upload works.
+    After E7: final end-to-end dry run — ./init.sh → audit from browser → Cetus hero, gallery, patch panels, trust panel all render. Verify grep checks (no jsonrpc in src/, no paid-API keys, no callClaude). Then confirm deadline (June 21, 2026 — 7 days remaining).
+- Issues found: none
+- Artifacts: test/e4-verify.ts (20/20), test/e5-verify.ts (14/14)
