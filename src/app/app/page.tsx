@@ -365,12 +365,7 @@ export default function AppPage() {
             <div
               key={label}
               className="rounded-[24px] flex flex-col p-8 min-h-[220px]"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
-                boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
-              }}
+              style={FORM_GLASS}
             >
               {/* Icon — raw, floating at top */}
               <svg className="w-[26px] h-[26px] shrink-0" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
