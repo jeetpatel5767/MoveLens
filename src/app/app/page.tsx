@@ -311,7 +311,7 @@ export default function AppPage() {
                 style={{
                   background: submitting ? "rgba(255,255,255,0.08)" : "var(--brand-lavender)",
                   color:      submitting ? "var(--text-tertiary)"   : "var(--ink)",
-                  boxShadow: submitting ? "none" : "0 4px 28px rgba(184,180,255,0.3)",
+                  boxShadow: "none",
                 }}
               >
                 {submitting ? (
@@ -335,16 +335,54 @@ export default function AppPage() {
         </div>
 
         {/* ── Stat tiles ──────────────────────────────────────────────────────── */}
-        <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl text-center">
-          {[
-            { num: "65",      label: "Regex rules (13 sectors)", color: "var(--brand-lavender)" },
-            { num: "10",      label: "OZ deviation checks",      color: "var(--brand-blue)" },
-            { num: "5",       label: "Walrus storage epochs",    color: "var(--brand-blue)" },
-            { num: "AES-256", label: "Seal encryption",          color: "var(--brand-lavender)" },
-          ].map(({ num, label, color }) => (
-            <div key={label} className="rounded-2xl p-4" style={GLASS}>
-              <div className="font-display font-bold text-xl" style={{ color }}>{num}</div>
-              <div className="font-sans-switzer text-xs mt-0.5" style={{ color: "var(--text-tertiary)" }}>{label}</div>
+        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl">
+          {([
+            {
+              num: "65", numSize: "text-[30px]",
+              label: "Regex rules", sub: "13 sectors",
+              color: "var(--brand-lavender)", iconBg: "rgba(184,180,255,0.12)",
+              icon: <><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></>,
+            },
+            {
+              num: "10", numSize: "text-[30px]",
+              label: "OZ checks", sub: "deviation rules",
+              color: "var(--brand-blue)", iconBg: "rgba(77,162,255,0.12)",
+              icon: <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
+            },
+            {
+              num: "5", numSize: "text-[30px]",
+              label: "Walrus epochs", sub: "storage guarantee",
+              color: "var(--brand-blue)", iconBg: "rgba(77,162,255,0.12)",
+              icon: <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>,
+            },
+            {
+              num: "AES-256", numSize: "text-[20px]",
+              label: "Seal encrypt", sub: "client-side keys",
+              color: "var(--brand-lavender)", iconBg: "rgba(184,180,255,0.12)",
+              icon: <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+            },
+          ] as const).map(({ num, numSize, label, sub, color, iconBg, icon }) => (
+            <div
+              key={label}
+              className="rounded-2xl p-5 flex flex-col gap-0"
+              style={{
+                background: "rgba(255,255,255,0.055)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+              }}
+            >
+              {/* Icon */}
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-4" style={{ background: iconBg }}>
+                <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round">
+                  {icon}
+                </svg>
+              </div>
+              {/* Number */}
+              <div className={`font-display font-bold ${numSize} text-white leading-none mb-1.5`}>{num}</div>
+              {/* Label */}
+              <div className="font-display text-[12px] font-semibold text-white/80 leading-snug">{label}</div>
+              <div className="font-display text-[11px] mt-0.5" style={{ color: "var(--text-tertiary)" }}>{sub}</div>
             </div>
           ))}
         </div>
