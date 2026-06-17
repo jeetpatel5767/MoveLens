@@ -10,7 +10,7 @@ const EnvSchema = z.object({
   SUI_NETWORK: z.enum(["testnet", "mainnet"]),
   WALRUS_NETWORK: z.enum(["testnet", "mainnet"]),
   SUI_KEYPAIR_B64: z.string().min(1),
-  LAYER4_SIDECAR_URL: z.string().url().default("http://localhost:8765"),
+  LAYER4_SIDECAR_URL: z.string().url().default("http://127.0.0.1:8765"),
   GROQ_API_KEY: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
   MEMWAL_ENABLED: z.coerce.boolean().default(true),

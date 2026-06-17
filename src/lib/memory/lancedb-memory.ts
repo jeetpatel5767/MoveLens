@@ -11,7 +11,7 @@ import type { Finding } from "../audit/schema";
 import type { AuditMemory, MemoryHit } from "./index";
 import { env } from "../env";
 
-const SIDECAR = env.LAYER4_SIDECAR_URL ?? "http://localhost:8765";
+const SIDECAR = env.LAYER4_SIDECAR_URL ?? "http://127.0.0.1:8765";
 
 // Map corpus sectors to the first registered Layer 1 rule ID for that sector.
 // Used to synthesize schema-valid Findings from corpus hits.

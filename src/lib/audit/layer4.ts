@@ -27,7 +27,7 @@ import { env } from "../env";
 import { VALID_RULE_IDS } from "./rule-ids";
 import { sanitizeForPatterns } from "./sanitize";
 
-const SIDECAR = env.LAYER4_SIDECAR_URL ?? "http://localhost:8765";
+const SIDECAR = env.LAYER4_SIDECAR_URL ?? "http://127.0.0.1:8765";
 
 // ──────────────────────────────────────────────────────────────
 // Groq rate limiter — 20 RPM (free tier hard cap)

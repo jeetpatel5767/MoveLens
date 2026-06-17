@@ -170,7 +170,7 @@ export function assembleReport(
 export async function sidecarHealthy(): Promise<boolean> {
   try {
     const url = `${env.LAYER4_SIDECAR_URL}/health`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(2000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
     return res.ok;
   } catch {
     return false;
