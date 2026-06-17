@@ -61,15 +61,16 @@ const GLASS: React.CSSProperties = {
 // ── Premium form card glass ───────────────────────────────────────────────────
 
 const FORM_GLASS: React.CSSProperties = {
-  background: "rgba(5,5,10,0.38)",
-  backdropFilter: "blur(48px) saturate(180%)",
-  WebkitBackdropFilter: "blur(48px) saturate(180%)",
-  border: "1px solid rgba(255,255,255,0.11)",
+  background: "rgba(10,8,20,0.42)",
+  backdropFilter: "blur(64px) saturate(210%) brightness(112%)",
+  WebkitBackdropFilter: "blur(64px) saturate(210%) brightness(112%)",
+  border: "1px solid rgba(184,180,255,0.14)",
   boxShadow: [
-    "0 32px 80px rgba(0,0,0,0.45)",
-    "0 8px 24px rgba(0,0,0,0.3)",
-    "inset 0 1px 0 rgba(255,255,255,0.1)",
-    "inset 0 -1px 0 rgba(0,0,0,0.2)",
+    "0 48px 120px rgba(0,0,0,0.55)",
+    "0 12px 40px rgba(0,0,0,0.35)",
+    "inset 0 1.5px 0 rgba(255,255,255,0.13)",
+    "inset 0 -1px 0 rgba(0,0,0,0.3)",
+    "0 0 0 0.5px rgba(184,180,255,0.07)",
   ].join(", "),
 };
 
@@ -193,11 +194,14 @@ export default function AppPage() {
 
           <form onSubmit={handleSubmit}>
 
-            {/* ── Zone 1: Header row — label + network segmented control ── */}
+            {/* ── Zone 1: Header — logo + label left, network right ── */}
             <div className="flex items-center justify-between px-7 pt-6 pb-5">
-              <span className="font-mono-plex text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--text-tertiary)" }}>
-                {tab === "address" ? "Sui Package Address" : "Move Source"}
-              </span>
+              <div className="flex items-center gap-2.5">
+                <img src="/Logo.png" alt="MoveLens" className="h-7 w-auto object-contain" />
+                <span className="font-display font-semibold text-[14px] text-white leading-none">
+                  {tab === "address" ? "Sui Package Address" : "Move Source"}
+                </span>
+              </div>
               <div
                 className="inline-flex rounded-full p-0.5 gap-0.5"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
@@ -207,61 +211,54 @@ export default function AppPage() {
                     key={n}
                     type="button"
                     onClick={() => setNetwork(n)}
-                    className="px-3 py-1 rounded-full font-mono-plex text-[10px] uppercase tracking-wide transition-all"
+                    className="px-3 py-1 rounded-full font-display text-[11px] font-medium transition-all"
                     style={{
                       background: network === n ? "var(--brand-lavender)" : "transparent",
                       color:      network === n ? "var(--ink)"            : "var(--text-tertiary)",
                     }}
                   >
-                    {n}
+                    {n.charAt(0).toUpperCase() + n.slice(1)}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* ── Divider ── */}
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
-
             {/* ── Zone 2: Input area ── */}
             {tab === "address" ? (
-              <div className="px-7 py-6">
+              <div className="px-7 pb-6">
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => handleAddressChange(e.target.value)}
                   onBlur={() => setAddressError(validateAddress(address))}
                   spellCheck={false}
-                  className="w-full bg-transparent font-mono-plex text-[15px] text-white focus:outline-none leading-relaxed"
+                  className="w-full bg-transparent font-mono-plex text-[14px] text-white focus:outline-none leading-relaxed"
                   style={{ caretColor: "var(--brand-lavender)" }}
                 />
-                {/* underline — red on error */}
                 <div
-                  className="mt-5 h-px transition-colors"
+                  className="mt-4 h-px transition-colors"
                   style={{ background: addressError ? "rgba(255,92,92,0.55)" : "rgba(255,255,255,0.08)" }}
                 />
                 <div className="mt-2 flex items-center justify-between">
-                  <span className="font-mono-plex text-[10px]" style={{ color: addressError ? "var(--severity-critical)" : "var(--text-tertiary)" }}>
-                    {addressError ? `⚠ ${addressError}` : "0x + 64 hex characters"}
+                  <span className="font-display text-[11px]" style={{ color: addressError ? "var(--severity-critical)" : "var(--text-tertiary)" }}>
+                    {addressError ? `⚠ ${addressError}` : "0x · 64 hex chars"}
                   </span>
                   {address && !addressError && (
-                    <span className="font-mono-plex text-[10px]" style={{ color: "var(--severity-safe)" }}>✓ valid</span>
+                    <span className="font-display text-[11px]" style={{ color: "var(--severity-safe)" }}>✓ valid</span>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="px-7 py-5">
+              <div className="px-7 pb-5">
                 <div className="flex items-center justify-between mb-3">
-                  <span className="font-mono-plex text-[11px]" style={{ color: "var(--text-secondary)" }}>{fileName}</span>
+                  <span className="font-display text-[12px]" style={{ color: "var(--text-secondary)" }}>{fileName}</span>
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="font-sans-switzer text-[11px] px-3 py-1 rounded-full transition-colors flex items-center gap-1"
+                    className="font-display text-[12px] px-3 py-1 rounded-full transition-colors flex items-center gap-1"
                     style={{ color: "var(--brand-lavender)", border: "1px solid rgba(184,180,255,0.25)" }}
                   >
-                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                    </svg>
-                    Upload .move
+                    ↑ Upload .move
                   </button>
                   <input ref={fileRef} type="file" accept=".move" onChange={handleFilePick} className="hidden" />
                 </div>
@@ -277,11 +274,8 @@ export default function AppPage() {
               </div>
             )}
 
-            {/* ── Divider ── */}
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
-
-            {/* ── Zone 3: Settings strip — on-chain + mainnet warning ── */}
-            <div className="flex items-center gap-3 px-7 py-4">
+            {/* ── Zone 3: Settings strip ── */}
+            <div className="flex items-center gap-3 px-7 pb-4">
               <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
                 <input
                   type="checkbox"
@@ -289,13 +283,13 @@ export default function AppPage() {
                   onChange={(e) => setPublishOnChain(e.target.checked)}
                   className="w-3.5 h-3.5 shrink-0 rounded accent-[var(--brand-lavender)]"
                 />
-                <span className="font-sans-switzer text-xs truncate" style={{ color: "var(--text-secondary)" }}>
-                  <span className="text-white font-medium">Publish on-chain</span>
+                <span className="font-display text-[12px] truncate" style={{ color: "var(--text-secondary)" }}>
+                  <span className="text-white font-semibold">Publish on-chain</span>
                   {" "}— write blob ID via MVR tx
                 </span>
               </label>
               {network === "mainnet" && (
-                <span className="font-mono-plex text-[10px] shrink-0" style={{ color: "var(--severity-medium)" }}>
+                <span className="font-display text-[11px] shrink-0" style={{ color: "var(--severity-medium)" }}>
                   ⚠ real SUI gas
                 </span>
               )}
@@ -303,32 +297,26 @@ export default function AppPage() {
 
             {/* ── API error ── */}
             {apiError && (
-              <>
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
-                <div className="px-7 py-3 font-sans-switzer text-xs" style={{ color: "var(--severity-critical)" }}>
-                  ⚠ {apiError}
-                </div>
-              </>
+              <div className="px-7 pb-3 font-display text-[12px]" style={{ color: "var(--severity-critical)" }}>
+                ⚠ {apiError}
+              </div>
             )}
 
-            {/* ── Divider ── */}
-            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
-
             {/* ── Zone 4: CTA ── */}
-            <div className="px-6 py-5">
+            <div className="px-6 pb-5">
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-4 rounded-full font-sans-switzer font-semibold text-[15px] transition-all flex items-center justify-center gap-2.5"
+                className="w-full py-3 rounded-full font-display font-bold text-[14px] tracking-wide transition-all flex items-center justify-center gap-2"
                 style={{
                   background: submitting ? "rgba(255,255,255,0.08)" : "var(--brand-lavender)",
                   color:      submitting ? "var(--text-tertiary)"   : "var(--ink)",
-                  boxShadow: submitting ? "none" : "0 4px 24px rgba(184,180,255,0.25)",
+                  boxShadow: submitting ? "none" : "0 4px 28px rgba(184,180,255,0.3)",
                 }}
               >
                 {submitting ? (
                   <>
-                    <svg className="w-4 h-4 animate-spin-slow" viewBox="0 0 24 24" fill="none">
+                    <svg className="w-3.5 h-3.5 animate-spin-slow" viewBox="0 0 24 24" fill="none">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                     </svg>
@@ -336,11 +324,8 @@ export default function AppPage() {
                   </>
                 ) : (
                   <>
-                    <svg className="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-                    </svg>
                     Run Audit
+                    <span className="text-[15px] leading-none">↗</span>
                   </>
                 )}
               </button>
