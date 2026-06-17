@@ -684,3 +684,29 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     After E7: final end-to-end dry run — ./init.sh → audit from browser → Cetus hero, gallery, patch panels, trust panel all render. Verify grep checks (no jsonrpc in src/, no paid-API keys, no callClaude). Then confirm deadline (June 21, 2026 — 7 days remaining).
 - Issues found: none
 - Artifacts: test/e4-verify.ts (20/20), test/e5-verify.ts (14/14)
+
+[2026-06-17] Session 26
+- Worked on: Frontend merge — landing page into main Next.js app
+- Completed (tested end-to-end):
+  Landing merge ✓:
+    - src/app/page.tsx: replaced old audit tool with full landing page (Header, Hero, Solution, HowItWorks, LiveDemoHero, SampleReport, Differentiators, TrustVerification, CTA, Footer)
+    - src/app/app/page.tsx: audit tool moved here; fixed gallery.json import path (../gallery.json)
+    - src/app/layout.tsx: Cabinet Grotesk/Switzer/IBM Plex Mono fonts + SVG grain filter + film grain overlay
+    - src/app/globals.css: full CSS vars (brand, severity), keyframes (mlPulse/mlScan/mlSpin/mlAurora/mlBlink/mlMarquee), font utility classes, bg-grain
+    - src/components/landing/: 14 components under @/components/landing/* (all import paths correct)
+    - public/: 27 image assets copied from Movelens fronted/public/ (mascot, logos, step illustrations, aurora)
+    - tsconfig.json: excluded "Movelens fronted/" from TS compilation
+  Verified: GET / HTTP 200 (landing), GET /app HTTP 200 (audit tool). Both compile clean (0 TS errors in src/).
+  Note: public/ was originally a stray file (not a directory) — deleted and recreated as directory.
+- Commits: 786e854 feat: merge landing page into main app — / = landing, /app = audit tool
+- Current state: init.sh should be green (no engine changes). Single Next.js app, two routes.
+- Next session should:
+    E7 (MANUAL — user must do): Get WAL tokens from https://faucet.testnet.walrus.space for address
+    0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57 — SUI was obtained but WAL
+    tokens are separate and required for Walrus uploads.
+    Final dry run: ./init.sh → open localhost:3000 (landing page), click "Audit package" → /app,
+    run a Cetus audit, verify gallery, patch panels, Walrus link all work.
+- Issues found:
+    public/ was a stray file instead of directory — deleted and recreated to fix "conflicting public file" 500.
+    Chrome extension not connected during this session — routes verified via HTTP status codes only.
+- Artifacts: none (no on-chain TXs)
