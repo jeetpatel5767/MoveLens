@@ -710,3 +710,48 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     public/ was a stray file instead of directory — deleted and recreated to fix "conflicting public file" 500.
     Chrome extension not connected during this session — routes verified via HTTP status codes only.
 - Artifacts: none (no on-chain TXs)
+
+[2026-06-17] Session 27
+- Worked on: /app design system alignment — making /app visually identical to landing page
+- Completed (tested end-to-end):
+  Previous session (5cee384) had already:
+    - Removed all gray-950/gray-900/gray-800/cyan Tailwind classes from /app
+    - Applied glass card constant (rgba(255,255,255,0.04) + backdropFilter blur(20px))
+    - CetusHero card in red-tinted glass
+    - All font classes: font-display (Cabinet Grotesk), font-sans-switzer, font-mono-plex
+    - All colors via CSS vars: var(--brand-lavender), var(--brand-blue), var(--severity-*), var(--text-*)
+    - "Run Audit" button as lavender pill (var(--brand-lavender) bg, var(--ink) text)
+    - Gallery cards in glass style, severity counts in var(--severity-*), "View on Walrus" in var(--brand-blue)
+
+  This session (bb3a8cd) refined remaining mismatches:
+    - mainnet badge: amber (var(--severity-medium)) → neutral glass (rgba(255,255,255,0.06) + var(--text-secondary))
+    - gallery highlight text: always-amber → neutral glass (rgba(255,255,255,0.04) + var(--text-secondary))
+    - AES-256 stat tile: var(--severity-safe) green → var(--brand-lavender) (correct brand vocabulary)
+    - Tab labels: removed emoji (📦 📄) for cleaner typographic look matching landing
+    - Footer: 1-line watermark → watermark + full <Footer /> component (same as landing page)
+      "PRODUCT / ECOSYSTEM / RESOURCES" columns in var(--brand-lavender), huge "MoveLens" wordmark
+    - Added Footer import to src/app/app/page.tsx
+
+  Verified visually in browser:
+    ✓ Same Header/Footer as landing page
+    ✓ Heading: Cabinet Grotesk 72px bold, same as landing
+    ✓ CetusHero card: red-tinted glass
+    ✓ Gallery cards: neutral glass, correct severity color vocabulary
+    ✓ "Run Audit" button: lavender pill — identical to landing CTA buttons
+    ✓ Stat tiles: 65(lavender) / 10(blue) / 5(blue) / AES-256(lavender)
+    ✓ "mainnet" badge: neutral white glass (NOT amber severity color)
+    ✓ Network selector: lavender active pill, ghost inactive
+    ✓ Watermark + full Footer with wordmark at bottom
+
+- Commits: 5cee384 style(/app): restyle audit tool to match landing page design system
+            bb3a8cd style(/app): align design tokens with landing page
+- Current state: / (landing) and /app (audit tool) share identical design vocabulary. init.sh should be green.
+- Next session should:
+    E7 (MANUAL — user must do): Get WAL tokens from https://faucet.testnet.walrus.space for address
+    0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57 — SUI was obtained but WAL
+    tokens are separate and required for Walrus live uploads. DEMO_MODE_BLOB_ID fallback is armed in .env.
+    Final dry run: ./init.sh → open localhost:3000 (landing), click "Audit package" → /app,
+    run a Cetus mainnet audit, verify CetusHero renders, gallery populates, Walrus link appears.
+    Deadline: June 21, 2026 — 4 days remaining.
+- Issues found: none
+- Artifacts: none (no on-chain TXs this session)
