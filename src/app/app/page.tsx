@@ -135,14 +135,14 @@ export default function AppPage() {
       <Header />
 
       {/* ── Hero ──────────────────────────────────────────────────────────────── */}
-      <section className="relative w-full overflow-hidden flex flex-col items-center justify-center pt-44 pb-36 px-6">
+      <section className="relative w-full min-h-[560px] flex flex-col items-center justify-center pt-40 pb-8 px-6">
         <AuroraBackground />
 
-        <div className="relative z-10 text-center max-w-5xl mx-auto">
-          <h1 className="font-display font-bold text-[72px] sm:text-[100px] md:text-[120px] leading-[0.9] tracking-[-0.035em] text-white mb-6">
-            Audit your<br />contract.
+        <div className="relative z-10 text-center max-w-4xl mx-auto">
+          <h1 className="font-display font-bold text-[48px] sm:text-[64px] md:text-[80px] leading-[0.92] tracking-[-0.035em] text-white mb-5">
+            Audit your contract.
           </h1>
-          <p className="font-sans-switzer text-[17px] sm:text-[19px] md:text-[21px] leading-[1.6] max-w-2xl mx-auto font-extralight" style={{ color: "var(--text-secondary)" }}>
+          <p className="font-sans-switzer text-[16px] sm:text-[18px] leading-[1.6] max-w-xl mx-auto font-extralight" style={{ color: "var(--text-secondary)" }}>
             <span className="text-white font-light">4-layer security analysis</span> — 65 deterministic rules,
             OZ benchmarks, LanceDB semantic recall, DeepSeek-1.3B confirmation.
           </p>
@@ -153,7 +153,7 @@ export default function AppPage() {
       <section className="flex flex-col items-center px-6 pb-20">
 
         {/* Floating pill tab switcher */}
-        <div className="flex justify-center py-6">
+        <div className="flex justify-center py-3">
           <div
             className="inline-flex rounded-full p-1.5 gap-1 shadow-2xl"
             style={{
