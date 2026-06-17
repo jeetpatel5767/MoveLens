@@ -195,15 +195,15 @@ export default function AppPage() {
           <form onSubmit={handleSubmit}>
 
             {/* ── Zone 1: Header — logo + label left, network right ── */}
-            <div className="flex items-center justify-between px-8 pt-8 pb-7">
-              <div className="flex items-center gap-3">
-                <img src="/Logo.png" alt="MoveLens" className="h-8 w-auto object-contain" />
-                <span className="font-display font-semibold text-[18px] text-white leading-none">
+            <div className="flex items-center justify-between px-10 pt-10 pb-8">
+              <div className="flex items-center gap-3.5">
+                <img src="/Logo.png" alt="MoveLens" className="h-10 w-auto object-contain" />
+                <span className="font-display font-semibold text-[22px] text-white leading-none">
                   {tab === "address" ? "Sui Package Address" : "Move Source"}
                 </span>
               </div>
               <div
-                className="inline-flex rounded-full p-0.5 gap-0.5"
+                className="inline-flex rounded-full p-1 gap-1"
                 style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
               >
                 {(["testnet", "mainnet"] as Network[]).map((n) => (
@@ -211,7 +211,7 @@ export default function AppPage() {
                     key={n}
                     type="button"
                     onClick={() => setNetwork(n)}
-                    className="px-4 py-1.5 rounded-full font-display text-[12px] font-medium transition-all"
+                    className="px-5 py-2 rounded-full font-display text-[13px] font-medium transition-all"
                     style={{
                       background: network === n ? "var(--brand-lavender)" : "transparent",
                       color:      network === n ? "var(--ink)"            : "var(--text-tertiary)",
@@ -225,37 +225,37 @@ export default function AppPage() {
 
             {/* ── Zone 2: Input area ── */}
             {tab === "address" ? (
-              <div className="px-8 pb-8">
+              <div className="px-10 pb-10">
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => handleAddressChange(e.target.value)}
                   onBlur={() => setAddressError(validateAddress(address))}
                   spellCheck={false}
-                  className="w-full bg-transparent font-mono-plex text-[16px] text-white focus:outline-none leading-relaxed"
+                  className="w-full bg-transparent font-mono-plex text-[19px] text-white focus:outline-none leading-relaxed"
                   style={{ caretColor: "var(--brand-lavender)" }}
                 />
                 <div
-                  className="mt-5 h-px transition-colors"
+                  className="mt-6 h-px transition-colors"
                   style={{ background: addressError ? "rgba(255,92,92,0.55)" : "rgba(255,255,255,0.08)" }}
                 />
-                <div className="mt-2.5 flex items-center justify-between">
-                  <span className="font-display text-[12px]" style={{ color: addressError ? "var(--severity-critical)" : "var(--text-tertiary)" }}>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="font-display text-[13px]" style={{ color: addressError ? "var(--severity-critical)" : "var(--text-tertiary)" }}>
                     {addressError ? `⚠ ${addressError}` : "0x · 64 hex chars"}
                   </span>
                   {address && !addressError && (
-                    <span className="font-display text-[12px]" style={{ color: "var(--severity-safe)" }}>✓ valid</span>
+                    <span className="font-display text-[13px]" style={{ color: "var(--severity-safe)" }}>✓ valid</span>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="px-8 pb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="font-display text-[13px]" style={{ color: "var(--text-secondary)" }}>{fileName}</span>
+              <div className="px-10 pb-8">
+                <div className="flex items-center justify-between mb-5">
+                  <span className="font-display text-[15px]" style={{ color: "var(--text-secondary)" }}>{fileName}</span>
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
-                    className="font-display text-[13px] px-4 py-1.5 rounded-full transition-colors flex items-center gap-1"
+                    className="font-display text-[14px] px-5 py-2 rounded-full transition-colors flex items-center gap-1"
                     style={{ color: "var(--brand-lavender)", border: "1px solid rgba(184,180,255,0.25)" }}
                   >
                     ↑ Upload .move
@@ -268,28 +268,28 @@ export default function AppPage() {
                   placeholder={`module example::contract {\n  // Paste your Move source here…\n}`}
                   rows={10}
                   spellCheck={false}
-                  className="w-full bg-transparent font-mono-plex text-[14px] text-white focus:outline-none resize-y placeholder-[rgba(255,255,255,0.22)]"
-                  style={{ lineHeight: 1.7, caretColor: "var(--brand-lavender)" }}
+                  className="w-full bg-transparent font-mono-plex text-[15px] text-white focus:outline-none resize-y placeholder-[rgba(255,255,255,0.22)]"
+                  style={{ lineHeight: 1.75, caretColor: "var(--brand-lavender)" }}
                 />
               </div>
             )}
 
             {/* ── Zone 3: Settings strip ── */}
-            <div className="flex items-center gap-3 px-8 pb-5">
-              <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+            <div className="flex items-center gap-4 px-10 pb-7">
+              <label className="flex items-center gap-3.5 cursor-pointer flex-1 min-w-0">
                 <input
                   type="checkbox"
                   checked={publishOnChain}
                   onChange={(e) => setPublishOnChain(e.target.checked)}
-                  className="w-4 h-4 shrink-0 rounded accent-[var(--brand-lavender)]"
+                  className="w-4.5 h-4.5 shrink-0 rounded accent-[var(--brand-lavender)]"
                 />
-                <span className="font-display text-[13px] truncate" style={{ color: "var(--text-secondary)" }}>
+                <span className="font-display text-[15px] truncate" style={{ color: "var(--text-secondary)" }}>
                   <span className="text-white font-semibold">Publish on-chain</span>
                   {" "}— write blob ID via MVR tx
                 </span>
               </label>
               {network === "mainnet" && (
-                <span className="font-display text-[12px] shrink-0" style={{ color: "var(--severity-medium)" }}>
+                <span className="font-display text-[13px] shrink-0" style={{ color: "var(--severity-medium)" }}>
                   ⚠ real SUI gas
                 </span>
               )}
@@ -297,17 +297,17 @@ export default function AppPage() {
 
             {/* ── API error ── */}
             {apiError && (
-              <div className="px-8 pb-4 font-display text-[13px]" style={{ color: "var(--severity-critical)" }}>
+              <div className="px-10 pb-5 font-display text-[14px]" style={{ color: "var(--severity-critical)" }}>
                 ⚠ {apiError}
               </div>
             )}
 
             {/* ── Zone 4: CTA ── */}
-            <div className="px-6 pb-6">
+            <div className="px-8 pb-8">
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full py-2.5 rounded-full font-display font-bold text-[14px] tracking-wide transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-full font-display font-bold text-[16px] tracking-wide transition-all flex items-center justify-center gap-2"
                 style={{
                   background: submitting ? "rgba(255,255,255,0.08)" : "var(--brand-lavender)",
                   color:      submitting ? "var(--text-tertiary)"   : "var(--ink)",
