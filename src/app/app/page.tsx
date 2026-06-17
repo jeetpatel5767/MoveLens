@@ -404,9 +404,12 @@ export default function AppPage() {
                 D: "rgba(255,139,92,0.28)",
                 F: "rgba(255,92,92,0.35)",
               };
-              const cardStyle = {
-                ...FORM_GLASS,
-                border: `1px solid ${gradeAccent[entry.riskGrade] ?? "rgba(255,255,255,0.12)"}`,
+              const cardStyle: React.CSSProperties = {
+                background: "rgba(255,255,255,0.04)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+                border: `1px solid ${gradeAccent[entry.riskGrade] ?? "rgba(255,255,255,0.1)"}`,
               };
 
               return (
@@ -466,22 +469,20 @@ export default function AppPage() {
                     </div>
                   </div>
 
-                  {/* ── Highlight callout ── */}
-                  {entry.highlight && (
-                    <div
-                      className="px-4 py-3 rounded-xl font-display text-[13px] leading-relaxed"
-                      style={{
-                        background: "rgba(255,255,255,0.04)",
-                        borderLeft: "2px solid var(--brand-lavender)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      {entry.highlight}
-                    </div>
-                  )}
+                  {/* ── Callout: highlight or description ── */}
+                  <div
+                    className="px-4 py-3 rounded-xl font-display text-[13px] leading-relaxed"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      borderLeft: `2px solid ${entry.highlight ? "var(--brand-lavender)" : "rgba(255,255,255,0.12)"}`,
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    {entry.highlight ?? entry.description}
+                  </div>
 
                   {/* ── Footer: layers + CTA ── */}
-                  <div className="flex items-center justify-between gap-3 mt-auto">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex flex-wrap gap-1.5">
                       {entry.layersRun.map((l) => (
                         <span
