@@ -384,76 +384,129 @@ export default function AppPage() {
 
         {/* ── Audit Gallery ────────────────────────────────────────────────────── */}
         <div className="mt-24 w-full max-w-4xl">
-          <h2 className="font-display font-bold text-[32px] sm:text-[40px] leading-tight tracking-[-0.02em] text-white mb-2 text-center">
-            Recent Public Audits
-          </h2>
-          <p className="font-sans-switzer text-sm text-center mb-8" style={{ color: "var(--text-tertiary)" }}>
-            Pre-audited protocols — findings stored permanently on Walrus.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {(galleryData as GalleryEntry[]).map((entry) => (
-              <div key={entry.id} className="rounded-2xl p-5 flex flex-col gap-3" style={GLASS}>
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <div className="font-sans-switzer text-sm font-semibold text-white truncate">
-                      {entry.packageName}
+          <div className="text-center mb-10">
+            <h2 className="font-display font-bold text-[40px] sm:text-[52px] leading-none tracking-[-0.03em] text-white mb-3">
+              Recent Public Audits
+            </h2>
+            <p className="font-display text-[15px]" style={{ color: "var(--text-tertiary)" }}>
+              Pre-audited protocols — findings stored permanently on Walrus.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {(galleryData as GalleryEntry[]).map((entry) => {
+              const { critical, high, medium, low } = entry.severityCounts;
+              const total = critical + high + medium + low || 1;
+              const gradeAccent: Record<string, string> = {
+                A: "rgba(92,255,177,0.28)",
+                B: "rgba(92,224,255,0.28)",
+                C: "rgba(255,193,92,0.28)",
+                D: "rgba(255,139,92,0.28)",
+                F: "rgba(255,92,92,0.35)",
+              };
+              const cardStyle = {
+                ...FORM_GLASS,
+                border: `1px solid ${gradeAccent[entry.riskGrade] ?? "rgba(255,255,255,0.12)"}`,
+              };
+
+              return (
+                <div key={entry.id} className="rounded-[24px] flex flex-col p-7 gap-6" style={cardStyle}>
+
+                  {/* ── Header: name + grade ── */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-2 min-w-0">
+                      <span className="font-display font-bold text-[17px] text-white leading-tight truncate">
+                        {entry.packageName}
+                      </span>
+                      <span
+                        className="self-start font-display text-[11px] font-medium px-2.5 py-1 rounded-full"
+                        style={
+                          entry.network === "mainnet"
+                            ? { background: "rgba(255,255,255,0.07)", color: "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.12)" }
+                            : { background: "rgba(77,162,255,0.12)",  color: "var(--brand-blue)",    border: "1px solid rgba(77,162,255,0.25)" }
+                        }
+                      >
+                        {entry.network}
+                      </span>
                     </div>
-                    <span
-                      className="inline-block mt-1 font-mono-plex text-[11px] px-2.5 py-0.5 rounded-full"
-                      style={
-                        entry.network === "mainnet"
-                          ? { background: "rgba(255,255,255,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.12)" }
-                          : { background: "rgba(77,162,255,0.12)",  color: "var(--brand-blue)",    border: "1px solid rgba(77,162,255,0.25)" }
-                      }
+                    {/* Grade — big */}
+                    <div
+                      className="shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center font-display font-extrabold text-[28px]"
+                      style={(() => {
+                        const g: Record<string, React.CSSProperties> = {
+                          A: { color: "var(--severity-safe)",     background: "rgba(92,255,177,0.1)",  border: "1px solid rgba(92,255,177,0.25)" },
+                          B: { color: "#5ce0ff",                  background: "rgba(92,224,255,0.1)",  border: "1px solid rgba(92,224,255,0.25)" },
+                          C: { color: "var(--severity-medium)",   background: "rgba(255,193,92,0.1)",  border: "1px solid rgba(255,193,92,0.25)" },
+                          D: { color: "var(--severity-high)",     background: "rgba(255,139,92,0.1)",  border: "1px solid rgba(255,139,92,0.25)" },
+                          F: { color: "var(--severity-critical)", background: "rgba(255,92,92,0.1)",   border: "1px solid rgba(255,92,92,0.25)" },
+                        };
+                        return g[entry.riskGrade] ?? g.C;
+                      })()}
                     >
-                      {entry.network}
-                    </span>
+                      {entry.riskGrade}
+                    </div>
                   </div>
-                  <RiskGradeBadge grade={entry.riskGrade} />
-                </div>
 
-                <div className="flex gap-2.5 font-mono-plex text-xs font-semibold">
-                  <span style={{ color: "var(--severity-critical)" }}>{entry.severityCounts.critical}C</span>
-                  <span style={{ color: "var(--severity-high)" }}>{entry.severityCounts.high}H</span>
-                  <span style={{ color: "var(--severity-medium)" }}>{entry.severityCounts.medium}M</span>
-                  <span style={{ color: "var(--severity-low)" }}>{entry.severityCounts.low}L</span>
-                  <span className="ml-auto" style={{ color: "var(--text-tertiary)" }}>
-                    {entry.totalFindings} findings
-                  </span>
-                </div>
+                  {/* ── Severity bar ── */}
+                  <div className="flex flex-col gap-2">
+                    <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
+                      {critical > 0 && <div style={{ width: `${critical/total*100}%`, background: "var(--severity-critical)" }} />}
+                      {high     > 0 && <div style={{ width: `${high/total*100}%`,     background: "var(--severity-high)" }} />}
+                      {medium   > 0 && <div style={{ width: `${medium/total*100}%`,   background: "var(--severity-medium)" }} />}
+                      {low      > 0 && <div style={{ width: `${low/total*100}%`,      background: "var(--severity-low)" }} />}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {critical > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-critical)" }}>{critical}C</span>}
+                      {high     > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-high)" }}>{high}H</span>}
+                      {medium   > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-medium)" }}>{medium}M</span>}
+                      {low      > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-low)" }}>{low}L</span>}
+                      <span className="ml-auto font-display text-[12px]" style={{ color: "var(--text-tertiary)" }}>
+                        {entry.totalFindings} findings
+                      </span>
+                    </div>
+                  </div>
 
-                {entry.highlight && (
-                  <p
-                    className="font-sans-switzer text-xs rounded-xl px-3 py-2 leading-snug"
-                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "var(--text-secondary)" }}
-                  >
-                    {entry.highlight}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-1.5">
-                  {entry.layersRun.map((l) => (
-                    <span
-                      key={l}
-                      className="font-mono-plex text-[11px] px-2 py-0.5 rounded-full"
-                      style={{ background: "rgba(255,255,255,0.06)", color: "var(--text-tertiary)" }}
+                  {/* ── Highlight callout ── */}
+                  {entry.highlight && (
+                    <div
+                      className="px-4 py-3 rounded-xl font-display text-[13px] leading-relaxed"
+                      style={{
+                        background: "rgba(255,255,255,0.04)",
+                        borderLeft: "2px solid var(--brand-lavender)",
+                        color: "var(--text-secondary)",
+                      }}
                     >
-                      {l}
-                    </span>
-                  ))}
-                </div>
+                      {entry.highlight}
+                    </div>
+                  )}
 
-                <a
-                  href={entry.walrusUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-auto font-sans-switzer text-xs underline underline-offset-2 break-all transition-colors"
-                  style={{ color: "var(--brand-blue)" }}
-                >
-                  View on Walrus ↗
-                </a>
-              </div>
-            ))}
+                  {/* ── Footer: layers + CTA ── */}
+                  <div className="flex items-center justify-between gap-3 mt-auto">
+                    <div className="flex flex-wrap gap-1.5">
+                      {entry.layersRun.map((l) => (
+                        <span
+                          key={l}
+                          className="font-display text-[11px] font-medium px-2.5 py-1 rounded-full"
+                          style={{ background: "rgba(184,180,255,0.08)", color: "var(--brand-lavender)", border: "1px solid rgba(184,180,255,0.18)" }}
+                        >
+                          {l}
+                        </span>
+                      ))}
+                    </div>
+                    <a
+                      href={entry.walrusUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 font-display text-[12px] font-semibold px-3.5 py-1.5 rounded-full transition-all"
+                      style={{ color: "var(--brand-blue)", border: "1px solid rgba(77,162,255,0.3)", background: "rgba(77,162,255,0.06)" }}
+                    >
+                      Walrus ↗
+                    </a>
+                  </div>
+
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
