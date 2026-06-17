@@ -397,19 +397,11 @@ export default function AppPage() {
             {(galleryData as GalleryEntry[]).map((entry) => {
               const { critical, high, medium, low } = entry.severityCounts;
               const total = critical + high + medium + low || 1;
-              const gradeAccent: Record<string, string> = {
-                A: "rgba(92,255,177,0.28)",
-                B: "rgba(92,224,255,0.28)",
-                C: "rgba(255,193,92,0.28)",
-                D: "rgba(255,139,92,0.28)",
-                F: "rgba(255,92,92,0.35)",
-              };
               const cardStyle: React.CSSProperties = {
                 background: "rgba(255,255,255,0.04)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
                 boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
-                border: `1px solid ${gradeAccent[entry.riskGrade] ?? "rgba(255,255,255,0.1)"}`,
               };
 
               return (
