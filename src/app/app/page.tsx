@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/landing/layout/Header";
+import { Footer } from "@/components/landing/footer/Footer";
 import galleryData from "../gallery.json";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -264,7 +265,7 @@ export default function AppPage() {
                   background: tab === t ? "rgba(184,180,255,0.05)" : "transparent",
                 }}
               >
-                {t === "address" ? "📦 Package Address" : "📄 Paste Source"}
+                {t === "address" ? "Package Address" : "Paste Source"}
               </button>
             ))}
           </div>
@@ -427,7 +428,7 @@ export default function AppPage() {
             { num: "65",      label: "Regex rules (13 sectors)", color: "var(--brand-lavender)" },
             { num: "10",      label: "OZ deviation checks",      color: "var(--brand-blue)" },
             { num: "5",       label: "Walrus storage epochs",    color: "var(--brand-blue)" },
-            { num: "AES-256", label: "Seal encryption",          color: "var(--severity-safe)" },
+            { num: "AES-256", label: "Seal encryption",          color: "var(--brand-lavender)" },
           ].map(({ num, label, color }) => (
             <div key={label} className="rounded-2xl p-4" style={GLASS}>
               <div className="font-display font-bold text-xl" style={{ color }}>{num}</div>
@@ -456,8 +457,8 @@ export default function AppPage() {
                       className="inline-block mt-1 font-mono-plex text-[11px] px-2.5 py-0.5 rounded-full"
                       style={
                         entry.network === "mainnet"
-                          ? { background: "rgba(255,193,92,0.12)", color: "var(--severity-medium)", border: "1px solid rgba(255,193,92,0.25)" }
-                          : { background: "rgba(77,162,255,0.12)", color: "var(--brand-blue)",     border: "1px solid rgba(77,162,255,0.25)" }
+                          ? { background: "rgba(255,255,255,0.06)", color: "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.12)" }
+                          : { background: "rgba(77,162,255,0.12)",  color: "var(--brand-blue)",    border: "1px solid rgba(77,162,255,0.25)" }
                       }
                     >
                       {entry.network}
@@ -479,7 +480,7 @@ export default function AppPage() {
                 {entry.highlight && (
                   <p
                     className="font-sans-switzer text-xs rounded-xl px-3 py-2 leading-snug"
-                    style={{ background: "rgba(255,193,92,0.08)", border: "1px solid rgba(255,193,92,0.2)", color: "var(--severity-medium)" }}
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", color: "var(--text-secondary)" }}
                   >
                     {entry.highlight}
                   </p>
@@ -513,13 +514,16 @@ export default function AppPage() {
 
       </section>
 
-      {/* ── Footer ───────────────────────────────────────────────────────────── */}
-      <footer
-        className="py-4 px-6 text-center font-sans-switzer text-xs"
-        style={{ borderTop: "1px solid rgba(255,255,255,0.06)", color: "var(--text-tertiary)" }}
+      {/* ── Watermark ────────────────────────────────────────────────────────── */}
+      <div
+        className="py-3 px-6 text-center font-mono-plex text-[11px]"
+        style={{ color: "var(--text-tertiary)" }}
       >
         Automated pre-screen — not a substitute for a human audit. · Sui Overflow 2026 · Walrus Track
-      </footer>
+      </div>
+
+      {/* ── Footer ───────────────────────────────────────────────────────────── */}
+      <Footer />
     </div>
   );
 }
