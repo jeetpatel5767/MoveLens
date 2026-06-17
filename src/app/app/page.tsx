@@ -49,13 +49,28 @@ function RiskGradeBadge({ grade }: { grade: string }) {
   );
 }
 
-// ── Shared glass style ────────────────────────────────────────────────────────
+// ── Shared glass style (gallery tiles) ───────────────────────────────────────
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.04)",
   backdropFilter: "blur(20px)",
   WebkitBackdropFilter: "blur(20px)",
   border: "1px solid rgba(255,255,255,0.07)",
+};
+
+// ── Premium form card glass ───────────────────────────────────────────────────
+
+const FORM_GLASS: React.CSSProperties = {
+  background: "rgba(8,8,13,0.82)",
+  backdropFilter: "blur(48px) saturate(160%)",
+  WebkitBackdropFilter: "blur(48px) saturate(160%)",
+  border: "1px solid rgba(255,255,255,0.11)",
+  boxShadow: [
+    "0 32px 80px rgba(0,0,0,0.6)",
+    "0 8px 24px rgba(0,0,0,0.4)",
+    "inset 0 1px 0 rgba(255,255,255,0.1)",
+    "inset 0 -1px 0 rgba(0,0,0,0.25)",
+  ].join(", "),
 };
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -124,10 +139,10 @@ export default function AppPage() {
   }
 
   const inputBase: React.CSSProperties = {
-    background: "var(--surface-nested)",
-    border: "1px solid rgba(255,255,255,0.09)",
+    background: "rgba(255,255,255,0.05)",
+    border: "1px solid rgba(255,255,255,0.1)",
     color: "var(--text-primary)",
-    borderRadius: 10,
+    borderRadius: 12,
   };
 
   return (
@@ -179,12 +194,14 @@ export default function AppPage() {
             ))}
           </div>
         </div>
-        <div className="w-full max-w-2xl rounded-2xl shadow-2xl" style={GLASS}>
-          <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <div className="w-full max-w-2xl rounded-3xl relative overflow-hidden" style={FORM_GLASS}>
+          {/* top-edge glass highlight */}
+          <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.18) 50%, transparent)" }} />
+          <form onSubmit={handleSubmit} className="p-7 space-y-5">
 
             {tab === "address" && (
               <div>
-                <label className="block font-sans-switzer text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>
+                <label className="block font-sans-switzer text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
                   Sui Package Address
                 </label>
                 <input
@@ -194,7 +211,7 @@ export default function AppPage() {
                   onBlur={() => setAddressError(validateAddress(address))}
                   placeholder="0x0000000000000000000000000000000000000000000000000000000000000002"
                   spellCheck={false}
-                  className="w-full px-4 py-3 font-mono-plex text-sm placeholder-[var(--text-tertiary)] focus:outline-none transition-all"
+                  className="w-full px-4 py-3 font-mono-plex text-sm placeholder-[rgba(255,255,255,0.28)] focus:outline-none transition-all"
                   style={{
                     ...inputBase,
                     boxShadow: addressError ? "0 0 0 2px rgba(255,92,92,0.4)" : undefined,
@@ -284,8 +301,8 @@ export default function AppPage() {
                 onChange={(e) => setPublishOnChain(e.target.checked)}
                 className="mt-0.5 w-4 h-4 shrink-0 accent-[var(--brand-lavender)]"
               />
-              <span className="font-sans-switzer text-xs leading-relaxed" style={{ color: "var(--text-tertiary)" }}>
-                <span className="font-medium" style={{ color: "var(--text-secondary)" }}>Publish audit on-chain</span> — write the
+              <span className="font-sans-switzer text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+                <span className="font-medium text-white">Publish audit on-chain</span> — write the
                 Walrus blob ID to the MoveLens PackageInfo object via an MVR transaction.
                 Your package address will be included in the on-chain record.
                 Leave unchecked to keep the audit report off-chain only.
