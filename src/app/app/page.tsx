@@ -335,28 +335,28 @@ export default function AppPage() {
         </div>
 
         {/* ── Stat tiles ──────────────────────────────────────────────────────── */}
-        <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 w-full max-w-2xl">
+        <div className="mt-6 grid grid-cols-2 gap-4 w-full max-w-2xl">
           {([
             {
-              num: "65",      numSize: "text-[36px]",
+              num: "65",      numSize: "text-[52px]",
               label: "Regex rules",    sub: "across 13 sectors",
               color: "var(--brand-lavender)",
               icon: <><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></>,
             },
             {
-              num: "10",      numSize: "text-[36px]",
+              num: "10",      numSize: "text-[52px]",
               label: "OZ checks",      sub: "deviation benchmarks",
               color: "var(--brand-blue)",
               icon: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>,
             },
             {
-              num: "5",       numSize: "text-[36px]",
+              num: "5",       numSize: "text-[52px]",
               label: "Walrus epochs",  sub: "storage guaranteed",
               color: "var(--brand-blue)",
               icon: <><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></>,
             },
             {
-              num: "AES‑256", numSize: "text-[22px]",
+              num: "AES‑256", numSize: "text-[32px]",
               label: "Seal encrypt",   sub: "client-side keys",
               color: "var(--brand-lavender)",
               icon: <><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
@@ -364,7 +364,7 @@ export default function AppPage() {
           ] as const).map(({ num, numSize, label, sub, color, icon }) => (
             <div
               key={label}
-              className="rounded-[24px] flex flex-col p-6 min-h-[180px]"
+              className="rounded-[24px] flex flex-col p-8 min-h-[220px]"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 backdropFilter: "blur(20px)",
@@ -373,7 +373,7 @@ export default function AppPage() {
               }}
             >
               {/* Icon — raw, floating at top */}
-              <svg className="w-[22px] h-[22px] shrink-0" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+              <svg className="w-[26px] h-[26px] shrink-0" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
                 {icon}
               </svg>
 
@@ -381,11 +381,11 @@ export default function AppPage() {
               <div className="flex-1" />
 
               {/* Stat number */}
-              <div className={`font-display font-bold text-white leading-none mb-2 ${numSize}`}>{num}</div>
+              <div className={`font-display font-bold text-white leading-none mb-3 ${numSize}`}>{num}</div>
 
               {/* Labels */}
-              <div className="font-display text-[13px] font-semibold text-white/75 leading-tight">{label}</div>
-              <div className="font-display text-[11px] mt-1" style={{ color: "var(--text-tertiary)" }}>{sub}</div>
+              <div className="font-display text-[15px] font-semibold text-white/75 leading-tight">{label}</div>
+              <div className="font-display text-[12px] mt-1.5" style={{ color: "var(--text-tertiary)" }}>{sub}</div>
             </div>
           ))}
         </div>
