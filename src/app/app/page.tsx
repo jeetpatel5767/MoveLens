@@ -364,23 +364,20 @@ export default function AppPage() {
           ] as const).map(({ num, numSize, label, sub, color, icon }) => (
             <div
               key={label}
-              className="rounded-[24px] flex flex-col p-8 min-h-[220px]"
+              className="rounded-[24px] flex flex-row items-center gap-6 p-8"
               style={FORM_GLASS}
             >
-              {/* Icon — raw, floating at top */}
-              <svg className="w-[26px] h-[26px] shrink-0" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+              {/* Icon — left */}
+              <svg className="w-[32px] h-[32px] shrink-0" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
                 {icon}
               </svg>
 
-              {/* Push number to bottom */}
-              <div className="flex-1" />
-
-              {/* Stat number */}
-              <div className={`font-display font-bold text-white leading-none mb-4 ${numSize}`}>{num}</div>
-
-              {/* Labels */}
-              <div className="font-display text-[18px] font-semibold text-white/80 leading-tight">{label}</div>
-              <div className="font-display text-[14px] mt-2" style={{ color: "var(--text-tertiary)" }}>{sub}</div>
+              {/* Number + labels — right */}
+              <div className="flex flex-col">
+                <div className={`font-display font-bold text-white leading-none mb-2 ${numSize}`}>{num}</div>
+                <div className="font-display text-[17px] font-semibold text-white/80 leading-tight">{label}</div>
+                <div className="font-display text-[13px] mt-1.5" style={{ color: "var(--text-tertiary)" }}>{sub}</div>
+              </div>
             </div>
           ))}
         </div>
