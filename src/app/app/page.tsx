@@ -138,13 +138,6 @@ export default function AppPage() {
     }
   }
 
-  const inputBase: React.CSSProperties = {
-    background: "rgba(255,255,255,0.05)",
-    border: "1px solid rgba(255,255,255,0.1)",
-    color: "var(--text-primary)",
-    borderRadius: 12,
-  };
-
   return (
     <div className="min-h-screen bg-black text-[var(--text-primary)] flex flex-col">
       <Header />
@@ -195,88 +188,26 @@ export default function AppPage() {
           </div>
         </div>
         <div className="w-full max-w-2xl rounded-3xl relative overflow-hidden" style={FORM_GLASS}>
-          {/* top-edge glass highlight */}
+          {/* top-edge glass shimmer */}
           <div className="absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.18) 50%, transparent)" }} />
-          <form onSubmit={handleSubmit} className="p-7 space-y-5">
 
-            {tab === "address" && (
-              <div>
-                <label className="block font-sans-switzer text-xs font-semibold mb-1.5 uppercase tracking-wide" style={{ color: "var(--text-secondary)" }}>
-                  Sui Package Address
-                </label>
-                <input
-                  type="text"
-                  value={address}
-                  onChange={(e) => handleAddressChange(e.target.value)}
-                  onBlur={() => setAddressError(validateAddress(address))}
-                  placeholder="0x0000000000000000000000000000000000000000000000000000000000000002"
-                  spellCheck={false}
-                  className="w-full px-4 py-3 font-mono-plex text-sm placeholder-[rgba(255,255,255,0.28)] focus:outline-none transition-all"
-                  style={{
-                    ...inputBase,
-                    boxShadow: addressError ? "0 0 0 2px rgba(255,92,92,0.4)" : undefined,
-                    border: addressError ? "1px solid rgba(255,92,92,0.5)" : "1px solid rgba(255,255,255,0.09)",
-                  }}
-                />
-                {addressError && (
-                  <p className="mt-1.5 font-sans-switzer text-xs flex items-center gap-1" style={{ color: "var(--severity-critical)" }}>
-                    ⚠ {addressError}
-                  </p>
-                )}
-              </div>
-            )}
+          <form onSubmit={handleSubmit}>
 
-            {tab === "source" && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <label className="font-sans-switzer text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-                    File name
-                  </label>
-                  <input
-                    type="text"
-                    value={fileName}
-                    onChange={(e) => setFileName(e.target.value)}
-                    className="flex-1 px-3 py-1.5 font-mono-plex text-xs focus:outline-none transition-all"
-                    style={inputBase}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => fileRef.current?.click()}
-                    className="font-sans-switzer text-xs px-3 py-1.5 rounded-full transition-colors"
-                    style={{ color: "var(--brand-lavender)", border: "1px solid rgba(184,180,255,0.3)" }}
-                  >
-                    Upload file
-                  </button>
-                  <input ref={fileRef} type="file" accept=".move" onChange={handleFilePick} className="hidden" />
-                </div>
-                <textarea
-                  value={sourceText}
-                  onChange={(e) => setSourceText(e.target.value)}
-                  placeholder={`module example::contract {\n  // Paste your Move source here…\n}`}
-                  rows={10}
-                  spellCheck={false}
-                  className="w-full px-4 py-3 font-mono-plex text-sm focus:outline-none resize-y transition-all"
-                  style={{ ...inputBase, lineHeight: 1.6 }}
-                />
-                <p className="font-sans-switzer text-xs" style={{ color: "var(--text-tertiary)" }}>
-                  Single .move file · max 1 MB · must contain a{" "}
-                  <code className="font-mono-plex" style={{ color: "var(--text-secondary)" }}>module</code> declaration
-                </p>
-              </div>
-            )}
-
-            {/* Network selector */}
-            <div className="flex items-center gap-3">
-              <label className="font-sans-switzer text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-                Network
-              </label>
-              <div className="flex rounded-full overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.09)" }}>
+            {/* ── Zone 1: Header row — label + network segmented control ── */}
+            <div className="flex items-center justify-between px-7 pt-6 pb-5">
+              <span className="font-mono-plex text-[10px] uppercase tracking-[0.14em]" style={{ color: "var(--text-tertiary)" }}>
+                {tab === "address" ? "Sui Package Address" : "Move Source"}
+              </span>
+              <div
+                className="inline-flex rounded-full p-0.5 gap-0.5"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.09)" }}
+              >
                 {(["testnet", "mainnet"] as Network[]).map((n) => (
                   <button
                     key={n}
                     type="button"
                     onClick={() => setNetwork(n)}
-                    className="px-4 py-1.5 font-sans-switzer text-xs font-medium transition-colors"
+                    className="px-3 py-1 rounded-full font-mono-plex text-[10px] uppercase tracking-wide transition-all"
                     style={{
                       background: network === n ? "var(--brand-lavender)" : "transparent",
                       color:      network === n ? "var(--ink)"            : "var(--text-tertiary)",
@@ -286,67 +217,135 @@ export default function AppPage() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* ── Divider ── */}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+
+            {/* ── Zone 2: Input area ── */}
+            {tab === "address" ? (
+              <div className="px-7 py-6">
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => handleAddressChange(e.target.value)}
+                  onBlur={() => setAddressError(validateAddress(address))}
+                  spellCheck={false}
+                  className="w-full bg-transparent font-mono-plex text-[15px] text-white focus:outline-none leading-relaxed"
+                  style={{ caretColor: "var(--brand-lavender)" }}
+                />
+                {/* underline — red on error */}
+                <div
+                  className="mt-5 h-px transition-colors"
+                  style={{ background: addressError ? "rgba(255,92,92,0.55)" : "rgba(255,255,255,0.08)" }}
+                />
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="font-mono-plex text-[10px]" style={{ color: addressError ? "var(--severity-critical)" : "var(--text-tertiary)" }}>
+                    {addressError ? `⚠ ${addressError}` : "0x + 64 hex characters"}
+                  </span>
+                  {address && !addressError && (
+                    <span className="font-mono-plex text-[10px]" style={{ color: "var(--severity-safe)" }}>✓ valid</span>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="px-7 py-5">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-mono-plex text-[11px]" style={{ color: "var(--text-secondary)" }}>{fileName}</span>
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="font-sans-switzer text-[11px] px-3 py-1 rounded-full transition-colors flex items-center gap-1"
+                    style={{ color: "var(--brand-lavender)", border: "1px solid rgba(184,180,255,0.25)" }}
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Upload .move
+                  </button>
+                  <input ref={fileRef} type="file" accept=".move" onChange={handleFilePick} className="hidden" />
+                </div>
+                <textarea
+                  value={sourceText}
+                  onChange={(e) => setSourceText(e.target.value)}
+                  placeholder={`module example::contract {\n  // Paste your Move source here…\n}`}
+                  rows={9}
+                  spellCheck={false}
+                  className="w-full bg-transparent font-mono-plex text-[13px] text-white focus:outline-none resize-y placeholder-[rgba(255,255,255,0.22)]"
+                  style={{ lineHeight: 1.65, caretColor: "var(--brand-lavender)" }}
+                />
+              </div>
+            )}
+
+            {/* ── Divider ── */}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+
+            {/* ── Zone 3: Settings strip — on-chain + mainnet warning ── */}
+            <div className="flex items-center gap-3 px-7 py-4">
+              <label className="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0">
+                <input
+                  type="checkbox"
+                  checked={publishOnChain}
+                  onChange={(e) => setPublishOnChain(e.target.checked)}
+                  className="w-3.5 h-3.5 shrink-0 rounded accent-[var(--brand-lavender)]"
+                />
+                <span className="font-sans-switzer text-xs truncate" style={{ color: "var(--text-secondary)" }}>
+                  <span className="text-white font-medium">Publish on-chain</span>
+                  {" "}— write blob ID via MVR tx
+                </span>
+              </label>
               {network === "mainnet" && (
-                <span className="font-sans-switzer text-xs" style={{ color: "var(--severity-medium)" }}>
-                  ⚠ mainnet — uses real SUI gas
+                <span className="font-mono-plex text-[10px] shrink-0" style={{ color: "var(--severity-medium)" }}>
+                  ⚠ real SUI gas
                 </span>
               )}
             </div>
 
-            {/* Privacy consent */}
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={publishOnChain}
-                onChange={(e) => setPublishOnChain(e.target.checked)}
-                className="mt-0.5 w-4 h-4 shrink-0 accent-[var(--brand-lavender)]"
-              />
-              <span className="font-sans-switzer text-xs leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                <span className="font-medium text-white">Publish audit on-chain</span> — write the
-                Walrus blob ID to the MoveLens PackageInfo object via an MVR transaction.
-                Your package address will be included in the on-chain record.
-                Leave unchecked to keep the audit report off-chain only.
-              </span>
-            </label>
-
-            {/* API error */}
+            {/* ── API error ── */}
             {apiError && (
-              <div
-                className="rounded-xl px-4 py-3 font-sans-switzer text-sm"
-                style={{ background: "rgba(255,92,92,0.08)", border: "1px solid rgba(255,92,92,0.25)", color: "var(--severity-critical)" }}
-              >
-                {apiError}
-              </div>
+              <>
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+                <div className="px-7 py-3 font-sans-switzer text-xs" style={{ color: "var(--severity-critical)" }}>
+                  ⚠ {apiError}
+                </div>
+              </>
             )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3.5 rounded-full font-sans-switzer font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg"
-              style={{
-                background: submitting ? "rgba(255,255,255,0.08)" : "var(--brand-lavender)",
-                color:      submitting ? "var(--text-tertiary)"   : "var(--ink)",
-              }}
-            >
-              {submitting ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin-slow" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Starting audit…
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-                  </svg>
-                  Run Audit
-                </>
-              )}
-            </button>
+            {/* ── Divider ── */}
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+
+            {/* ── Zone 4: CTA ── */}
+            <div className="px-6 py-5">
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full py-4 rounded-full font-sans-switzer font-semibold text-[15px] transition-all flex items-center justify-center gap-2.5"
+                style={{
+                  background: submitting ? "rgba(255,255,255,0.08)" : "var(--brand-lavender)",
+                  color:      submitting ? "var(--text-tertiary)"   : "var(--ink)",
+                  boxShadow: submitting ? "none" : "0 4px 24px rgba(184,180,255,0.25)",
+                }}
+              >
+                {submitting ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin-slow" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Starting audit…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-[17px] h-[17px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
+                    </svg>
+                    Run Audit
+                  </>
+                )}
+              </button>
+            </div>
+
           </form>
         </div>
 
