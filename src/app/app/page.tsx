@@ -402,38 +402,46 @@ export default function AppPage() {
                 F: "var(--severity-critical)",
               };
 
+              const CARD_BORDER = "1px solid rgba(184,180,255,0.1)";
+
               return (
-                <div key={entry.id} className="rounded-xl overflow-hidden font-mono-plex" style={{ background: "#0a0a0c", border: "1px solid rgba(255,255,255,0.07)" }}>
+                <div key={entry.id} className="rounded-2xl overflow-hidden" style={{
+                  background: "rgba(10,8,20,0.52)",
+                  backdropFilter: "blur(32px) saturate(180%)",
+                  WebkitBackdropFilter: "blur(32px) saturate(180%)",
+                  border: "1px solid rgba(184,180,255,0.13)",
+                  boxShadow: "0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+                }}>
 
                   {/* ── 2×2 header grid ── */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: CARD_BORDER }}>
 
                     {/* Cell A: Identity */}
-                    <div style={{ padding: "16px 18px 14px", borderRight: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                      <div className="text-[11px] leading-tight truncate" style={{ color: "rgba(255,255,255,0.75)" }}>{entry.packageName}</div>
-                      <div className="text-[8px] uppercase tracking-[0.2em] mt-2" style={{ color: "rgba(255,255,255,0.2)" }}>{entry.network}</div>
+                    <div style={{ padding: "16px 18px 14px", borderRight: CARD_BORDER, borderBottom: CARD_BORDER }}>
+                      <div className="font-mono-plex text-[11px] leading-tight truncate" style={{ color: "rgba(255,255,255,0.75)" }}>{entry.packageName}</div>
+                      <div className="font-display text-[9px] uppercase tracking-[0.15em] mt-2" style={{ color: entry.network === "mainnet" ? "rgba(184,180,255,0.45)" : "rgba(77,162,255,0.5)" }}>{entry.network}</div>
                     </div>
 
                     {/* Cell B: Total findings */}
-                    <div style={{ padding: "16px 18px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between" }}>
-                      <div className="text-[8px] uppercase tracking-[0.2em]" style={{ color: "rgba(255,255,255,0.2)" }}>Findings</div>
+                    <div style={{ padding: "16px 18px 14px", borderBottom: CARD_BORDER, display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between" }}>
+                      <div className="font-display text-[9px] uppercase tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.25)" }}>Findings</div>
                       <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
-                        <span className="font-display font-bold text-[40px] leading-none" style={{ color: "rgba(255,255,255,0.8)", letterSpacing: "-0.03em" }}>{entry.totalFindings}</span>
-                        <span className="text-[11px] pb-1" style={{ color: "rgba(255,255,255,0.15)" }}>total</span>
+                        <span className="font-display font-bold text-[40px] leading-none" style={{ color: "rgba(255,255,255,0.85)", letterSpacing: "-0.03em" }}>{entry.totalFindings}</span>
+                        <span className="font-display text-[11px] pb-1" style={{ color: "rgba(255,255,255,0.2)" }}>total</span>
                       </div>
                     </div>
 
                     {/* Cell C: Grade letter */}
-                    <div style={{ padding: "10px 18px 18px", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                    <div style={{ padding: "10px 18px 18px", borderRight: CARD_BORDER, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
                       <div className="font-display font-extrabold leading-none" style={{ fontSize: 88, letterSpacing: "-0.04em", color: gradeColor[entry.riskGrade] ?? "white", lineHeight: 0.88 }}>
                         {entry.riskGrade}
                       </div>
-                      <div className="text-[7.5px] uppercase tracking-[0.2em] mt-2" style={{ color: "rgba(255,255,255,0.2)" }}>Risk Grade</div>
+                      <div className="font-display text-[9px] uppercase tracking-[0.15em] mt-2" style={{ color: "rgba(184,180,255,0.4)" }}>Risk Grade</div>
                     </div>
 
                     {/* Cell D: Severity 2×2 breakdown */}
                     <div style={{ padding: "12px 18px 18px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                      <div className="text-[8px] uppercase tracking-[0.2em]" style={{ color: "rgba(255,255,255,0.2)" }}>By Severity</div>
+                      <div className="font-display text-[9px] uppercase tracking-[0.15em]" style={{ color: "rgba(255,255,255,0.25)" }}>By Severity</div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: 10 }}>
                         {([
                           { count: critical, label: "Critical", color: "var(--severity-critical)" },
@@ -443,7 +451,7 @@ export default function AppPage() {
                         ] as { count: number; label: string; color: string }[]).map(({ count, label, color }) => (
                           <div key={label} style={{ borderTop: `1px solid ${color}`, paddingTop: 6 }}>
                             <div className="font-display font-bold text-[22px] leading-none" style={{ color, letterSpacing: "-0.02em" }}>{count}</div>
-                            <div className="text-[7px] uppercase tracking-[0.12em] mt-1" style={{ color: "rgba(255,255,255,0.22)" }}>{label}</div>
+                            <div className="font-display text-[8px] uppercase tracking-[0.1em] mt-1" style={{ color: "rgba(255,255,255,0.25)" }}>{label}</div>
                           </div>
                         ))}
                       </div>
@@ -451,7 +459,7 @@ export default function AppPage() {
                   </div>
 
                   {/* ── Severity stripe ── */}
-                  <div style={{ height: 5, display: "flex" }}>
+                  <div style={{ height: 4, display: "flex" }}>
                     {critical > 0 && <div style={{ flex: critical, background: "var(--severity-critical)" }} />}
                     {high     > 0 && <div style={{ flex: high,     background: "var(--severity-high)" }} />}
                     {medium   > 0 && <div style={{ flex: medium,   background: "var(--severity-medium)" }} />}
@@ -459,25 +467,25 @@ export default function AppPage() {
                   </div>
 
                   {/* ── Insight ── */}
-                  <div style={{ padding: "15px 18px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                    <p className="text-[11.5px] italic leading-[1.8]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  <div style={{ padding: "15px 18px 14px", borderBottom: CARD_BORDER }}>
+                    <p className="font-display text-[13px] italic leading-[1.7]" style={{ color: "rgba(255,255,255,0.38)" }}>
                       {entry.highlight ?? entry.description}
                     </p>
                   </div>
 
                   {/* ── Footer: layers + walrus ── */}
-                  <div style={{ padding: "11px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ padding: "11px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: CARD_BORDER }}>
                     <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                       {entry.layersRun.map((l, i) => (
                         <Fragment key={l}>
-                          {i > 0 && <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.1)" }}>·</span>}
-                          <span className="text-[8.5px] tracking-[0.06em] capitalize" style={{ color: "rgba(255,255,255,0.3)" }}>
+                          {i > 0 && <span className="font-display text-[10px]" style={{ color: "rgba(184,180,255,0.2)" }}>·</span>}
+                          <span className="font-display text-[9px] tracking-[0.05em] capitalize" style={{ color: "rgba(255,255,255,0.3)" }}>
                             {l.replace("layer", "Layer ")}
                           </span>
                         </Fragment>
                       ))}
                     </div>
-                    <a href={entry.walrusUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] tracking-[0.04em]" style={{ color: "var(--brand-blue)" }}>
+                    <a href={entry.walrusUrl} target="_blank" rel="noopener noreferrer" className="font-display text-[10px] font-medium tracking-[0.04em]" style={{ color: "var(--brand-blue)" }}>
                       Walrus ↗
                     </a>
                   </div>
@@ -486,8 +494,8 @@ export default function AppPage() {
                   <div style={{ padding: "13px 18px" }}>
                     <a
                       href={entry.walrusUrl} target="_blank" rel="noopener noreferrer"
-                      className="w-full text-[9px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-colors"
-                      style={{ padding: "12px 18px", background: "transparent", border: "1px solid rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.4)", display: "flex" }}
+                      className="font-display w-full text-[10px] uppercase tracking-[0.18em] flex items-center justify-center gap-3 transition-colors"
+                      style={{ padding: "12px 18px", background: "transparent", border: "1px solid rgba(184,180,255,0.14)", color: "rgba(255,255,255,0.4)", display: "flex" }}
                     >
                       View Audit <span style={{ fontSize: 14, opacity: 0.4, letterSpacing: 0 }}>→</span>
                     </a>
