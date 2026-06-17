@@ -135,7 +135,7 @@ export default function AppPage() {
       <Header />
 
       {/* ── Hero ──────────────────────────────────────────────────────────────── */}
-      <section className="relative w-full min-h-[560px] flex flex-col items-center justify-center pt-40 pb-8 px-6">
+      <section className="relative w-full flex flex-col items-center justify-start pt-32 pb-6 px-6">
         <AuroraBackground />
 
         <div className="relative z-10 text-center max-w-4xl mx-auto">
@@ -153,7 +153,7 @@ export default function AppPage() {
       <section className="flex flex-col items-center px-6 pb-20">
 
         {/* Floating pill tab switcher */}
-        <div className="flex justify-center py-3">
+        <div className="flex justify-center pt-5 pb-4">
           <div
             className="inline-flex rounded-full p-1.5 gap-1 shadow-2xl"
             style={{
