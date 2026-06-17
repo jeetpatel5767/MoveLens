@@ -1,1 +1,84 @@
 @import "tailwindcss";
+
+:root {
+  --bg-color: #000000;
+  --surface-color: #121214;
+  --surface-nested: #1c1c1f;
+  --text-primary: #f5f5f7;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #6b6b70;
+  --ink: #0a0a0c;
+  --brand-blue: #4da2ff;
+  --brand-lavender: #b8b4ff;
+  --brand-lavender-hover: #cfccff;
+
+  --severity-critical: #ff5c5c;
+  --severity-high: #ff8b5c;
+  --severity-medium: #ffc15c;
+  --severity-low: #5cc9f5;
+  --severity-safe: #5cffb1;
+
+  --gradient-aurora: linear-gradient(90deg, #4da2ff, #b8b4ff, #ff8fe3);
+}
+
+::selection {
+  background: var(--brand-lavender);
+  color: #0a0a0c;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-color);
+  color: var(--text-primary);
+  font-family: 'Switzer', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ── Landing page font classes ── */
+.font-display       { font-family: 'Cabinet Grotesk', sans-serif; }
+.font-sans-switzer  { font-family: 'Switzer', sans-serif; }
+.font-mono-plex     { font-family: 'IBM Plex Mono', monospace; }
+
+/* ── Animations ── */
+@keyframes mlPulse {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+@keyframes mlScan {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(12px); }
+  100% { transform: translateY(0); }
+}
+@keyframes mlSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes mlAurora {
+  0%, 100% { transform: translate(-2%, -2%) scale(1); }
+  50% { transform: translate(2%, 2%) scale(1.08); }
+}
+@keyframes mlBlink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.08); }
+}
+@keyframes mlMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-pulse-slow  { animation: mlPulse 2.4s ease-in-out infinite; }
+.animate-scan        { animation: mlScan 2.6s ease-in-out infinite; }
+.animate-spin-slow   { animation: mlSpin 0.9s linear infinite; }
+.animate-aurora      { animation: mlAurora 18s ease-in-out infinite; }
+.animate-blink       { animation: mlBlink 4s ease-in-out infinite; }
+.animate-marquee     { animation: mlMarquee 26s linear infinite; }
+
+/* ── Grain texture ── */
+.bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
