@@ -368,12 +368,12 @@ export default function AppPage() {
               style={FORM_GLASS}
             >
               {/* Icon — left */}
-              <svg className="w-[32px] h-[32px] shrink-0" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <svg className="w-[52px] h-[52px] shrink-0" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={1.25} strokeLinecap="round" strokeLinejoin="round">
                 {icon}
               </svg>
 
               {/* Number + labels — right */}
-              <div className="flex flex-col">
+              <div className="flex flex-col ml-4">
                 <div className={`font-display font-bold text-white leading-none mb-2 ${numSize}`}>{num}</div>
                 <div className="font-display text-[17px] font-semibold text-white/80 leading-tight">{label}</div>
                 <div className="font-display text-[13px] mt-1.5" style={{ color: "var(--text-tertiary)" }}>{sub}</div>
