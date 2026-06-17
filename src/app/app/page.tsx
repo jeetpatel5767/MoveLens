@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/landing/layout/Header";
 import { Footer } from "@/components/landing/footer/Footer";
@@ -396,104 +396,100 @@ export default function AppPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {(galleryData as GalleryEntry[]).map((entry) => {
               const { critical, high, medium, low } = entry.severityCounts;
-              const total = critical + high + medium + low || 1;
-              const cardStyle: React.CSSProperties = {
-                background: "rgba(255,255,255,0.04)",
-                backdropFilter: "blur(20px)",
-                WebkitBackdropFilter: "blur(20px)",
-                boxShadow: "0 8px 40px rgba(0,0,0,0.4)",
+              const gradeColor: Record<string, string> = {
+                A: "var(--severity-safe)", B: "#5ce0ff",
+                C: "var(--severity-medium)", D: "var(--severity-high)",
+                F: "var(--severity-critical)",
               };
 
               return (
-                <div key={entry.id} className="rounded-[24px] flex flex-col p-7 gap-6" style={cardStyle}>
+                <div key={entry.id} className="rounded-xl overflow-hidden font-mono-plex" style={{ background: "#0a0a0c", border: "1px solid rgba(255,255,255,0.07)" }}>
 
-                  {/* ── Header: name + grade ── */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex flex-col gap-2 min-w-0">
-                      <span className="font-display font-bold text-[17px] text-white leading-tight truncate">
-                        {entry.packageName}
-                      </span>
-                      <span
-                        className="self-start font-display text-[11px] font-medium px-2.5 py-1 rounded-full"
-                        style={
-                          entry.network === "mainnet"
-                            ? { background: "rgba(255,255,255,0.07)", color: "var(--text-secondary)", border: "1px solid rgba(255,255,255,0.12)" }
-                            : { background: "rgba(77,162,255,0.12)",  color: "var(--brand-blue)",    border: "1px solid rgba(77,162,255,0.25)" }
-                        }
-                      >
-                        {entry.network}
-                      </span>
-                    </div>
-                    {/* Grade — big */}
-                    <div
-                      className="shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center font-display font-extrabold text-[28px]"
-                      style={(() => {
-                        const g: Record<string, React.CSSProperties> = {
-                          A: { color: "var(--severity-safe)",     background: "rgba(92,255,177,0.1)",  border: "1px solid rgba(92,255,177,0.25)" },
-                          B: { color: "#5ce0ff",                  background: "rgba(92,224,255,0.1)",  border: "1px solid rgba(92,224,255,0.25)" },
-                          C: { color: "var(--severity-medium)",   background: "rgba(255,193,92,0.1)",  border: "1px solid rgba(255,193,92,0.25)" },
-                          D: { color: "var(--severity-high)",     background: "rgba(255,139,92,0.1)",  border: "1px solid rgba(255,139,92,0.25)" },
-                          F: { color: "var(--severity-critical)", background: "rgba(255,92,92,0.1)",   border: "1px solid rgba(255,92,92,0.25)" },
-                        };
-                        return g[entry.riskGrade] ?? g.C;
-                      })()}
-                    >
-                      {entry.riskGrade}
-                    </div>
-                  </div>
+                  {/* ── 2×2 header grid ── */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
 
-                  {/* ── Severity bar ── */}
-                  <div className="flex flex-col gap-2">
-                    <div className="flex h-1.5 rounded-full overflow-hidden gap-px">
-                      {critical > 0 && <div style={{ width: `${critical/total*100}%`, background: "var(--severity-critical)" }} />}
-                      {high     > 0 && <div style={{ width: `${high/total*100}%`,     background: "var(--severity-high)" }} />}
-                      {medium   > 0 && <div style={{ width: `${medium/total*100}%`,   background: "var(--severity-medium)" }} />}
-                      {low      > 0 && <div style={{ width: `${low/total*100}%`,      background: "var(--severity-low)" }} />}
+                    {/* Cell A: Identity */}
+                    <div style={{ padding: "16px 18px 14px", borderRight: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div className="text-[11px] leading-tight truncate" style={{ color: "rgba(255,255,255,0.75)" }}>{entry.packageName}</div>
+                      <div className="text-[8px] uppercase tracking-[0.2em] mt-2" style={{ color: "rgba(255,255,255,0.2)" }}>{entry.network}</div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      {critical > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-critical)" }}>{critical}C</span>}
-                      {high     > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-high)" }}>{high}H</span>}
-                      {medium   > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-medium)" }}>{medium}M</span>}
-                      {low      > 0 && <span className="font-display text-[12px] font-semibold" style={{ color: "var(--severity-low)" }}>{low}L</span>}
-                      <span className="ml-auto font-display text-[12px]" style={{ color: "var(--text-tertiary)" }}>
-                        {entry.totalFindings} findings
-                      </span>
+
+                    {/* Cell B: Total findings */}
+                    <div style={{ padding: "16px 18px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "space-between" }}>
+                      <div className="text-[8px] uppercase tracking-[0.2em]" style={{ color: "rgba(255,255,255,0.2)" }}>Findings</div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 3 }}>
+                        <span className="font-display font-bold text-[40px] leading-none" style={{ color: "rgba(255,255,255,0.8)", letterSpacing: "-0.03em" }}>{entry.totalFindings}</span>
+                        <span className="text-[11px] pb-1" style={{ color: "rgba(255,255,255,0.15)" }}>total</span>
+                      </div>
+                    </div>
+
+                    {/* Cell C: Grade letter */}
+                    <div style={{ padding: "10px 18px 18px", borderRight: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+                      <div className="font-display font-extrabold leading-none" style={{ fontSize: 88, letterSpacing: "-0.04em", color: gradeColor[entry.riskGrade] ?? "white", lineHeight: 0.88 }}>
+                        {entry.riskGrade}
+                      </div>
+                      <div className="text-[7.5px] uppercase tracking-[0.2em] mt-2" style={{ color: "rgba(255,255,255,0.2)" }}>Risk Grade</div>
+                    </div>
+
+                    {/* Cell D: Severity 2×2 breakdown */}
+                    <div style={{ padding: "12px 18px 18px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                      <div className="text-[8px] uppercase tracking-[0.2em]" style={{ color: "rgba(255,255,255,0.2)" }}>By Severity</div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginTop: 10 }}>
+                        {([
+                          { count: critical, label: "Critical", color: "var(--severity-critical)" },
+                          { count: high,     label: "High",     color: "var(--severity-high)" },
+                          { count: medium,   label: "Medium",   color: "var(--severity-medium)" },
+                          { count: low,      label: "Low",      color: low > 0 ? "var(--severity-low)" : "rgba(255,255,255,0.18)" },
+                        ] as { count: number; label: string; color: string }[]).map(({ count, label, color }) => (
+                          <div key={label} style={{ borderTop: `1px solid ${color}`, paddingTop: 6 }}>
+                            <div className="font-display font-bold text-[22px] leading-none" style={{ color, letterSpacing: "-0.02em" }}>{count}</div>
+                            <div className="text-[7px] uppercase tracking-[0.12em] mt-1" style={{ color: "rgba(255,255,255,0.22)" }}>{label}</div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  {/* ── Callout: highlight or description ── */}
-                  <div
-                    className="px-4 py-3 rounded-xl font-display text-[13px] leading-relaxed"
-                    style={{
-                      background: "rgba(255,255,255,0.04)",
-                      borderLeft: `2px solid ${entry.highlight ? "var(--brand-lavender)" : "rgba(255,255,255,0.12)"}`,
-                      color: "var(--text-secondary)",
-                    }}
-                  >
-                    {entry.highlight ?? entry.description}
+                  {/* ── Severity stripe ── */}
+                  <div style={{ height: 5, display: "flex" }}>
+                    {critical > 0 && <div style={{ flex: critical, background: "var(--severity-critical)" }} />}
+                    {high     > 0 && <div style={{ flex: high,     background: "var(--severity-high)" }} />}
+                    {medium   > 0 && <div style={{ flex: medium,   background: "var(--severity-medium)" }} />}
+                    {low      > 0 && <div style={{ flex: low,      background: "var(--severity-low)" }} />}
                   </div>
 
-                  {/* ── Footer: layers + CTA ── */}
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex flex-wrap gap-1.5">
-                      {entry.layersRun.map((l) => (
-                        <span
-                          key={l}
-                          className="font-display text-[11px] font-medium px-2.5 py-1 rounded-full"
-                          style={{ background: "rgba(184,180,255,0.08)", color: "var(--brand-lavender)", border: "1px solid rgba(184,180,255,0.18)" }}
-                        >
-                          {l}
-                        </span>
+                  {/* ── Insight ── */}
+                  <div style={{ padding: "15px 18px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <p className="text-[11.5px] italic leading-[1.8]" style={{ color: "rgba(255,255,255,0.35)" }}>
+                      {entry.highlight ?? entry.description}
+                    </p>
+                  </div>
+
+                  {/* ── Footer: layers + walrus ── */}
+                  <div style={{ padding: "11px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      {entry.layersRun.map((l, i) => (
+                        <Fragment key={l}>
+                          {i > 0 && <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.1)" }}>·</span>}
+                          <span className="text-[8.5px] tracking-[0.06em] capitalize" style={{ color: "rgba(255,255,255,0.3)" }}>
+                            {l.replace("layer", "Layer ")}
+                          </span>
+                        </Fragment>
                       ))}
                     </div>
-                    <a
-                      href={entry.walrusUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 font-display text-[12px] font-semibold px-3.5 py-1.5 rounded-full transition-all"
-                      style={{ color: "var(--brand-blue)", border: "1px solid rgba(77,162,255,0.3)", background: "rgba(77,162,255,0.06)" }}
-                    >
+                    <a href={entry.walrusUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] tracking-[0.04em]" style={{ color: "var(--brand-blue)" }}>
                       Walrus ↗
+                    </a>
+                  </div>
+
+                  {/* ── CTA ── */}
+                  <div style={{ padding: "13px 18px" }}>
+                    <a
+                      href={entry.walrusUrl} target="_blank" rel="noopener noreferrer"
+                      className="w-full text-[9px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-colors"
+                      style={{ padding: "12px 18px", background: "transparent", border: "1px solid rgba(255,255,255,0.09)", color: "rgba(255,255,255,0.4)", display: "flex" }}
+                    >
+                      View Audit <span style={{ fontSize: 14, opacity: 0.4, letterSpacing: 0 }}>→</span>
                     </a>
                   </div>
 
