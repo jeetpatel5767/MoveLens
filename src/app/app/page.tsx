@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/landing/layout/Header";
 import { Footer } from "@/components/landing/footer/Footer";
+import { AuroraBackground } from "@/components/landing/home/AuroraBackground";
 import galleryData from "../gallery.json";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -28,8 +29,6 @@ const ADDRESS_RE = /^0x[0-9a-fA-F]{64}$/;
 type Tab = "address" | "source";
 type Network = "testnet" | "mainnet";
 
-const CETUS_PACKAGE_ID = "0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92";
-
 // ── Risk grade badge ──────────────────────────────────────────────────────────
 
 function RiskGradeBadge({ grade }: { grade: string }) {
@@ -50,94 +49,7 @@ function RiskGradeBadge({ grade }: { grade: string }) {
   );
 }
 
-// ── Cetus hero card ───────────────────────────────────────────────────────────
-
-function CetusHero({ entry, onRunLive }: { entry: GalleryEntry; onRunLive: () => void }) {
-  return (
-    <div className="w-full max-w-2xl mb-8">
-      <div
-        className="rounded-2xl p-5"
-        style={{
-          background: "rgba(255,92,92,0.04)",
-          border: "1px solid rgba(255,92,92,0.18)",
-          backdropFilter: "blur(20px)",
-        }}
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <RiskGradeBadge grade="F" />
-          <div>
-            <p className="font-mono-plex text-xs" style={{ color: "var(--text-tertiary)" }}>
-              @cetus/clmm · mainnet · May 22, 2025
-            </p>
-            <p className="text-xs font-medium" style={{ color: "var(--severity-critical)" }}>
-              34 critical · 66 high · 129 findings total
-            </p>
-          </div>
-        </div>
-
-        <h2 className="font-display font-bold text-[22px] leading-tight text-white mb-1">
-          $223,000,000 lost to one bit-shift overflow.
-        </h2>
-        <p className="text-sm mb-1 font-sans-switzer" style={{ color: "var(--text-secondary)" }}>
-          ML-INT-001 fires on the real, deployed Cetus AMM contract with confidence 1.0.
-          This deterministic rule runs in under 5 seconds and costs nothing.
-        </p>
-        <p className="text-xs mb-4 font-sans-switzer" style={{ color: "var(--severity-high)", opacity: 0.75 }}>
-          The 34 critical findings are all instances of{" "}
-          <code className="font-mono-plex">integer_mate::checked_shlw</code> called across
-          deposit, withdraw, and swap functions — the exact pattern that was exploited.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-          <div
-            className="rounded-xl p-3"
-            style={{ background: "rgba(255,92,92,0.08)", border: "1px solid rgba(255,92,92,0.2)" }}
-          >
-            <p className="font-mono-plex text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--severity-critical)" }}>
-              Vulnerable (deployed)
-            </p>
-            <pre className="font-mono-plex text-xs overflow-x-auto leading-relaxed" style={{ color: "#ffc4c4" }}>
-              <code>{`let mask = 0xffffffffffffffff\n      << 192;\nif (n > mask) { (0, true) }\nelse { (n << 64, false) }`}</code>
-            </pre>
-          </div>
-          <div
-            className="rounded-xl p-3"
-            style={{ background: "rgba(92,255,177,0.06)", border: "1px solid rgba(92,255,177,0.2)" }}
-          >
-            <p className="font-mono-plex text-xs font-semibold mb-2 uppercase tracking-wide" style={{ color: "var(--severity-safe)" }}>
-              OZ safe pattern
-            </p>
-            <pre className="font-mono-plex text-xs overflow-x-auto leading-relaxed" style={{ color: "#c4ffe4" }}>
-              <code>{`// Checked shift — aborts on overflow\n// instead of silently truncating\nu256::checked_shl(n, 64)\n  // returns None on overflow`}</code>
-            </pre>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-4">
-          <a
-            href={entry.walrusUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs underline underline-offset-2 transition-colors font-sans-switzer"
-            style={{ color: "var(--brand-blue)" }}
-          >
-            View permanent audit on Walrus ↗
-          </a>
-          <button
-            type="button"
-            onClick={onRunLive}
-            className="text-xs underline underline-offset-2 transition-colors font-sans-switzer"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            Re-run live →
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Shared glass style ────────────────────────────────────────────────────────
 
 const GLASS: React.CSSProperties = {
   background: "rgba(255,255,255,0.04)",
@@ -146,26 +58,20 @@ const GLASS: React.CSSProperties = {
   border: "1px solid rgba(255,255,255,0.07)",
 };
 
+// ── Main page ─────────────────────────────────────────────────────────────────
+
 export default function AppPage() {
   const router = useRouter();
-  const [tab, setTab]           = useState<Tab>("address");
-  const [network, setNetwork]   = useState<Network>("testnet");
-  const [address, setAddress]   = useState("");
-  const [addressError, setAddressError] = useState<string | null>(null);
-  const [sourceText, setSourceText]     = useState("");
-  const [fileName, setFileName]         = useState("contract.move");
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [tab, setTab]                       = useState<Tab>("address");
+  const [network, setNetwork]               = useState<Network>("testnet");
+  const [address, setAddress]               = useState("");
+  const [addressError, setAddressError]     = useState<string | null>(null);
+  const [sourceText, setSourceText]         = useState("");
+  const [fileName, setFileName]             = useState("contract.move");
+  const fileRef                             = useRef<HTMLInputElement>(null);
   const [publishOnChain, setPublishOnChain] = useState(false);
-  const [submitting, setSubmitting]     = useState(false);
-  const [apiError, setApiError]         = useState<string | null>(null);
-
-  function runLiveCetusAudit() {
-    setTab("address");
-    setAddress(CETUS_PACKAGE_ID);
-    setAddressError(null);
-    setApiError(null);
-    setNetwork("mainnet");
-  }
+  const [submitting, setSubmitting]         = useState(false);
+  const [apiError, setApiError]             = useState<string | null>(null);
 
   function validateAddress(val: string): string | null {
     if (!val.trim()) return "Package address is required";
@@ -228,48 +134,52 @@ export default function AppPage() {
     <div className="min-h-screen bg-black text-[var(--text-primary)] flex flex-col">
       <Header />
 
-      {/* ── Main content ───────────────────────────────────────────────────── */}
-      <section className="flex-1 flex flex-col items-center justify-center px-6 pt-36 pb-20">
+      {/* ── Hero ──────────────────────────────────────────────────────────────── */}
+      <section className="relative w-full overflow-hidden flex flex-col items-center justify-center pt-44 pb-36 px-6">
+        <AuroraBackground />
 
-        {/* Page title */}
-        <div className="text-center mb-10">
-          <h1 className="font-display font-bold text-[56px] sm:text-[72px] leading-[0.95] tracking-[-0.03em] text-white mb-4">
-            Audit your contract.
+        <div className="relative z-10 text-center max-w-5xl mx-auto">
+          <h1 className="font-display font-bold text-[72px] sm:text-[100px] md:text-[120px] leading-[0.9] tracking-[-0.035em] text-white mb-6">
+            Audit your<br />contract.
           </h1>
-          <p className="font-sans-switzer text-[17px] leading-relaxed max-w-lg mx-auto" style={{ color: "var(--text-secondary)" }}>
-            4-layer security analysis — 65 deterministic rules, OZ benchmarks,
-            LanceDB semantic recall, DeepSeek-1.3B confirmation.
+          <p className="font-sans-switzer text-[17px] sm:text-[19px] md:text-[21px] leading-[1.6] max-w-2xl mx-auto font-extralight" style={{ color: "var(--text-secondary)" }}>
+            <span className="text-white font-light">4-layer security analysis</span> — 65 deterministic rules,
+            OZ benchmarks, LanceDB semantic recall, DeepSeek-1.3B confirmation.
           </p>
         </div>
+      </section>
 
-        {/* ── Cetus hero ───────────────────────────────────────────────────── */}
-        <CetusHero
-          entry={(galleryData as GalleryEntry[])[0]}
-          onRunLive={runLiveCetusAudit}
-        />
+      {/* ── Form section ──────────────────────────────────────────────────────── */}
+      <section className="flex flex-col items-center px-6 pb-20">
 
-        {/* ── Input card ───────────────────────────────────────────────────── */}
-        <div className="w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl" style={GLASS}>
-
-          {/* Tabs */}
-          <div style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }} className="flex">
+        {/* Floating pill tab switcher */}
+        <div className="flex justify-center py-6">
+          <div
+            className="inline-flex rounded-full p-1.5 gap-1 shadow-2xl"
+            style={{
+              background: "rgba(10,10,12,0.85)",
+              backdropFilter: "blur(24px)",
+              WebkitBackdropFilter: "blur(24px)",
+              border: "1px solid rgba(255,255,255,0.1)",
+            }}
+          >
             {(["address", "source"] as Tab[]).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => { setTab(t); setApiError(null); }}
-                className="flex-1 py-3.5 text-sm font-medium font-sans-switzer transition-colors"
+                className="px-6 py-2.5 rounded-full font-sans-switzer text-sm font-medium transition-all"
                 style={{
-                  color: tab === t ? "var(--brand-lavender)" : "var(--text-tertiary)",
-                  borderBottom: tab === t ? "2px solid var(--brand-lavender)" : "2px solid transparent",
-                  background: tab === t ? "rgba(184,180,255,0.05)" : "transparent",
+                  background: tab === t ? "var(--brand-lavender)" : "transparent",
+                  color:      tab === t ? "var(--ink)"            : "var(--text-secondary)",
                 }}
               >
                 {t === "address" ? "Package Address" : "Paste Source"}
               </button>
             ))}
           </div>
-
+        </div>
+        <div className="w-full max-w-2xl rounded-2xl shadow-2xl" style={GLASS}>
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
 
             {tab === "address" && (
@@ -332,7 +242,8 @@ export default function AppPage() {
                   style={{ ...inputBase, lineHeight: 1.6 }}
                 />
                 <p className="font-sans-switzer text-xs" style={{ color: "var(--text-tertiary)" }}>
-                  Single .move file · max 1 MB · must contain a <code className="font-mono-plex" style={{ color: "var(--text-secondary)" }}>module</code> declaration
+                  Single .move file · max 1 MB · must contain a{" "}
+                  <code className="font-mono-plex" style={{ color: "var(--text-secondary)" }}>module</code> declaration
                 </p>
               </div>
             )}
@@ -351,7 +262,7 @@ export default function AppPage() {
                     className="px-4 py-1.5 font-sans-switzer text-xs font-medium transition-colors"
                     style={{
                       background: network === n ? "var(--brand-lavender)" : "transparent",
-                      color: network === n ? "var(--ink)" : "var(--text-tertiary)",
+                      color:      network === n ? "var(--ink)"            : "var(--text-tertiary)",
                     }}
                   >
                     {n}
@@ -366,7 +277,7 @@ export default function AppPage() {
             </div>
 
             {/* Privacy consent */}
-            <label className="flex items-start gap-3 cursor-pointer group">
+            <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={publishOnChain}
@@ -398,7 +309,7 @@ export default function AppPage() {
               className="w-full py-3.5 rounded-full font-sans-switzer font-semibold text-sm transition-all flex items-center justify-center gap-2 shadow-lg"
               style={{
                 background: submitting ? "rgba(255,255,255,0.08)" : "var(--brand-lavender)",
-                color: submitting ? "var(--text-tertiary)" : "var(--ink)",
+                color:      submitting ? "var(--text-tertiary)"   : "var(--ink)",
               }}
             >
               {submitting ? (
@@ -422,7 +333,7 @@ export default function AppPage() {
           </form>
         </div>
 
-        {/* ── Stat tiles ───────────────────────────────────────────────────── */}
+        {/* ── Stat tiles ──────────────────────────────────────────────────────── */}
         <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 w-full max-w-2xl text-center">
           {[
             { num: "65",      label: "Regex rules (13 sectors)", color: "var(--brand-lavender)" },
@@ -437,8 +348,8 @@ export default function AppPage() {
           ))}
         </div>
 
-        {/* ── Audit Gallery ────────────────────────────────────────────────── */}
-        <div className="mt-20 w-full max-w-4xl">
+        {/* ── Audit Gallery ────────────────────────────────────────────────────── */}
+        <div className="mt-24 w-full max-w-4xl">
           <h2 className="font-display font-bold text-[32px] sm:text-[40px] leading-tight tracking-[-0.02em] text-white mb-2 text-center">
             Recent Public Audits
           </h2>
@@ -511,10 +422,9 @@ export default function AppPage() {
             ))}
           </div>
         </div>
-
       </section>
 
-      {/* ── Watermark ────────────────────────────────────────────────────────── */}
+      {/* ── Watermark ─────────────────────────────────────────────────────────── */}
       <div
         className="py-3 px-6 text-center font-mono-plex text-[11px]"
         style={{ color: "var(--text-tertiary)" }}
@@ -522,7 +432,7 @@ export default function AppPage() {
         Automated pre-screen — not a substitute for a human audit. · Sui Overflow 2026 · Walrus Track
       </div>
 
-      {/* ── Footer ───────────────────────────────────────────────────────────── */}
+      {/* ── Footer ────────────────────────────────────────────────────────────── */}
       <Footer />
     </div>
   );
