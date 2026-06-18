@@ -7,7 +7,7 @@ MoveLens analyzes untrusted Move source code. We assume:
 - Move source may contain adversarial content (crafted to evade detection or
   manipulate the AI layers)
 - The LanceDB corpus may receive community contributions (potential poisoning)
-- Layer 4 (Ollama/Groq) processes raw code as LLM input (prompt injection surface)
+- Layer 4 (Groq API) processes raw code as LLM input (prompt injection surface)
 - The Walrus quilt's `report.json` is public — it must never contain decrypted findings
 
 ## Mitigations
@@ -30,9 +30,10 @@ MoveLens analyzes untrusted Move source code. We assume:
   code. Layer 1 `confidence` is always 1.0 for a pattern match — it is not a
   guarantee the matched code is exploitable.
 
-- **Layer 4 (DeepSeek-1.3B)** is a small model; classification accuracy on novel
-  Move patterns is estimated at 60–70%, not the literal confidence scores shown.
-  Layer 4 findings are explicitly lower-confidence and marked as such in the UI.
+- **Layer 4 (Groq llama-3.3-70b-versatile)** is capable but limited by the free-tier
+  rate cap (20 RPM). Audits on very large packages may fall back to the keyword heuristic
+  classifier for some snippets when the rate limit is reached. Layer 4 findings are
+  marked with their source (`layer4`) in the UI.
 
 - **19 AST-based rules are not yet implemented** — scoped for a future release
   pending a Move AST parser integration.

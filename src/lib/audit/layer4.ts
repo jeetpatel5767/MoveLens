@@ -3,7 +3,7 @@
  *
  * Layer 4 — ML model ensemble. The ONLY file in business logic allowed to:
  *   - Talk to the Python sidecar (port 8765)
- *   - Call Groq free-tier API (Model C, ONLY when confidence is 0.4–0.7)
+ *   - Call Groq free-tier API (Model B primary classifier)
  *
  * HARD RULES:
  *   - NEVER add paid third-party LLM API keys to this file. Free Groq tier only.
@@ -13,10 +13,10 @@
  *   - Drop and log invalid findings — never propagate unknown rule_ids.
  *
  * Pipeline per snippet:
- *   Model A: Jina embed → LanceDB cosine similarity > 0.75 → similarity flag
- *   Model B: Keyword heuristic classifier → { vulnerable, category, confidence, reason }
- *   Model C: Groq confirmation ONLY when 0.4 ≤ confidence ≤ 0.7 (skip if no GROQ_API_KEY)
- *   Final:   confidence = clamp(B.confidence + (A.similar ? +0.2 : 0) + (C.confirmed ? +0.1 : -0.1), 0, 1)
+ *   Model A: Jina embed (sidecar) → LanceDB cosine similarity > 0.75 → boost flag
+ *   Model B: Groq llama-3.3-70b-versatile (free tier) → full classification
+ *            Falls back to sidecar keyword heuristic if Groq unavailable/rate-limited
+ *   Final:   confidence = clamp(B.confidence + (A.similar && B.conf < 0.8 ? +0.15 : 0), 0, 1)
  */
 
 import type { Finding, Severity } from "./schema";
@@ -50,7 +50,7 @@ export function groqRateLimitOk(): boolean {
     groqCallTimestamps.shift();
   }
   if (groqCallTimestamps.length >= GROQ_RPM) {
-    console.warn("[layer4] Groq rate limit reached (20 RPM) — skipping Groq confirmation");
+    console.warn("[layer4] Groq rate limit reached (20 RPM) — skipping Groq classification, using heuristic fallback");
     return false;
   }
   groqCallTimestamps.push(now);
@@ -109,11 +109,11 @@ function buildMemoryContext(memoryHits: MemoryHit[]): string {
   return `\n\nADDITIONAL CONTEXT FROM PAST AUDITS:\n${examples}\n`;
 }
 
-async function classifySnippet(code: string, memoryContext = ""): Promise<ClassifyResult> {
+async function classifyFallback(code: string): Promise<ClassifyResult> {
   const resp = await fetch(`${SIDECAR}/classify`, {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ code, memory_context: memoryContext }),
+    body:    JSON.stringify({ code }),
     signal:  AbortSignal.timeout(15_000),
   });
   if (!resp.ok) throw new Error(`/classify ${resp.status}`);
@@ -121,22 +121,50 @@ async function classifySnippet(code: string, memoryContext = ""): Promise<Classi
 }
 
 // ──────────────────────────────────────────────────────────────
-// Model C: Groq confirmation (free tier — only for 0.4–0.7 range)
+// Model B: Groq llama-3.3-70b-versatile — primary classifier
 // ──────────────────────────────────────────────────────────────
 
-async function confirmWithGroq(code: string, category: string): Promise<boolean> {
-  const apiKey = env.GROQ_API_KEY;
-  if (!apiKey) {
-    // No key → skip, don't count as confirmation
-    return false;
-  }
+const GROQ_PROMPT_TEMPLATE = `You are a Sui Move smart-contract security classifier.
+Move is resource-oriented: capabilities (AdminCap) are access-control objects passed
+as params; a hot potato struct has NO abilities; overflow aborts EXCEPT on bit-shifts.
 
-  const prompt = `You are a Sui Move smart-contract security classifier.
-Classify this snippet: is it vulnerable to a ${category} issue?
-Answer with ONLY "YES" or "NO".
+Classify the SNIPPET into exactly one category:
+ML-ACC, ML-INT, ML-HOT, ML-OWN, ML-ARI, ML-UPG, ML-RAC, ML-RET,
+ML-TOK, ML-WRP, ML-DOS, ML-DEP, ML-LOG.
+If not vulnerable, set vulnerable: false.
+Output ONLY JSON — no markdown, no explanation outside the JSON.
+
+EXAMPLE 1:
+let mask = 0xffffffffffffffff << 192;
+if (n > mask) abort; let r = n << 64;
+-> {"vulnerable": true, "category": "ML-INT", "confidence": 0.95, "reason": "Wrong overflow mask before <<64 (Cetus-class)"}
+
+EXAMPLE 2:
+public fun create_admin_cap(_u: &UpgradeCap, to: address) {}
+-> {"vulnerable": true, "category": "ML-ACC", "confidence": 0.90, "reason": "Capability minted without validating UpgradeCap package ID"}
+
+EXAMPLE 3:
+fun get_balance(account: &Account): u64 { account.balance }
+-> {"vulnerable": false, "category": "ML-LOG", "confidence": 0.95, "reason": "Read-only accessor, no vulnerability"}
 
 SNIPPET:
-${code.slice(0, 800)}`;
+{code}
+
+JSON only:`;
+
+/**
+ * Model B: Groq llama-3.3-70b-versatile (free tier) — primary classifier.
+ * Returns null on ANY failure (missing key, rate limit, network error, bad JSON).
+ * Caller MUST fall back to classifyFallback() on null.
+ * NEVER throws.
+ */
+async function classifyWithGroq(rawCode: string, memoryContext: string): Promise<ClassifyResult | null> {
+  const apiKey = env.GROQ_API_KEY;
+  if (!apiKey) return null;
+  if (!groqRateLimitOk()) return null;
+
+  const cleanCode = sanitizeForPatterns(rawCode, false);
+  const prompt = GROQ_PROMPT_TEMPLATE.replace("{code}", cleanCode.slice(0, 600)) + memoryContext;
 
   try {
     const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -148,21 +176,32 @@ ${code.slice(0, 800)}`;
       body: JSON.stringify({
         model:       "llama-3.3-70b-versatile",
         messages:    [{ role: "user", content: prompt }],
-        max_tokens:  5,
-        temperature: 0,
+        max_tokens:  150,
+        temperature: 0.1,
       }),
       signal: AbortSignal.timeout(15_000),
     });
     if (!resp.ok) {
-      console.warn("[layer4] Groq API error:", resp.status);
-      return false;
+      console.warn("[layer4] Groq classify error:", resp.status);
+      return null;
     }
     const data = await resp.json() as { choices?: { message?: { content?: string } }[] };
-    const answer = data.choices?.[0]?.message?.content?.trim().toUpperCase() ?? "";
-    return answer.startsWith("YES");
+    const text = data.choices?.[0]?.message?.content?.trim() ?? "";
+    const match = text.match(/\{[^{}]+\}/);
+    if (!match) {
+      console.warn("[layer4] Groq response had no JSON block:", text.slice(0, 100));
+      return null;
+    }
+    const parsed = JSON.parse(match[0]);
+    return {
+      vulnerable: Boolean(parsed.vulnerable),
+      category:   String(parsed.category ?? "ML-LOG"),
+      confidence: Number(parsed.confidence ?? 0.5),
+      reason:     String(parsed.reason ?? "Classified by Groq llama-3.3-70b"),
+    };
   } catch (err) {
-    console.warn("[layer4] Groq call failed:", err);
-    return false;
+    console.warn("[layer4] Groq classify call failed:", err);
+    return null;
   }
 }
 
@@ -337,8 +376,15 @@ async function analyzeSnippet(
       console.warn("[layer4] /embed failed:", err);
     }
 
-    // ── Model B: Classification (with Layer 3 memory context) ─────────────────
-    const classResult = await classifySnippet(cleanCode, buildMemoryContext(memoryHits));
+    // ── Model B: Groq primary classifier (falls back to sidecar heuristic) ──
+    const memCtx = buildMemoryContext(memoryHits);
+    let classResult = await classifyWithGroq(snippet.code, memCtx);
+    if (classResult === null) {
+      console.log("[layer4] Groq unavailable/rate-limited — using sidecar heuristic fallback");
+      classResult = await classifyFallback(cleanCode);
+    } else {
+      console.log(`[layer4] Groq classified: vulnerable=${classResult.vulnerable} category=${classResult.category} conf=${classResult.confidence.toFixed(2)}`);
+    }
 
     if (!classResult.vulnerable && !simResult.similar_to) {
       return null; // nothing interesting
@@ -351,23 +397,9 @@ async function analyzeSnippet(
     let confidence = classResult.confidence;
 
     // Boost if similarity match found (Model A confirms it).
-    // Smaller boost (+0.15) and only when base confidence was < 0.8,
-    // preventing the boost from pushing everything straight to critical.
+    // Only when base confidence < 0.8 to avoid pushing everything to critical.
     if (simResult.similar_to && confidence < 0.8) {
       confidence = Math.min(0.95, confidence + 0.15);
-    }
-
-    // ── Model C: Groq confirmation (only in uncertain range, rate-limited) ──
-    if (confidence >= 0.4 && confidence <= 0.7 && env.GROQ_API_KEY) {
-      if (!groqRateLimitOk()) {
-        // rate limit logged inside groqRateLimitOk(); treat as unconfirmed
-      } else {
-        const confirmed = await confirmWithGroq(cleanCode, classResult.category);
-        confidence = confirmed
-          ? Math.min(1.0, confidence + 0.1)
-          : Math.max(0.0, confidence - 0.1);
-        console.log(`[layer4] Groq confirmation for ${ruleId}: ${confirmed} → confidence=${confidence.toFixed(2)}`);
-      }
     }
 
     // Below threshold — skip

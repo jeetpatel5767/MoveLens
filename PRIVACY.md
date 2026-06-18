@@ -76,8 +76,10 @@ All AI processing runs locally or via your own API keys:
 | Layer 1 — Deterministic rules | None (regex) | Local |
 | Layer 2 — OZ benchmark | None (regex) | Local |
 | Layer 3 — Memory recall | Jina embeddings (local) | Local (via Layer 4 sidecar) |
-| Layer 4 — ML classification | DeepSeek-1.3B via Ollama | Local |
-| Layer 4 — Groq confirmation | Mixtral/Llama (free tier) | Groq API (your key) |
+| Layer 4 — ML classification | Groq llama-3.3-70b-versatile (free tier) | **Groq API** (your key) |
+| Layer 4 — Fallback classifier | Keyword heuristic | Local (via Layer 4 sidecar) |
 
-No audit source code, findings, or package addresses are sent to MoveLens operators
-or any third party beyond the models listed above.
+**Important:** Code snippets extracted for Layer 4 analysis are transmitted to Groq's API
+for classification. Comments and string literals are stripped before transmission
+(`sanitizeForPatterns`). See [Groq's privacy policy](https://groq.com/privacy-policy/)
+for how they handle API request data. No audit data is sent to MoveLens operators.

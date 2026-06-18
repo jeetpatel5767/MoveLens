@@ -96,13 +96,13 @@ movelens/
 │   └── smoke.ts               # end-to-end smoke test used by init.sh
 ├── lancedb_store/             # auto-created by seedLanceDB.ts, gitignored
 └── scripts/
-    ├── layer4_server.py       # Python sidecar: Jina embeddings + DeepSeek classification (port 8765)
+    ├── layer4_server.py       # Python sidecar: Jina embeddings + heuristic fallback (port 8765)
     ├── seedLanceDB.ts         # one-time: seeds LanceDB with known-vulnerable snippets
     ├── seed-fixtures.ts
     └── demo.md
 ```
 
-**Stack decision (final):** Single Next.js 15 + TypeScript app. All Sui-ecosystem SDKs (`@mysten/sui`, `@mysten/walrus`, `@mysten/seal`, `@mysten-incubation/memwal`) are TypeScript — one language, one repo, one deploy. No Rust backend, no PostgreSQL. An in-process job store is enough for a hackathon demo. The AI engine is a zero-cost 4-layer hybrid system: Layer 1 (93 deterministic rules), Layer 2 (OZ math benchmark), Layer 3 (MemWal semantic memory), Layer 4 (local Jina embeddings + DeepSeek-1.3B + free Groq confirmation). No paid API keys anywhere. The only Python in the project is the Layer 4 sidecar (`scripts/layer4_server.py`).
+**Stack decision (final):** Single Next.js 15 + TypeScript app. All Sui-ecosystem SDKs (`@mysten/sui`, `@mysten/walrus`, `@mysten/seal`, `@mysten-incubation/memwal`) are TypeScript — one language, one repo, one deploy. No Rust backend, no PostgreSQL. An in-process job store is enough for a hackathon demo. The AI engine is a zero-cost 4-layer hybrid system: Layer 1 (93 deterministic rules), Layer 2 (OZ math benchmark), Layer 3 (MemWal semantic memory), Layer 4 (local Jina embeddings + Groq llama-3.3-70b-versatile free tier). No paid API keys anywhere. The only Python in the project is the Layer 4 sidecar (`scripts/layer4_server.py`).
 
 ---
 
@@ -287,7 +287,7 @@ In `src/app/api/audit/route.ts` (partial — full route in Phase 7):
 Layer 1 — 93 deterministic rules (regex + AST), 13 sectors      confidence = 1.0
 Layer 2 — 10 OZ DeFi math deviation checks (deterministic)      confidence = 0.95
 Layer 3 — MemWal semantic memory recall (before) + remember (after)
-Layer 4 — Model ensemble: Jina embeddings → DeepSeek-1.3B → Groq free tier
+Layer 4 — Model ensemble: Jina embeddings (local) → Groq llama-3.3-70b-versatile (free tier)
 ```
 
 ## Phase 2 — Setup
@@ -566,10 +566,10 @@ await db.createTable('vuln_corpus', rows, { mode: 'overwrite' });
 
 In `scripts/layer4_server.py` + `requirements.txt` (`sentence-transformers, lancedb, flask, transformers, torch`):
 
-**The 3 models (final decision, do not change):**
-- **Model A — Embeddings (always runs):** `jinaai/jina-embeddings-v2-base-code` (161MB, 768-dim) via `sentence-transformers`, local. Cosine similarity > 0.75 against LanceDB → flag as similar to known vulnerability.
-- **Model B — Classification (always runs after A):** `deepseek-ai/deepseek-coder-1.3b-instruct` (~1GB GGUF Q4_K_M) via `transformers` locally (Colab/Kaggle T4 if no local GPU). Outputs `{ vulnerable, category, confidence, reason }`.
-- **Model C — Confirmation (ONLY when Model B confidence is 0.4–0.7):** Groq free tier `llama-3.3-70b-versatile` (or OpenRouter free `qwen/qwen3-coder:free`). Free, no credit card, ~30 RPM — Model C runs for only 20–30% of snippets so a demo never hits limits. **Skip if confidence > 0.7.**
+**[UPDATED — TASK_GROQ_SWITCH.md] Active 2-model pipeline:**
+- **Model A — Embeddings (always runs):** `jinaai/jina-embeddings-v2-base-code` (161MB, 768-dim) via `sentence-transformers`, local sidecar. Cosine similarity > 0.75 against LanceDB → confidence boost flag.
+- **Model B — Classification (primary):** Groq `llama-3.3-70b-versatile` (free tier, `GROQ_API_KEY`). Full JSON classification: `{ vulnerable, category, confidence, reason }`. Falls back to keyword heuristic (`/classify` sidecar endpoint) when Groq is unavailable or rate-limited (20 RPM cap).
+- ~~Model C~~ **REMOVED** — Groq is now the primary classifier, so a "confirm with Groq" step would be self-referential. Removed in TASK_GROQ_SWITCH.
 
 ```python
 # scripts/layer4_server.py

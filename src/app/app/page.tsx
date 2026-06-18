@@ -153,7 +153,7 @@ export default function AppPage() {
           </h1>
           <p className="font-sans-switzer text-[16px] sm:text-[18px] leading-[1.6] max-w-xl mx-auto font-extralight" style={{ color: "var(--text-secondary)" }}>
             <span className="text-white font-light">4-layer security analysis</span> — 65 deterministic rules,
-            OZ benchmarks, LanceDB semantic recall, DeepSeek-1.3B confirmation.
+            OZ benchmarks, LanceDB semantic recall, Groq llama-3.3-70b classification.
           </p>
         </div>
       </section>

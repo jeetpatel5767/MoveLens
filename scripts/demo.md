@@ -47,15 +47,15 @@ pattern (green)]**
 
 > *"Layer 1 catches it instantly — that's the deterministic rule engine, 65 regex
 > rules across 13 vulnerability sectors. Layers 2 through 4 add the OpenZeppelin
-> benchmark, semantic memory recall via LanceDB, and a local DeepSeek AI model —
-> all running with zero API cost."*
+> benchmark, semantic memory recall via LanceDB, and Groq's llama-3.3-70b model —
+> all running at zero cost with the free tier."*
 
 Point to each stage lighting up:
 
 | Stage | What to say |
 |-------|-------------|
 | **Fetching Package** | "Fetching from Sui GraphQL — we never use JSON-RPC, it shuts down July 31." |
-| **Running 4-Layer Analysis** | "Layer 1: 65 deterministic rules, confidence 1.0. Layer 2: OZ benchmark. Layer 3: LanceDB recall. Layer 4: DeepSeek local." |
+| **Running 4-Layer Analysis** | "Layer 1: 65 deterministic rules, confidence 1.0. Layer 2: OZ benchmark. Layer 3: LanceDB recall. Layer 4: Groq llama-3.3-70b classification." |
 | **Encrypting Findings** | "Seal IBE encryption — findings go into findings.enc, only decryptable by the auditor." |
 | **Uploading to Walrus** | "Encrypted quilt: report.json + findings.enc + summary.md. 5 epochs of guaranteed storage." |
 | **MVR Linking** | "Blob ID attached on-chain to the package via MVR set_metadata." |
