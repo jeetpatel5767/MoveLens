@@ -61,14 +61,6 @@ const SOURCE_LABEL: Record<FindingSource,string> = {
   layer4:"ML Analysis (Layer 4)",
 };
 
-const PIPELINE_STEPS: {key:AuditStatus; label:string}[] = [
-  { key:"fetching",   label:"Fetching Package"    },
-  { key:"auditing",   label:"Running Analysis"    },
-  { key:"encrypting", label:"Encrypting Report"   },
-  { key:"uploading",  label:"Uploading to Walrus" },
-  { key:"linking",    label:"Registering On-Chain"},
-];
-
 const TERMINAL: AuditStatus[] = ["done","failed"];
 
 const EYE: React.CSSProperties = {
@@ -77,68 +69,65 @@ const EYE: React.CSSProperties = {
   marginBottom:16, fontFamily:"var(--font-display)",
 };
 
-// ── Loading card ──────────────────────────────────────────────────────────────
+// ── Loading screen ────────────────────────────────────────────────────────────
 
-function LoadingCard({ job }: { job:JobStatus }) {
-  const visited = job.stagesVisited ?? [];
-  const current = job.status;
-  const progress = Math.round((visited.length / PIPELINE_STEPS.length) * 100);
+const STAGE_LABEL: Record<AuditStatus, string> = {
+  queued:     "Queued",
+  fetching:   "Fetching Package",
+  auditing:   "Running Analysis",
+  encrypting: "Encrypting Report",
+  uploading:  "Uploading to Walrus",
+  linking:    "Linking On-Chain",
+  done:       "Complete",
+  failed:     "Failed",
+};
 
+const STAGE_SUB: Record<AuditStatus, string> = {
+  queued:     "Waiting for a worker slot…",
+  fetching:   "Pulling modules via Sui GraphQL",
+  auditing:   "65 rules · OZ benchmarks · LanceDB recall · Groq ML",
+  encrypting: "IBE threshold encryption via Seal",
+  uploading:  "5-epoch permanent storage",
+  linking:    "Writing blob ID via MVR on-chain tx",
+  done:       "Report ready",
+  failed:     "An error occurred",
+};
+
+function LoadingScreen({ job }: { job:JobStatus }) {
   return (
-    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"80px 24px" }}>
-      <div style={{ width:520, ...CARD, padding:48 }}>
-        {/* Spinner + title */}
-        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:32 }}>
-          <div style={{
-            width:34, height:34, borderRadius:"50%", flexShrink:0,
-            border:"2px solid rgba(139,141,255,0.18)", borderTopColor:"#8B8DFF",
-            animation:"mlSpin 0.9s linear infinite",
-          }} />
-          <div>
-            <div className="font-display" style={{ fontSize:16, fontWeight:600, color:"#fff", letterSpacing:"-0.02em", lineHeight:1.2 }}>
-              Analyzing Package
-            </div>
-            <div className="font-display" style={{ fontSize:12, color:"rgba(255,255,255,0.35)", marginTop:3 }}>
-              {PIPELINE_STEPS.find(s=>s.key===current)?.label ?? "Processing…"}
-            </div>
-          </div>
-        </div>
+    <div style={{
+      minHeight:"calc(100vh - 64px)", display:"flex", flexDirection:"column",
+      alignItems:"center", justifyContent:"center", padding:"80px 28px", textAlign:"center",
+    }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:32 }}>
+        <div style={{ width:8, height:8, borderRadius:"50%", background:"#8B8DFF", boxShadow:"0 0 12px rgba(139,141,255,0.8)", animation:"mlPulse 1.5s ease-in-out infinite" }} />
+        <span className="font-display" style={{ fontSize:12, color:"rgba(139,141,255,0.55)", letterSpacing:"0.14em", textTransform:"uppercase" as const }}>In Progress</span>
+      </div>
 
-        {/* Progress bar */}
-        <div style={{ height:2, background:"rgba(255,255,255,0.06)", borderRadius:2, marginBottom:36, overflow:"hidden" }}>
-          <div style={{ height:"100%", background:"#8B8DFF", borderRadius:2, width:`${progress}%`, transition:"width 0.6s ease" }} />
-        </div>
+      <h1 className="font-display" style={{
+        fontSize:"clamp(52px, 9vw, 96px)", fontWeight:700,
+        letterSpacing:"-0.04em", color:"#fff", lineHeight:0.92, marginBottom:20,
+      }}>
+        {STAGE_LABEL[job.status]}
+      </h1>
 
-        {/* Steps */}
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          {PIPELINE_STEPS.map(step => {
-            const done    = visited.includes(step.key);
-            const active  = current === step.key && !done;
-            const pending = !done && !active;
-            return (
-              <div key={step.key} style={{ display:"flex", alignItems:"center", gap:12 }}>
-                {done   ? <span className="font-mono-plex" style={{ fontSize:13, color:"#4ade80",   flexShrink:0, lineHeight:1 }}>✓</span>
-                : active ? <span className="font-mono-plex" style={{ fontSize:13, color:"#8B8DFF",   flexShrink:0, lineHeight:1, animation:"mlPulse 1.4s ease-in-out infinite" }}>→</span>
-                :           <span className="font-mono-plex" style={{ fontSize:13, color:"rgba(255,255,255,0.15)", flexShrink:0, lineHeight:1 }}>○</span>}
-                <span className="font-display" style={{
-                  fontSize:13, flex:1,
-                  fontWeight: active ? 500 : 400,
-                  color: active ? "#fff" : done ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.2)",
-                }}>
-                  {step.label}
-                </span>
-                {active && <div style={{ width:14, height:14, borderRadius:"50%", border:"1.5px solid rgba(139,141,255,0.2)", borderTopColor:"#8B8DFF", flexShrink:0, animation:"mlSpin 0.8s linear infinite" }} />}
-              </div>
-            );
-          })}
-        </div>
+      <p className="font-sans-switzer" style={{
+        fontSize:"clamp(14px, 2vw, 17px)", color:"rgba(255,255,255,0.3)",
+        maxWidth:480, lineHeight:1.65, marginBottom:52,
+      }}>
+        {STAGE_SUB[job.status]}
+      </p>
 
-        {/* Package ID */}
-        <div style={{ marginTop:36, padding:"12px 16px", background:"rgba(255,255,255,0.025)", border:`1px solid ${BORDER}`, borderRadius:10, overflow:"hidden" }}>
-          <span className="font-mono-plex" style={{ fontSize:11, color:"rgba(255,255,255,0.22)", whiteSpace:"nowrap", display:"block", overflow:"hidden", textOverflow:"ellipsis" }}>
-            {job.id}
-          </span>
-        </div>
+      <div style={{ width:"min(300px, 80vw)", height:2, borderRadius:99, background:"rgba(255,255,255,0.07)", overflow:"hidden" }}>
+        <div style={{
+          height:"100%", width:"45%", borderRadius:99,
+          background:"linear-gradient(90deg, transparent, #8B8DFF, transparent)",
+          animation:"mlMarquee 2s linear infinite",
+        }} />
+      </div>
+
+      <div className="font-mono-plex" style={{ marginTop:32, fontSize:11, color:"rgba(255,255,255,0.14)", wordBreak:"break-all", maxWidth:500 }}>
+        {job.id}
       </div>
     </div>
   );
@@ -427,7 +416,7 @@ export default function AuditPage() {
         )}
 
         {/* Pipeline running */}
-        {isLive && <LoadingCard job={job} />}
+        {isLive && <LoadingScreen job={job} />}
 
         {/* Failed */}
         {isFailed && (
