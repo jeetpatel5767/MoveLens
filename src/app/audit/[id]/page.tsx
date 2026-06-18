@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { AuroraBackground } from "@/components/landing/home/AuroraBackground";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -65,7 +66,7 @@ interface JobStatus {
   updatedAt: string;
 }
 
-// ── Tokens ────────────────────────────────────────────────────────────────────
+// ── Design tokens ─────────────────────────────────────────────────────────────
 
 const SEV: Record<Severity, string> = {
   critical: "#ff5c5c",
@@ -82,13 +83,31 @@ const GRADE_LABEL: Record<string, string> = {
   A: "Clean", B: "Low Risk", C: "Medium Risk", D: "High Risk", F: "Critical Risk",
 };
 
-const DIVIDER = "1px solid rgba(184,180,255,0.07)";
-
-const CARD: React.CSSProperties = {
-  borderRadius: 16,
-  background: "rgba(8,6,20,0.65)",
-  border: DIVIDER,
+// Matches /app page form glass exactly
+const FORM_GLASS: React.CSSProperties = {
+  background: "rgba(10,8,20,0.42)",
+  backdropFilter: "blur(64px) saturate(210%) brightness(112%)",
+  WebkitBackdropFilter: "blur(64px) saturate(210%) brightness(112%)",
+  border: "1px solid rgba(184,180,255,0.14)",
+  boxShadow: [
+    "0 48px 120px rgba(0,0,0,0.55)",
+    "0 12px 40px rgba(0,0,0,0.35)",
+    "inset 0 1.5px 0 rgba(255,255,255,0.13)",
+    "inset 0 -1px 0 rgba(0,0,0,0.3)",
+    "0 0 0 0.5px rgba(184,180,255,0.07)",
+  ].join(", "),
 };
+
+// Gallery card style from /app page
+const GALLERY_CARD: React.CSSProperties = {
+  background: "rgba(10,8,20,0.52)",
+  backdropFilter: "blur(32px) saturate(180%)",
+  WebkitBackdropFilter: "blur(32px) saturate(180%)",
+  border: "1px solid rgba(184,180,255,0.13)",
+  boxShadow: "0 24px 64px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+};
+
+const CARD_DIVIDER = "1px solid rgba(184,180,255,0.1)";
 
 const SOURCE: Record<FindingSource, { label: string; color: string; bg: string }> = {
   layer1: { label: "L1 · Rule",   color: "#b8b4ff", bg: "rgba(184,180,255,0.09)" },
@@ -97,18 +116,31 @@ const SOURCE: Record<FindingSource, { label: string; color: string; bg: string }
   layer4: { label: "L4 · ML",     color: "#ff8b5c", bg: "rgba(255,140,92,0.09)" },
 };
 
-const STAGES: { key: AuditStatus; label: string; sub: string }[] = [
-  { key: "fetching",   label: "Fetch Package",    sub: "Sui GraphQL · modules" },
-  { key: "auditing",   label: "4-Layer Analysis", sub: "65 rules · OZ · LanceDB · Groq" },
-  { key: "encrypting", label: "Seal Encryption",  sub: "IBE threshold" },
-  { key: "uploading",  label: "Walrus Upload",    sub: "5-epoch storage" },
-  { key: "linking",    label: "MVR Link",         sub: "On-chain registration" },
-  { key: "done",       label: "Complete",         sub: "Report ready" },
-];
-
 const TERMINAL: AuditStatus[] = ["done", "failed"];
 
-// ── Micro ─────────────────────────────────────────────────────────────────────
+const STAGE_LABEL: Record<AuditStatus, string> = {
+  queued:     "Queued",
+  fetching:   "Fetching Package",
+  auditing:   "Running Analysis",
+  encrypting: "Encrypting Report",
+  uploading:  "Uploading to Walrus",
+  linking:    "Linking On-Chain",
+  done:       "Complete",
+  failed:     "Failed",
+};
+
+const STAGE_SUB: Record<AuditStatus, string> = {
+  queued:     "Waiting for a worker slot…",
+  fetching:   "Pulling modules via Sui GraphQL",
+  auditing:   "65 rules · OZ benchmarks · LanceDB recall · Groq ML",
+  encrypting: "IBE threshold encryption via Seal",
+  uploading:  "5-epoch permanent storage",
+  linking:    "Writing blob ID via MVR on-chain tx",
+  done:       "Report ready",
+  failed:     "An error occurred",
+};
+
+// ── Spinner ───────────────────────────────────────────────────────────────────
 
 function Spinner({ size = 16, color = "#b8b4ff" }: { size?: number; color?: string }) {
   return (
@@ -120,63 +152,53 @@ function Spinner({ size = 16, color = "#b8b4ff" }: { size?: number; color?: stri
   );
 }
 
-function Check() {
+// ── Severity bar chart (vertical bars) ───────────────────────────────────────
+
+function SeverityBars({ counts }: { counts: SeverityCounts }) {
+  const bars = [
+    { key: "critical" as Severity, count: counts.critical, label: "Critical" },
+    { key: "high"     as Severity, count: counts.high,     label: "High"     },
+    { key: "medium"   as Severity, count: counts.medium,   label: "Medium"   },
+    { key: "low"      as Severity, count: counts.low,      label: "Low"      },
+  ];
+  const max = Math.max(...bars.map(b => b.count), 1);
+  const BAR_MAX_H = 110;
+
   return (
-    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-      <path d="M1.5 5.5l2.5 2.5L9.5 2" stroke="#5cffb1" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div style={{ display: "flex", gap: 10, alignItems: "flex-end", height: BAR_MAX_H + 68 }}>
+      {bars.map(({ key, count, label }) => {
+        const color = SEV[key];
+        const h = count > 0 ? Math.max(6, Math.round((count / max) * BAR_MAX_H)) : 3;
+        return (
+          <div key={key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
+            <div className="font-display" style={{
+              fontSize: 34, fontWeight: 800, letterSpacing: "-0.04em",
+              color: count > 0 ? color : "rgba(255,255,255,0.1)",
+              lineHeight: 1, marginBottom: 10,
+            }}>
+              {count}
+            </div>
+            <div style={{
+              width: "100%", height: h,
+              background: count > 0 ? color : "rgba(255,255,255,0.05)",
+              borderRadius: "5px 5px 0 0",
+              opacity: count > 0 ? 0.78 : 1,
+              transition: "height 0.9s cubic-bezier(0.4,0,0.2,1)",
+            }} />
+            <div className="font-display" style={{
+              fontSize: 10, color: count > 0 ? color + "99" : "rgba(255,255,255,0.2)",
+              textTransform: "uppercase" as const, letterSpacing: "0.1em", marginTop: 9,
+            }}>
+              {label}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
-// ── Donut chart ───────────────────────────────────────────────────────────────
-
-function DonutChart({ counts }: { counts: SeverityCounts }) {
-  const total = counts.critical + counts.high + counts.medium + counts.low;
-  const r = 68, cx = 84, cy = 84, sw = 15;
-  const circ = 2 * Math.PI * r;
-
-  const segs = [
-    { key: "critical", count: counts.critical, color: SEV.critical },
-    { key: "high",     count: counts.high,     color: SEV.high },
-    { key: "medium",   count: counts.medium,   color: SEV.medium },
-    { key: "low",      count: counts.low,      color: SEV.low },
-  ].filter(s => s.count > 0);
-
-  let cum = 0;
-
-  return (
-    <svg viewBox="0 0 168 168" width={168} height={168} aria-hidden>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={sw} />
-      {total === 0
-        ? <circle cx={cx} cy={cy} r={r} fill="none" stroke="#5cffb1" strokeWidth={sw} opacity={0.25} />
-        : segs.map(seg => {
-            const pct = seg.count / total;
-            const arc = pct * circ;
-            const off = -(cum * circ);
-            cum += pct;
-            return (
-              <circle key={seg.key} cx={cx} cy={cy} r={r} fill="none"
-                stroke={seg.color} strokeWidth={sw}
-                strokeDasharray={`${arc} ${circ}`}
-                strokeDashoffset={off}
-                transform={`rotate(-90 ${cx} ${cy})`}
-                opacity={0.88}
-              />
-            );
-          })}
-      <text x={cx} y={cy - 7} textAnchor="middle" fill="#f5f5f7"
-        fontSize="26" fontWeight="800" fontFamily="Cabinet Grotesk, sans-serif" letterSpacing="-1">
-        {total}
-      </text>
-      <text x={cx} y={cy + 13} textAnchor="middle" fill="rgba(255,255,255,0.25)"
-        fontSize="9.5" fontFamily="Cabinet Grotesk, sans-serif" letterSpacing="0.06em">
-        FINDINGS
-      </text>
-    </svg>
-  );
-}
-
-// ── Category bars ─────────────────────────────────────────────────────────────
+// ── Category horizontal bars ──────────────────────────────────────────────────
 
 function CategoryChart({ findings }: { findings: Finding[] }) {
   const cats = useMemo(() => {
@@ -193,70 +215,25 @@ function CategoryChart({ findings }: { findings: Finding[] }) {
   const max = cats[0]?.[1].count ?? 1;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
       {cats.map(([cat, { count, topSev }]) => (
         <div key={cat}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-            <span className="font-mono-plex" style={{ fontSize: 9.5, color: "rgba(255,255,255,0.38)", letterSpacing: "0.06em" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span className="font-mono-plex" style={{ fontSize: 11, color: "rgba(255,255,255,0.38)", letterSpacing: "0.06em" }}>
               {cat.toUpperCase()}
             </span>
-            <span className="font-display" style={{ fontSize: 11, fontWeight: 700, color: SEV[topSev] }}>{count}</span>
+            <span className="font-display" style={{ fontSize: 14, fontWeight: 700, color: SEV[topSev] }}>{count}</span>
           </div>
-          <div style={{ height: 3, borderRadius: 99, overflow: "hidden", background: "rgba(255,255,255,0.05)" }}>
+          <div style={{ height: 5, borderRadius: 99, overflow: "hidden", background: "rgba(255,255,255,0.05)" }}>
             <div style={{
               height: "100%", borderRadius: 99,
               width: `${(count / max) * 100}%`,
-              background: SEV[topSev],
-              opacity: 0.65,
-              transition: "width 0.8s cubic-bezier(0.4,0,0.2,1)",
+              background: SEV[topSev], opacity: 0.65,
+              transition: "width 0.9s cubic-bezier(0.4,0,0.2,1)",
             }} />
           </div>
         </div>
       ))}
-    </div>
-  );
-}
-
-// ── Pipeline ──────────────────────────────────────────────────────────────────
-
-function Pipeline({ job }: { job: JobStatus }) {
-  const failed = job.status === "failed";
-  const done   = job.status === "done";
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-      {STAGES.map((stage, i) => {
-        const visited  = job.stagesVisited?.includes(stage.key) ?? false;
-        const active   = job.status === stage.key && !failed;
-        const failHere = failed && job.status === stage.key;
-        const complete = (visited && !active && !failHere) || (stage.key === "done" && done);
-        const pending  = !visited && !active && !failHere;
-        const last     = i === STAGES.length - 1;
-
-        const dotBg     = complete ? "rgba(92,255,177,0.12)"  : active ? "rgba(184,180,255,0.12)" : failHere ? "rgba(255,92,92,0.1)" : "rgba(255,255,255,0.03)";
-        const dotBorder = complete ? "rgba(92,255,177,0.3)"   : active ? "rgba(184,180,255,0.4)"  : failHere ? "rgba(255,92,92,0.3)" : "rgba(255,255,255,0.08)";
-        const textColor = active   ? "#f5f5f7" : complete ? "rgba(255,255,255,0.6)" : failHere ? "#ff5c5c" : "rgba(255,255,255,0.22)";
-
-        return (
-          <div key={stage.key} style={{ display: "flex", gap: 10, opacity: pending ? 0.28 : 1 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 18, flexShrink: 0 }}>
-              <div style={{ width: 18, height: 18, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: dotBg, border: `1px solid ${dotBorder}`, flexShrink: 0 }}>
-                {active    ? <Spinner size={9} /> :
-                 complete  ? <Check /> :
-                 failHere  ? <span style={{ fontSize: 8, color: "#ff5c5c" }}>✕</span> :
-                             <span className="font-mono-plex" style={{ fontSize: 7.5, color: "rgba(255,255,255,0.2)" }}>{i + 1}</span>}
-              </div>
-              {!last && <div style={{ width: 1, flex: 1, minHeight: 10, marginTop: 3, background: complete ? "rgba(92,255,177,0.18)" : "rgba(255,255,255,0.05)" }} />}
-            </div>
-            <div style={{ paddingBottom: last ? 0 : 12, paddingTop: 1 }}>
-              <div className="font-display" style={{ fontSize: 12, fontWeight: 500, color: textColor }}>{stage.label}</div>
-              {(active || complete) && (
-                <div className="font-display" style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", marginTop: 1 }}>{stage.sub}</div>
-              )}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }
@@ -271,85 +248,86 @@ function FindingRow({ finding, idx }: { finding: Finding; idx: number }) {
 
   return (
     <div style={{
-      border: open ? `1px solid ${c}28` : DIVIDER,
-      borderRadius: 13,
+      border: open ? `1px solid ${c}28` : CARD_DIVIDER,
+      borderRadius: 14,
       overflow: "hidden",
-      background: open ? `${c}07` : "rgba(6,4,16,0.5)",
+      background: open ? `${c}06` : "rgba(10,8,20,0.45)",
+      backdropFilter: "blur(24px)",
+      WebkitBackdropFilter: "blur(24px)",
       transition: "border-color 0.15s, background 0.15s",
     }}>
       <button type="button" onClick={() => setOpen(v => !v)}
-        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 10, padding: "11px 14px", cursor: "pointer", background: "transparent", border: "none" }}>
+        style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer", background: "transparent", border: "none" }}>
 
-        <div style={{ width: 7, height: 7, borderRadius: "50%", background: c, flexShrink: 0, boxShadow: `0 0 6px ${c}70` }} />
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: c, flexShrink: 0, boxShadow: `0 0 8px ${c}70` }} />
 
-        <span className="font-mono-plex" style={{ fontSize: 9, color: "rgba(255,255,255,0.22)", width: 16, flexShrink: 0, textAlign: "right" }}>
+        <span className="font-mono-plex" style={{ fontSize: 9.5, color: "rgba(255,255,255,0.2)", width: 18, flexShrink: 0, textAlign: "right" }}>
           {String(idx + 1).padStart(2, "0")}
         </span>
 
-        <span className="font-mono-plex" style={{ fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.45)", flexShrink: 0, whiteSpace: "nowrap" }}>
+        <span className="font-mono-plex" style={{ fontSize: 11, padding: "2px 7px", borderRadius: 6, background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)", flexShrink: 0, whiteSpace: "nowrap" }}>
           {finding.rule_id}
         </span>
 
-        <span className="font-sans-switzer" style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span className="font-sans-switzer" style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {finding.description}
         </span>
 
-        <span className="font-display" style={{ fontSize: 9, padding: "2px 7px", borderRadius: 99, background: src.bg, color: src.color, flexShrink: 0, whiteSpace: "nowrap" }}>
+        <span className="font-display" style={{ fontSize: 9.5, padding: "2px 8px", borderRadius: 99, background: src.bg, color: src.color, flexShrink: 0, whiteSpace: "nowrap" }}>
           {src.label}
         </span>
 
-        <span className="font-mono-plex" style={{ fontSize: 9, color: "rgba(255,255,255,0.2)", flexShrink: 0 }}>:{finding.line_start}</span>
+        <span className="font-mono-plex" style={{ fontSize: 9.5, color: "rgba(255,255,255,0.18)", flexShrink: 0 }}>:{finding.line_start}</span>
 
-        <span style={{ fontSize: 9, color: "rgba(184,180,255,0.3)", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.18s ease", flexShrink: 0 }}>▼</span>
+        <span style={{ fontSize: 9, color: "rgba(184,180,255,0.3)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.18s ease", flexShrink: 0 }}>▼</span>
       </button>
 
       {open && (
-        <div style={{ borderTop: DIVIDER, padding: "16px 16px 18px", display: "flex", flexDirection: "column", gap: 14 }}>
-          {/* Location + confidence */}
+        <div style={{ borderTop: CARD_DIVIDER, padding: "18px 18px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span className="font-mono-plex" style={{ fontSize: 10, padding: "3px 8px", borderRadius: 7, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)" }}>
+            <span className="font-mono-plex" style={{ fontSize: 11, padding: "3px 9px", borderRadius: 7, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.45)" }}>
               {finding.module}:{finding.line_start}{finding.line_end !== finding.line_start ? `–${finding.line_end}` : ""}
             </span>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 100 }}>
-              <span className="font-display" style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", whiteSpace: "nowrap" }}>confidence</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, flex: 1, minWidth: 120 }}>
+              <span className="font-display" style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", whiteSpace: "nowrap" }}>confidence</span>
               <div style={{ flex: 1, height: 2, borderRadius: 99, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
                 <div style={{ height: "100%", width: `${pct}%`, background: c, opacity: 0.55, transition: "width 0.4s ease", borderRadius: 99 }} />
               </div>
-              <span className="font-mono-plex" style={{ fontSize: 9, color: "rgba(255,255,255,0.28)", flexShrink: 0 }}>{pct}%</span>
+              <span className="font-mono-plex" style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", flexShrink: 0 }}>{pct}%</span>
             </div>
           </div>
 
           <div>
-            <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.3)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 5 }}>Description</div>
-            <p className="font-sans-switzer" style={{ fontSize: 13, lineHeight: 1.65, color: "rgba(255,255,255,0.58)" }}>{finding.description}</p>
+            <div className="font-display" style={{ fontSize: 10, color: "rgba(184,180,255,0.3)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6 }}>Description</div>
+            <p className="font-sans-switzer" style={{ fontSize: 14, lineHeight: 1.65, color: "rgba(255,255,255,0.55)" }}>{finding.description}</p>
           </div>
 
           <div>
-            <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.3)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 5 }}>Recommendation</div>
-            <p className="font-sans-switzer" style={{ fontSize: 13, lineHeight: 1.65, color: "rgba(255,255,255,0.58)" }}>{finding.recommendation}</p>
+            <div className="font-display" style={{ fontSize: 10, color: "rgba(184,180,255,0.3)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 6 }}>Recommendation</div>
+            <p className="font-sans-switzer" style={{ fontSize: 14, lineHeight: 1.65, color: "rgba(255,255,255,0.55)" }}>{finding.recommendation}</p>
           </div>
 
           {finding.patch_after && (
             <div>
-              <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.3)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 8 }}>Suggested Fix</div>
-              <div style={{ display: "grid", gridTemplateColumns: finding.patch_before ? "1fr 1fr" : "1fr", gap: 8 }}>
+              <div className="font-display" style={{ fontSize: 10, color: "rgba(184,180,255,0.3)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginBottom: 10 }}>Suggested Fix</div>
+              <div style={{ display: "grid", gridTemplateColumns: finding.patch_before ? "1fr 1fr" : "1fr", gap: 10 }}>
                 {finding.patch_before && (
                   <div>
-                    <div className="font-display" style={{ fontSize: 9, color: SEV.critical, marginBottom: 5, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Before</div>
-                    <pre className="font-mono-plex" style={{ fontSize: 11, lineHeight: 1.6, whiteSpace: "pre-wrap", borderRadius: 10, padding: 12, background: "rgba(255,92,92,0.05)", border: "1px solid rgba(255,92,92,0.12)", color: "rgba(255,200,200,0.7)", overflow: "auto", margin: 0 }}>
+                    <div className="font-display" style={{ fontSize: 9.5, color: SEV.critical, marginBottom: 6, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>Before</div>
+                    <pre className="font-mono-plex" style={{ fontSize: 12, lineHeight: 1.6, whiteSpace: "pre-wrap", borderRadius: 10, padding: 12, background: "rgba(255,92,92,0.05)", border: "1px solid rgba(255,92,92,0.12)", color: "rgba(255,200,200,0.7)", overflow: "auto", margin: 0 }}>
                       <code>{finding.patch_before}</code>
                     </pre>
                   </div>
                 )}
                 <div>
-                  <div className="font-display" style={{ fontSize: 9, color: "#5cffb1", marginBottom: 5, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>After</div>
-                  <pre className="font-mono-plex" style={{ fontSize: 11, lineHeight: 1.6, whiteSpace: "pre-wrap", borderRadius: 10, padding: 12, background: "rgba(92,255,177,0.05)", border: "1px solid rgba(92,255,177,0.12)", color: "rgba(180,255,220,0.7)", overflow: "auto", margin: 0 }}>
+                  <div className="font-display" style={{ fontSize: 9.5, color: "#5cffb1", marginBottom: 6, textTransform: "uppercase" as const, letterSpacing: "0.08em" }}>After</div>
+                  <pre className="font-mono-plex" style={{ fontSize: 12, lineHeight: 1.6, whiteSpace: "pre-wrap", borderRadius: 10, padding: 12, background: "rgba(92,255,177,0.05)", border: "1px solid rgba(92,255,177,0.12)", color: "rgba(180,255,220,0.7)", overflow: "auto", margin: 0 }}>
                     <code>{finding.patch_after}</code>
                   </pre>
                 </div>
               </div>
               <button type="button" onClick={() => void navigator.clipboard.writeText(finding.patch_after!)}
-                className="font-display" style={{ fontSize: 10, color: "#b8b4ff", marginTop: 8, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+                className="font-display" style={{ fontSize: 11, color: "#b8b4ff", marginTop: 10, background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
                 Copy fix →
               </button>
             </div>
@@ -373,8 +351,7 @@ function FindingsList({ findings }: { findings: Finding[] }) {
 
   return (
     <div>
-      {/* Filter strip */}
-      <div style={{ display: "flex", gap: 5, marginBottom: 14, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
         {(["all", "critical", "high", "medium", "low"] as const).map(s => {
           const cnt = s === "all" ? findings.length : bySev[s].length;
           if (s !== "all" && cnt === 0) return null;
@@ -384,20 +361,19 @@ function FindingsList({ findings }: { findings: Finding[] }) {
             <button key={s} type="button" onClick={() => setFilter(s)}
               className="font-display"
               style={{
-                fontSize: 11, padding: "4px 11px", borderRadius: 99, cursor: "pointer",
-                border: `1px solid ${active ? col + "55" : "rgba(255,255,255,0.06)"}`,
+                fontSize: 12, padding: "5px 14px", borderRadius: 99, cursor: "pointer",
+                border: `1px solid ${active ? col + "55" : "rgba(255,255,255,0.07)"}`,
                 background: active ? col + "14" : "transparent",
                 color: active ? col : "rgba(255,255,255,0.3)",
                 transition: "all 0.12s",
               }}>
               {s === "all" ? "All" : s[0].toUpperCase() + s.slice(1)}
-              {" "}<span style={{ opacity: 0.55 }}>{cnt}</span>
+              {" "}<span style={{ opacity: 0.5 }}>{cnt}</span>
             </button>
           );
         })}
       </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {shown.map(f => {
           const card = <FindingRow key={`${f.rule_id}-${i}`} finding={f} idx={i} />;
           i++;
@@ -451,367 +427,380 @@ export default function AuditPage() {
   const total = critical + high + medium + low;
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#000", color: "#f5f5f7" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#000", color: "#f5f5f7", position: "relative" }}>
+
+      {/* ── Aurora — fixed, always behind everything ──────────────────────── */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, overflow: "hidden" }}>
+        <AuroraBackground />
+      </div>
 
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
       <nav style={{
-        borderBottom: "1px solid rgba(184,180,255,0.07)",
-        padding: "0 28px", height: 50,
-        display: "flex", alignItems: "center", gap: 8,
         position: "sticky", top: 0, zIndex: 30,
-        background: "rgba(0,0,0,0.9)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(184,180,255,0.07)",
+        padding: "0 28px", height: 52,
+        display: "flex", alignItems: "center", gap: 8,
+        background: "rgba(0,0,0,0.88)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
       }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 7, textDecoration: "none" }}>
           <img src="/Logo.png" alt="MoveLens" style={{ height: 22 }} />
-          <span className="font-display" style={{ fontSize: 13, fontWeight: 700, color: "#f5f5f7" }}>MoveLens</span>
+          <span className="font-display" style={{ fontSize: 14, fontWeight: 700, color: "#f5f5f7" }}>MoveLens</span>
         </Link>
-        <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 11 }}>/</span>
-        <span className="font-display" style={{ fontSize: 11, color: "rgba(255,255,255,0.28)" }}>Audit</span>
-        <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 11 }}>/</span>
-        <span className="font-mono-plex" style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 12 }}>/</span>
+        <span className="font-display" style={{ fontSize: 12, color: "rgba(255,255,255,0.28)" }}>Audit</span>
+        <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 12 }}>/</span>
+        <span className="font-mono-plex" style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {auditId}
         </span>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           {isLive && (
             <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <Spinner size={12} />
-              <span className="font-display" style={{ fontSize: 11, color: "#b8b4ff" }}>Analyzing</span>
+              <span className="font-display" style={{ fontSize: 12, color: "#b8b4ff" }}>
+                {STAGE_LABEL[job.status]}
+              </span>
             </span>
           )}
-          {isDone && <span className="font-display" style={{ fontSize: 10, padding: "3px 10px", borderRadius: 99, background: "rgba(92,255,177,0.08)", color: "#5cffb1", border: "1px solid rgba(92,255,177,0.2)" }}>Complete</span>}
-          {isFailed && <span className="font-display" style={{ fontSize: 10, padding: "3px 10px", borderRadius: 99, background: "rgba(255,92,92,0.08)", color: "#ff5c5c", border: "1px solid rgba(255,92,92,0.2)" }}>Failed</span>}
+          {isDone   && <span className="font-display" style={{ fontSize: 11, padding: "3px 11px", borderRadius: 99, background: "rgba(92,255,177,0.08)",  color: "#5cffb1",  border: "1px solid rgba(92,255,177,0.2)"  }}>Complete</span>}
+          {isFailed && <span className="font-display" style={{ fontSize: 11, padding: "3px 11px", borderRadius: 99, background: "rgba(255,92,92,0.08)",   color: "#ff5c5c",  border: "1px solid rgba(255,92,92,0.2)"  }}>Failed</span>}
         </div>
       </nav>
 
-      {/* ── Hero ────────────────────────────────────────────────────────────── */}
-      {job && (
-        <div style={{ position: "relative", overflow: "hidden" }}>
-          {/* Aurora glow */}
-          <div aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            <div style={{
-              position: "absolute", top: "-60%", left: "50%", transform: "translateX(-50%)",
-              width: "120%", height: "260%",
-              background: isDone
-                ? `radial-gradient(ellipse 65% 45% at 50% 0%, ${gradeColor}1a 0%, transparent 65%)`
-                : "radial-gradient(ellipse 65% 45% at 50% 0%, rgba(184,180,255,0.13) 0%, transparent 65%)",
-              animation: "mlAurora 18s ease-in-out infinite",
-            }} />
+      {/* ── Error ───────────────────────────────────────────────────────────── */}
+      {fetchErr && (
+        <div style={{ position: "relative", zIndex: 10, maxWidth: 1440, margin: "20px auto", width: "100%", padding: "0 28px" }}>
+          <div className="font-sans-switzer" style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,92,92,0.06)", border: "1px solid rgba(255,92,92,0.2)", color: "#ff5c5c", fontSize: 14 }}>
+            Failed to load: {fetchErr}
           </div>
-
-          <div style={{ maxWidth: 1440, margin: "0 auto", padding: "36px 28px 0", position: "relative" }}>
-            {isDone && report ? (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
-                {/* Left: title + meta */}
-                <div>
-                  <div className="font-display" style={{ fontSize: 10, color: "rgba(255,193,92,0.5)", marginBottom: 14, display: "flex", alignItems: "center", gap: 5 }}>
-                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,193,92,0.5)", display: "inline-block", flexShrink: 0 }} />
-                    Automated pre-screen — not a substitute for a human audit.
-                  </div>
-                  <h1 className="font-display" style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-0.03em", color: "#f5f5f7", lineHeight: 1, marginBottom: 8 }}>
-                    Security Report
-                  </h1>
-                  {report.package.mvrName && (
-                    <div className="font-display" style={{ fontSize: 17, fontWeight: 600, color: "#b8b4ff", marginBottom: 5 }}>
-                      {report.package.mvrName}
-                    </div>
-                  )}
-                  <div className="font-mono-plex" style={{ fontSize: 10.5, color: "rgba(255,255,255,0.22)", wordBreak: "break-all", maxWidth: 540, marginBottom: 12 }}>
-                    {report.package.packageId}
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    {[
-                      `${report.package.moduleCount} module${report.package.moduleCount !== 1 ? "s" : ""}`,
-                      `v${report.package.version}`,
-                      new Date(report.generated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-                    ].map((t, i, arr) => (
-                      <span key={t} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span className="font-display" style={{ fontSize: 11, color: "rgba(255,255,255,0.28)" }}>{t}</span>
-                        {i < arr.length - 1 && <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>}
-                      </span>
-                    ))}
-                    <span className="font-display" style={{ fontSize: 10, padding: "2px 8px", borderRadius: 99, background: report.package.network === "mainnet" ? "rgba(184,180,255,0.08)" : "rgba(77,162,255,0.08)", color: report.package.network === "mainnet" ? "#b8b4ff" : "#4da2ff", border: `1px solid ${report.package.network === "mainnet" ? "rgba(184,180,255,0.18)" : "rgba(77,162,255,0.18)"}` }}>
-                      {report.package.network}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Right: grade */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                  <div style={{ position: "relative" }}>
-                    <div style={{ position: "absolute", inset: -24, background: `radial-gradient(circle, ${gradeColor}28 0%, transparent 70%)`, borderRadius: "50%", filter: "blur(18px)" }} />
-                    <div className="font-display" style={{ fontSize: 112, fontWeight: 900, letterSpacing: "-0.04em", color: gradeColor, lineHeight: 0.88, position: "relative" }}>
-                      {grade}
-                    </div>
-                  </div>
-                  <div className="font-display" style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: "0.04em" }}>
-                    {GRADE_LABEL[grade]}
-                  </div>
-                </div>
-              </div>
-            ) : isFailed ? (
-              <div>
-                <h1 className="font-display" style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.03em", color: "#ff5c5c" }}>Audit Failed</h1>
-                {job.error && <p className="font-sans-switzer" style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", marginTop: 6 }}>{job.error}</p>}
-              </div>
-            ) : (
-              <div>
-                <h1 className="font-display" style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.03em", color: "#f5f5f7", marginBottom: 6 }}>
-                  Analyzing Contract
-                </h1>
-                <p className="font-mono-plex" style={{ fontSize: 10.5, color: "rgba(255,255,255,0.22)", wordBreak: "break-all" }}>{auditId}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Severity stat cards */}
-          {isDone && report && (
-            <div style={{ maxWidth: 1440, margin: "0 auto", padding: "22px 28px 0" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-                {([
-                  { sev: "critical" as Severity, count: critical, label: "Critical" },
-                  { sev: "high"     as Severity, count: high,     label: "High" },
-                  { sev: "medium"   as Severity, count: medium,   label: "Medium" },
-                  { sev: "low"      as Severity, count: low,      label: "Low" },
-                ]).map(({ sev, count, label }) => (
-                  <div key={sev} style={{
-                    borderRadius: 14, padding: "16px 18px",
-                    background: count > 0 ? `${SEV[sev]}0c` : "rgba(255,255,255,0.02)",
-                    border: `1px solid ${count > 0 ? SEV[sev] + "28" : "rgba(255,255,255,0.04)"}`,
-                  }}>
-                    <div className="font-display" style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-0.04em", color: count > 0 ? SEV[sev] : "rgba(255,255,255,0.12)", lineHeight: 1 }}>
-                      {count}
-                    </div>
-                    <div className="font-display" style={{ fontSize: 10, color: count > 0 ? SEV[sev] + "aa" : "rgba(255,255,255,0.18)", textTransform: "uppercase" as const, letterSpacing: "0.1em", marginTop: 4 }}>
-                      {label}
-                    </div>
-                    <div style={{ height: 2, borderRadius: 99, marginTop: 10, background: count > 0 ? SEV[sev] : "rgba(255,255,255,0.04)", opacity: count > 0 ? Math.min(1, 0.25 + (count / Math.max(total, 1))) : 0.3 }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* ── Main grid ───────────────────────────────────────────────────────── */}
-      <main style={{ flex: 1, maxWidth: 1440, margin: "0 auto", width: "100%", padding: "20px 28px 48px" }}>
+      {/* ── Initial spinner ─────────────────────────────────────────────────── */}
+      {!job && !fetchErr && (
+        <div style={{ position: "relative", zIndex: 10, flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 14, padding: "80px 28px", flexDirection: "column" }}>
+          <Spinner size={20} />
+          <span className="font-display" style={{ fontSize: 15, color: "rgba(255,255,255,0.28)" }}>Loading audit…</span>
+        </div>
+      )}
 
-        {fetchErr && (
-          <div className="font-sans-switzer" style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(255,92,92,0.06)", border: "1px solid rgba(255,92,92,0.2)", color: "#ff5c5c", fontSize: 13 }}>
-            Failed to load: {fetchErr}
+      {/* ── Pipeline running: full-page loading screen ───────────────────────── */}
+      {isLive && (
+        <div style={{
+          position: "relative", zIndex: 10,
+          flex: 1, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "80px 28px", textAlign: "center",
+          minHeight: "calc(100vh - 52px)",
+        }}>
+          {/* Status pill */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 32 }}>
+            <div style={{
+              width: 9, height: 9, borderRadius: "50%",
+              background: "#b8b4ff",
+              boxShadow: "0 0 14px rgba(184,180,255,0.85)",
+              animation: "mlPulse 1.5s ease-in-out infinite",
+            }} />
+            <span className="font-display" style={{ fontSize: 13, color: "rgba(184,180,255,0.55)", letterSpacing: "0.14em", textTransform: "uppercase" as const }}>
+              In Progress
+            </span>
           </div>
-        )}
 
-        {!job && !fetchErr && (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, padding: "80px 0" }}>
-            <Spinner size={18} />
-            <span className="font-display" style={{ fontSize: 14, color: "rgba(255,255,255,0.28)" }}>Loading audit…</span>
+          {/* Big stage text */}
+          <h1
+            className="font-display"
+            style={{
+              fontSize: "clamp(52px, 9vw, 96px)",
+              fontWeight: 800,
+              letterSpacing: "-0.04em",
+              color: "#f5f5f7",
+              lineHeight: 0.92,
+              marginBottom: 22,
+            }}
+          >
+            {STAGE_LABEL[job.status]}
+          </h1>
+
+          {/* Subtitle */}
+          <p className="font-sans-switzer" style={{
+            fontSize: "clamp(14px, 2vw, 18px)",
+            color: "rgba(255,255,255,0.3)",
+            maxWidth: 500,
+            lineHeight: 1.65,
+            marginBottom: 56,
+          }}>
+            {STAGE_SUB[job.status]}
+          </p>
+
+          {/* Marquee line */}
+          <div style={{ width: "min(300px, 80vw)", height: 2, borderRadius: 99, background: "rgba(255,255,255,0.07)", overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: "45%",
+              background: "linear-gradient(90deg, transparent, #b8b4ff, transparent)",
+              animation: "mlMarquee 2s linear infinite",
+              borderRadius: 99,
+            }} />
           </div>
-        )}
 
-        {job && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16, alignItems: "start" }}>
+          {/* Package ID */}
+          <div className="font-mono-plex" style={{ marginTop: 36, fontSize: 11, color: "rgba(255,255,255,0.14)", wordBreak: "break-all", maxWidth: 500 }}>
+            {auditId}
+          </div>
+        </div>
+      )}
 
-            {/* ── LEFT ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* ── Failed ──────────────────────────────────────────────────────────── */}
+      {isFailed && (
+        <div style={{
+          position: "relative", zIndex: 10, flex: 1,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "80px 28px", textAlign: "center",
+        }}>
+          <h1 className="font-display" style={{ fontSize: "clamp(52px, 9vw, 88px)", fontWeight: 800, letterSpacing: "-0.04em", color: "#ff5c5c", lineHeight: 0.92, marginBottom: 18 }}>
+            Failed
+          </h1>
+          {job?.error && (
+            <p className="font-sans-switzer" style={{ fontSize: 16, color: "rgba(255,255,255,0.32)", maxWidth: 420, lineHeight: 1.65 }}>{job.error}</p>
+          )}
+          <Link href="/app" className="font-display" style={{ fontSize: 13, color: "#b8b4ff", textDecoration: "none", marginTop: 36, opacity: 0.65 }}>
+            ← Try again
+          </Link>
+        </div>
+      )}
 
-              {/* Degraded banner */}
-              {isDone && job.degraded && (
-                <div style={{ padding: "13px 16px", borderRadius: 12, background: "rgba(255,193,92,0.04)", border: "1px solid rgba(255,193,92,0.16)" }}>
-                  <div className="font-display" style={{ fontSize: 12, fontWeight: 600, color: "#ffc15c", marginBottom: 3 }}>⚠ Cached reference audit shown</div>
-                  <p className="font-sans-switzer" style={{ fontSize: 11.5, color: "rgba(255,193,92,0.48)", lineHeight: 1.55 }}>
-                    Live Walrus upload was unavailable. Findings are real; only the on-chain storage step used a fallback.
-                  </p>
-                </div>
-              )}
+      {/* ── Done: full dashboard ─────────────────────────────────────────────── */}
+      {isDone && report && (
+        <div style={{ position: "relative", zIndex: 10, flex: 1 }}>
 
-              {/* Charts row */}
-              {isDone && report && (
-                <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 12 }}>
-                  {/* Donut */}
-                  <div style={{ ...CARD, padding: "18px 20px", display: "flex", flexDirection: "column", gap: 12 }}>
-                    <div className="font-display" style={{ fontSize: 10.5, fontWeight: 600, color: "rgba(255,255,255,0.28)" }}>Distribution</div>
-                    <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                      <DonutChart counts={report.severity_counts} />
-                      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                        {(["critical", "high", "medium", "low"] as Severity[]).map(s => {
-                          const cnt = report.severity_counts[s];
-                          const pct = total > 0 ? Math.round((cnt / total) * 100) : 0;
-                          return (
-                            <div key={s} style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                              <div style={{ width: 7, height: 7, borderRadius: "50%", background: SEV[s], flexShrink: 0 }} />
-                              <span className="font-display" style={{ fontSize: 10.5, color: "rgba(255,255,255,0.42)", width: 50 }}>
-                                {s[0].toUpperCase() + s.slice(1)}
-                              </span>
-                              <span className="font-display" style={{ fontSize: 13, fontWeight: 700, color: cnt > 0 ? SEV[s] : "rgba(255,255,255,0.15)", width: 18 }}>{cnt}</span>
-                              <span className="font-mono-plex" style={{ fontSize: 9.5, color: "rgba(255,255,255,0.18)" }}>{pct}%</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+          {/* Hero */}
+          <div style={{ maxWidth: 1440, margin: "0 auto", padding: "42px 28px 26px" }}>
+            <div className="font-display" style={{ fontSize: 11, color: "rgba(255,193,92,0.42)", marginBottom: 18, display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(255,193,92,0.5)", display: "inline-block" }} />
+              Automated pre-screen — not a substitute for a human audit.
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 20, flexWrap: "wrap" }}>
+              <div>
+                <h1 className="font-display" style={{ fontSize: "clamp(38px, 5vw, 60px)", fontWeight: 800, letterSpacing: "-0.035em", color: "#f5f5f7", lineHeight: 1, marginBottom: 10 }}>
+                  Security Report
+                </h1>
+                {report.package.mvrName && (
+                  <div className="font-display" style={{ fontSize: 22, fontWeight: 600, color: "#b8b4ff", marginBottom: 7 }}>
+                    {report.package.mvrName}
                   </div>
+                )}
+                <div className="font-mono-plex" style={{ fontSize: 11.5, color: "rgba(255,255,255,0.22)", wordBreak: "break-all", maxWidth: 580, marginBottom: 14 }}>
+                  {report.package.packageId}
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  {[
+                    `${report.package.moduleCount} module${report.package.moduleCount !== 1 ? "s" : ""}`,
+                    `v${report.package.version}`,
+                    new Date(report.generated_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+                  ].map((t, i, arr) => (
+                    <span key={t} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span className="font-display" style={{ fontSize: 14, color: "rgba(255,255,255,0.3)" }}>{t}</span>
+                      {i < arr.length - 1 && <span style={{ color: "rgba(255,255,255,0.1)" }}>·</span>}
+                    </span>
+                  ))}
+                  <span className="font-display" style={{ fontSize: 12, padding: "3px 11px", borderRadius: 99, background: report.package.network === "mainnet" ? "rgba(184,180,255,0.08)" : "rgba(77,162,255,0.08)", color: report.package.network === "mainnet" ? "#b8b4ff" : "#4da2ff", border: `1px solid ${report.package.network === "mainnet" ? "rgba(184,180,255,0.18)" : "rgba(77,162,255,0.18)"}` }}>
+                    {report.package.network}
+                  </span>
+                </div>
+              </div>
 
-                  {/* Categories */}
-                  <div style={{ ...CARD, padding: "18px 20px" }}>
-                    <div className="font-display" style={{ fontSize: 10.5, fontWeight: 600, color: "rgba(255,255,255,0.28)", marginBottom: 14 }}>By Category</div>
-                    <CategoryChart findings={report.findings} />
-                    {/* Engine badges */}
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 16, paddingTop: 12, borderTop: "1px solid rgba(184,180,255,0.06)" }}>
+              {/* Grade letter */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0, paddingBottom: 6 }}>
+                <div style={{ position: "relative" }}>
+                  <div style={{ position: "absolute", inset: -30, background: `radial-gradient(circle, ${gradeColor}22 0%, transparent 70%)`, borderRadius: "50%", filter: "blur(22px)" }} />
+                  <div className="font-display" style={{ fontSize: "clamp(80px, 10vw, 120px)", fontWeight: 900, letterSpacing: "-0.04em", color: gradeColor, lineHeight: 0.88, position: "relative" }}>
+                    {grade}
+                  </div>
+                </div>
+                <div className="font-display" style={{ fontSize: 13, color: "rgba(255,255,255,0.28)", letterSpacing: "0.04em" }}>
+                  {GRADE_LABEL[grade]}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Degraded banner */}
+          {job.degraded && (
+            <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 28px 14px" }}>
+              <div style={{ padding: "14px 18px", borderRadius: 14, background: "rgba(255,193,92,0.04)", border: "1px solid rgba(255,193,92,0.14)" }}>
+                <div className="font-display" style={{ fontSize: 14, fontWeight: 600, color: "#ffc15c", marginBottom: 4 }}>⚠ Cached reference audit shown</div>
+                <p className="font-sans-switzer" style={{ fontSize: 13, color: "rgba(255,193,92,0.42)", lineHeight: 1.55 }}>
+                  Live Walrus upload was unavailable. Findings are real; only the on-chain storage step used a fallback.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Two-column grid */}
+          <div style={{ maxWidth: 1440, margin: "0 auto", padding: "0 28px 56px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 300px", gap: 16, alignItems: "start" }}>
+
+              {/* ── LEFT ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+                {/* Charts row */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+
+                  {/* Severity bars */}
+                  <div style={{ ...FORM_GLASS, borderRadius: 24, padding: "24px 26px", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} />
+                    <div className="font-display" style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.28)", marginBottom: 20 }}>
+                      Severity Distribution
+                    </div>
+                    <SeverityBars counts={report.severity_counts} />
+                    <div style={{ borderTop: "1px solid rgba(184,180,255,0.07)", marginTop: 22, paddingTop: 16, display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {[
-                        { label: "L1 · 65 rules", c: "#b8b4ff", bg: "rgba(184,180,255,0.07)", b: "rgba(184,180,255,0.14)" },
-                        { label: "L2 · OZ",        c: "#4da2ff", bg: "rgba(77,162,255,0.07)",  b: "rgba(77,162,255,0.14)"  },
-                        ...(report.memory_context_used ? [{ label: `L3 · ${report.layer3_hits ?? 0} hits`, c: "#5cffb1", bg: "rgba(92,255,177,0.07)", b: "rgba(92,255,177,0.14)" }] : []),
-                        ...(report.layer4_used ? [{ label: "L4 · ML", c: "#ff8b5c", bg: "rgba(255,140,92,0.07)", b: "rgba(255,140,92,0.14)" }] : []),
-                      ].map(({ label, c, bg, b }) => (
-                        <span key={label} className="font-display" style={{ fontSize: 9, padding: "3px 8px", borderRadius: 99, background: bg, color: c, border: `1px solid ${b}` }}>
+                        { label: "L1 · 65 rules", c: "#b8b4ff", bg: "rgba(184,180,255,0.07)" },
+                        { label: "L2 · OZ",        c: "#4da2ff", bg: "rgba(77,162,255,0.07)"  },
+                        ...(report.memory_context_used ? [{ label: `L3 · ${report.layer3_hits ?? 0} hits`, c: "#5cffb1", bg: "rgba(92,255,177,0.07)" }] : []),
+                        ...(report.layer4_used ? [{ label: "L4 · ML", c: "#ff8b5c", bg: "rgba(255,140,92,0.07)" }] : []),
+                      ].map(({ label, c, bg }) => (
+                        <span key={label} className="font-display" style={{ fontSize: 10.5, padding: "3px 10px", borderRadius: 99, background: bg, color: c, border: `1px solid ${c}30` }}>
                           {label}
                         </span>
                       ))}
                     </div>
                   </div>
-                </div>
-              )}
 
-              {/* Analyzing visual */}
-              {isLive && (
-                <div style={{ ...CARD, padding: "40px 28px", display: "flex", flexDirection: "column", alignItems: "center", gap: 22 }}>
-                  <div style={{ position: "relative", width: 72, height: 72 }}>
-                    <div style={{ width: 72, height: 72, borderRadius: "50%", border: "1.5px solid rgba(184,180,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <div style={{ width: 52, height: 52, borderRadius: "50%", border: "1.5px solid rgba(184,180,255,0.07)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <Spinner size={22} />
-                      </div>
+                  {/* Category chart */}
+                  <div style={{ ...FORM_GLASS, borderRadius: 24, padding: "24px 26px", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", inset: "0 0 auto", height: 1, background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12) 50%, transparent)" }} />
+                    <div className="font-display" style={{ fontSize: 13, fontWeight: 600, color: "rgba(255,255,255,0.28)", marginBottom: 20 }}>
+                      By Category
                     </div>
-                    <div style={{ position: "absolute", top: "50%", left: -6, right: -6, height: 1, background: "linear-gradient(90deg, transparent, rgba(184,180,255,0.35), transparent)", animation: "mlScan 2.6s ease-in-out infinite", marginTop: -0.5 }} />
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div className="font-display" style={{ fontSize: 14, fontWeight: 600, color: "rgba(255,255,255,0.55)", marginBottom: 4 }}>Running 4-Layer Analysis</div>
-                    <div className="font-sans-switzer" style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>65 rules · OZ benchmarks · LanceDB recall · Groq ML</div>
-                  </div>
-                  <div style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 8 }}>
-                    {[
-                      { label: "L1 Deterministic", color: "#b8b4ff" },
-                      { label: "L2 OZ Benchmark",  color: "#4da2ff" },
-                      { label: "L3 Semantic",       color: "#5cffb1" },
-                      { label: "L4 ML",             color: "#ff8b5c" },
-                    ].map((l, idx) => (
-                      <div key={l.label} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span className="font-mono-plex" style={{ fontSize: 9, color: "rgba(255,255,255,0.22)", width: 110, flexShrink: 0 }}>{l.label}</span>
-                        <div style={{ flex: 1, height: 2, borderRadius: 99, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", background: l.color, width: "55%", animation: `mlPulse 2.4s ease-in-out infinite ${idx * 0.18}s`, borderRadius: 99 }} />
-                        </div>
-                      </div>
-                    ))}
+                    <CategoryChart findings={report.findings} />
                   </div>
                 </div>
-              )}
 
-              {/* Failed */}
-              {isFailed && job.error && (
-                <div style={{ ...CARD, padding: "16px 18px", background: "rgba(255,92,92,0.04)", borderColor: "rgba(255,92,92,0.18)" }}>
-                  <div className="font-display" style={{ fontSize: 13, fontWeight: 600, color: "#ff5c5c", marginBottom: 6 }}>Pipeline error</div>
-                  <p className="font-sans-switzer" style={{ fontSize: 13, color: "rgba(255,160,160,0.65)", lineHeight: 1.6 }}>{job.error}</p>
-                </div>
-              )}
-
-              {/* Findings */}
-              {isDone && report && (
-                <div style={{ ...CARD, padding: "18px 20px" }}>
+                {/* Findings */}
+                <div style={{ ...GALLERY_CARD, borderRadius: 24, padding: "24px 26px" }}>
                   {report.findings.length > 0 ? (
                     <>
-                      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 14 }}>
-                        <h2 className="font-display" style={{ fontSize: 17, fontWeight: 700, letterSpacing: "-0.02em", color: "#f5f5f7" }}>Findings</h2>
-                        <span className="font-display" style={{ fontSize: 12, color: "rgba(255,255,255,0.25)" }}>{report.findings.length} total</span>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 18 }}>
+                        <h2 className="font-display" style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em", color: "#f5f5f7" }}>Findings</h2>
+                        <span className="font-display" style={{ fontSize: 14, color: "rgba(255,255,255,0.25)" }}>{report.findings.length} total</span>
                       </div>
                       <FindingsList findings={report.findings} />
                     </>
                   ) : (
-                    <div style={{ textAlign: "center", padding: "36px 20px" }}>
-                      <div className="font-display" style={{ fontSize: 68, fontWeight: 900, letterSpacing: "-0.04em", color: "#5cffb1", lineHeight: 0.88, marginBottom: 12 }}>A</div>
-                      <div className="font-display" style={{ fontSize: 15, fontWeight: 600, color: "#5cffb1", marginBottom: 5 }}>Clean contract</div>
-                      <p className="font-sans-switzer" style={{ fontSize: 13, color: "rgba(255,255,255,0.28)" }}>No findings across all analysis layers.</p>
+                    <div style={{ textAlign: "center", padding: "44px 20px" }}>
+                      <div className="font-display" style={{ fontSize: 88, fontWeight: 900, letterSpacing: "-0.04em", color: "#5cffb1", lineHeight: 0.88, marginBottom: 16 }}>A</div>
+                      <div className="font-display" style={{ fontSize: 20, fontWeight: 600, color: "#5cffb1", marginBottom: 8 }}>Clean contract</div>
+                      <p className="font-sans-switzer" style={{ fontSize: 15, color: "rgba(255,255,255,0.28)" }}>No findings across all analysis layers.</p>
                     </div>
                   )}
                 </div>
-              )}
 
-              {(isDone || isFailed) && (
                 <div style={{ textAlign: "center", paddingTop: 4 }}>
-                  <Link href="/app" className="font-display" style={{ fontSize: 12, color: "#b8b4ff", textDecoration: "none", opacity: 0.6 }}>← Run another audit</Link>
+                  <Link href="/app" className="font-display" style={{ fontSize: 13, color: "#b8b4ff", textDecoration: "none", opacity: 0.55 }}>← Run another audit</Link>
                 </div>
-              )}
-            </div>
-
-            {/* ── RIGHT SIDEBAR ── */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "sticky", top: 62 }}>
-
-              {/* Pipeline */}
-              <div style={{ ...CARD, padding: "16px 16px 18px" }}>
-                <div className="font-display" style={{ fontSize: 10.5, fontWeight: 600, color: "rgba(255,255,255,0.28)", marginBottom: 14 }}>Analysis Pipeline</div>
-                <Pipeline job={job} />
               </div>
 
-              {/* Provenance */}
-              {isDone && (
-                <div style={{ ...CARD, padding: "16px 16px 18px" }}>
-                  <div className="font-display" style={{ fontSize: 10.5, fontWeight: 600, color: "rgba(255,255,255,0.28)", marginBottom: 12 }}>Provenance</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {/* ── RIGHT SIDEBAR ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "sticky", top: 64 }}>
+
+                {/* Severity 2×2 grid card — gallery style */}
+                <div style={{ ...GALLERY_CARD, borderRadius: 20, overflow: "hidden" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
+                    {([
+                      { sev: "critical" as Severity, count: critical },
+                      { sev: "high"     as Severity, count: high },
+                      { sev: "medium"   as Severity, count: medium },
+                      { sev: "low"      as Severity, count: low },
+                    ]).map(({ sev, count }, i) => (
+                      <div key={sev} style={{
+                        padding: "18px 20px",
+                        borderRight: i % 2 === 0 ? CARD_DIVIDER : "none",
+                        borderBottom: i < 2 ? CARD_DIVIDER : "none",
+                        borderTop: `2px solid ${count > 0 ? SEV[sev] : "rgba(255,255,255,0.06)"}`,
+                      }}>
+                        <div className="font-display" style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.04em", color: count > 0 ? SEV[sev] : "rgba(255,255,255,0.1)", lineHeight: 1, marginBottom: 5 }}>
+                          {count}
+                        </div>
+                        <div className="font-display" style={{ fontSize: 9, color: count > 0 ? SEV[sev] + "99" : "rgba(255,255,255,0.2)", textTransform: "uppercase" as const, letterSpacing: "0.12em" }}>
+                          {sev}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Severity stripe */}
+                  <div style={{ height: 3, display: "flex" }}>
+                    {critical > 0 && <div style={{ flex: critical, background: SEV.critical }} />}
+                    {high     > 0 && <div style={{ flex: high,     background: SEV.high }} />}
+                    {medium   > 0 && <div style={{ flex: medium,   background: SEV.medium }} />}
+                    {low      > 0 && <div style={{ flex: low,      background: SEV.low }} />}
+                    {total === 0  && <div style={{ flex: 1,        background: "#5cffb1" }} />}
+                  </div>
+                  <div style={{ padding: "14px 20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span className="font-display" style={{ fontSize: 12, color: "rgba(255,255,255,0.2)" }}>{total} total findings</span>
+                    <span className="font-display" style={{ fontSize: 24, fontWeight: 800, letterSpacing: "-0.04em", color: gradeColor }}>{grade}</span>
+                  </div>
+                </div>
+
+                {/* Provenance */}
+                <div style={{ ...FORM_GLASS, borderRadius: 20, padding: "18px 20px" }}>
+                  <div className="font-display" style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.28)", marginBottom: 16 }}>Provenance</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     {job.blobId ? (
                       <div>
-                        <div className="font-display" style={{ fontSize: 9, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 5 }}>Walrus Blob</div>
-                        <a href={`https://aggregator.walrus-testnet.walrus.space/v1/blobs/${job.blobId}`} target="_blank" rel="noopener noreferrer" className="font-mono-plex" style={{ fontSize: 9.5, color: "#4da2ff", wordBreak: "break-all", lineHeight: 1.5, display: "block" }}>
+                        <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 6 }}>Walrus Blob</div>
+                        <a href={`https://aggregator.walrus-testnet.walrus.space/v1/blobs/${job.blobId}`} target="_blank" rel="noopener noreferrer" className="font-mono-plex" style={{ fontSize: 10, color: "#4da2ff", wordBreak: "break-all", lineHeight: 1.5, display: "block" }}>
                           {job.blobId}
                         </a>
-                        <div className="font-display" style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", marginTop: 3 }}>AES-256 · 5 epochs</div>
+                        <div className="font-display" style={{ fontSize: 10, color: "rgba(255,255,255,0.18)", marginTop: 4 }}>AES-256 · 5 epochs</div>
                       </div>
                     ) : (
                       <div>
-                        <div className="font-display" style={{ fontSize: 9, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 4 }}>Walrus Blob</div>
-                        <div className="font-display" style={{ fontSize: 10, color: "rgba(255,255,255,0.18)" }}>Not uploaded</div>
+                        <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 4 }}>Walrus Blob</div>
+                        <div className="font-display" style={{ fontSize: 12, color: "rgba(255,255,255,0.18)" }}>Not uploaded</div>
                       </div>
                     )}
                     {job.txDigest && (
                       <div>
-                        <div className="font-display" style={{ fontSize: 9, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 5 }}>MVR Tx</div>
-                        <a href={`https://suiscan.xyz/testnet/tx/${job.txDigest}`} target="_blank" rel="noopener noreferrer" className="font-mono-plex" style={{ fontSize: 9.5, color: "#4da2ff", wordBreak: "break-all" }}>
+                        <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 6 }}>MVR Tx</div>
+                        <a href={`https://suiscan.xyz/testnet/tx/${job.txDigest}`} target="_blank" rel="noopener noreferrer" className="font-mono-plex" style={{ fontSize: 10, color: "#4da2ff", wordBreak: "break-all" }}>
                           {job.txDigest}
                         </a>
                       </div>
                     )}
                     <div>
-                      <div className="font-display" style={{ fontSize: 9, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 5 }}>Seal</div>
-                      <span className="font-display" style={{ fontSize: 9.5, padding: "2px 8px", borderRadius: 99, background: report?.sealed ? "rgba(92,255,177,0.07)" : "rgba(255,255,255,0.04)", color: report?.sealed ? "#5cffb1" : "rgba(255,255,255,0.22)", border: `1px solid ${report?.sealed ? "rgba(92,255,177,0.18)" : "rgba(255,255,255,0.06)"}` }}>
-                        {report?.sealed ? "IBE encrypted" : "Plaintext fallback"}
+                      <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 6 }}>Seal</div>
+                      <span className="font-display" style={{ fontSize: 11, padding: "3px 9px", borderRadius: 99, background: report.sealed ? "rgba(92,255,177,0.07)" : "rgba(255,255,255,0.04)", color: report.sealed ? "#5cffb1" : "rgba(255,255,255,0.22)", border: `1px solid ${report.sealed ? "rgba(92,255,177,0.18)" : "rgba(255,255,255,0.06)"}` }}>
+                        {report.sealed ? "IBE encrypted" : "Plaintext fallback"}
                       </span>
                     </div>
-                    {report && (
-                      <div>
-                        <div className="font-display" style={{ fontSize: 9, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 4 }}>Generated</div>
-                        <div className="font-sans-switzer" style={{ fontSize: 11, color: "rgba(255,255,255,0.35)" }}>
-                          {new Date(report.generated_at).toLocaleString()}
-                        </div>
+                    <div>
+                      <div className="font-display" style={{ fontSize: 9.5, color: "rgba(184,180,255,0.38)", textTransform: "uppercase" as const, letterSpacing: "0.14em", marginBottom: 5 }}>Generated</div>
+                      <div className="font-sans-switzer" style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
+                        {new Date(report.generated_at).toLocaleString()}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </div>
-              )}
 
-              {/* Watermark */}
-              <div style={{ padding: "10px 13px", borderRadius: 11, background: "rgba(255,193,92,0.03)", border: "1px solid rgba(255,193,92,0.07)" }}>
-                <p className="font-display" style={{ fontSize: 9, color: "rgba(255,193,92,0.38)", lineHeight: 1.55, textAlign: "center" }}>
-                  Automated pre-screen — not a substitute for a human audit.
-                </p>
+                {/* Watermark */}
+                <div style={{ padding: "12px 14px", borderRadius: 12, background: "rgba(255,193,92,0.03)", border: "1px solid rgba(255,193,92,0.07)", textAlign: "center" }}>
+                  <p className="font-display" style={{ fontSize: 9.5, color: "rgba(255,193,92,0.35)", lineHeight: 1.6 }}>
+                    Automated pre-screen — not a substitute for a human audit.
+                  </p>
+                </div>
+
               </div>
             </div>
-
           </div>
-        )}
-      </main>
+        </div>
+      )}
 
-      <footer style={{ borderTop: "1px solid rgba(184,180,255,0.06)", padding: "11px 28px", textAlign: "center" }}>
-        <span className="font-display" style={{ fontSize: 10.5, color: "rgba(255,255,255,0.15)" }}>
+      {/* ── Footer ──────────────────────────────────────────────────────────── */}
+      <footer style={{ position: "relative", zIndex: 10, borderTop: "1px solid rgba(184,180,255,0.06)", padding: "12px 28px", textAlign: "center" }}>
+        <span className="font-display" style={{ fontSize: 11, color: "rgba(255,255,255,0.14)" }}>
           Automated pre-screen — not a substitute for a human audit. · Sui Overflow 2026 · Walrus Track
         </span>
       </footer>
