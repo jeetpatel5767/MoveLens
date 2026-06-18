@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { AuroraBackground } from "@/components/landing/home/AuroraBackground";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -96,38 +97,48 @@ const STAGE_SUB: Record<AuditStatus, string> = {
 function LoadingScreen({ job }: { job:JobStatus }) {
   return (
     <div style={{
-      minHeight:"calc(100vh - 64px)", display:"flex", flexDirection:"column",
+      position:"relative", minHeight:"calc(100vh - 64px)", overflow:"hidden",
+      display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center", padding:"80px 28px", textAlign:"center",
     }}>
-      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:32 }}>
-        <div style={{ width:8, height:8, borderRadius:"50%", background:"#8B8DFF", boxShadow:"0 0 12px rgba(139,141,255,0.8)", animation:"mlPulse 1.5s ease-in-out infinite" }} />
-        <span className="font-display" style={{ fontSize:12, color:"rgba(139,141,255,0.55)", letterSpacing:"0.14em", textTransform:"uppercase" as const }}>In Progress</span>
+      {/* Aurora image */}
+      <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:0 }}>
+        <AuroraBackground />
       </div>
 
-      <h1 className="font-display" style={{
-        fontSize:"clamp(52px, 9vw, 96px)", fontWeight:700,
-        letterSpacing:"-0.04em", color:"#fff", lineHeight:0.92, marginBottom:20,
-      }}>
-        {STAGE_LABEL[job.status]}
-      </h1>
+      {/* Content above aurora */}
+      <div style={{ position:"relative", zIndex:1, display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:36 }}>
+          <div style={{ width:8, height:8, borderRadius:"50%", background:"#b8b4ff", boxShadow:"0 0 14px rgba(184,180,255,0.9)", animation:"mlPulse 1.5s ease-in-out infinite" }} />
+          <span className="font-display" style={{ fontSize:12, color:"rgba(184,180,255,0.6)", letterSpacing:"0.16em", textTransform:"uppercase" as const }}>In Progress</span>
+        </div>
 
-      <p className="font-sans-switzer" style={{
-        fontSize:"clamp(14px, 2vw, 17px)", color:"rgba(255,255,255,0.3)",
-        maxWidth:480, lineHeight:1.65, marginBottom:52,
-      }}>
-        {STAGE_SUB[job.status]}
-      </p>
+        <h1 className="font-display" style={{
+          fontSize:"clamp(52px, 9vw, 96px)", fontWeight:800,
+          letterSpacing:"-0.04em", color:"#fff", lineHeight:0.92, marginBottom:22,
+          textShadow:"0 2px 40px rgba(184,180,255,0.18)",
+        }}>
+          {STAGE_LABEL[job.status]}
+        </h1>
 
-      <div style={{ width:"min(300px, 80vw)", height:2, borderRadius:99, background:"rgba(255,255,255,0.07)", overflow:"hidden" }}>
-        <div style={{
-          height:"100%", width:"45%", borderRadius:99,
-          background:"linear-gradient(90deg, transparent, #8B8DFF, transparent)",
-          animation:"mlMarquee 2s linear infinite",
-        }} />
-      </div>
+        <p className="font-sans-switzer" style={{
+          fontSize:"clamp(14px, 2vw, 17px)", color:"rgba(255,255,255,0.38)",
+          maxWidth:460, lineHeight:1.65, marginBottom:56,
+        }}>
+          {STAGE_SUB[job.status]}
+        </p>
 
-      <div className="font-mono-plex" style={{ marginTop:32, fontSize:11, color:"rgba(255,255,255,0.14)", wordBreak:"break-all", maxWidth:500 }}>
-        {job.id}
+        <div style={{ width:"min(300px, 80vw)", height:2, borderRadius:99, background:"rgba(184,180,255,0.1)", overflow:"hidden" }}>
+          <div style={{
+            height:"100%", width:"45%", borderRadius:99,
+            background:"linear-gradient(90deg, transparent, #b8b4ff, transparent)",
+            animation:"mlMarquee 2s linear infinite",
+          }} />
+        </div>
+
+        <div className="font-mono-plex" style={{ marginTop:36, fontSize:11, color:"rgba(255,255,255,0.18)", wordBreak:"break-all", maxWidth:500 }}>
+          {job.id}
+        </div>
       </div>
     </div>
   );
