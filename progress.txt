@@ -755,3 +755,31 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     Deadline: June 21, 2026 — 4 days remaining.
 - Issues found: none
 - Artifacts: none (no on-chain TXs this session)
+
+[2026-06-18] Session 28
+- Worked on: Bug fix — sidecarHealthy() always returning false despite sidecar running
+- Completed (tested end-to-end):
+  Root cause: Windows Node.js resolves 'localhost' to '::1' (IPv6), but Flask binds 0.0.0.0
+  (IPv4 only). Every fetch() to http://localhost:8765 got ECONNREFUSED → catch block → false.
+  The Session 19 fix (change localhost→127.0.0.1) was applied to the runtime env but never
+  persisted to the files, so it regressed in every session after.
+  Fixed ALL five locations:
+    - .env: LAYER4_SIDECAR_URL=http://127.0.0.1:8765
+    - .env.example: same
+    - src/lib/env.ts: default changed to http://127.0.0.1:8765
+    - src/lib/audit/layer4.ts: fallback changed to http://127.0.0.1:8765
+    - src/lib/memory/lancedb-memory.ts: fallback changed to http://127.0.0.1:8765
+  Also bumped sidecarHealthy() timeout 2s → 5s (engine.ts:173) for slow Windows startup.
+  Verified: `npx tsx -e sidecarHealthy()` → true with sidecar running on :8765.
+- Commits: 82de1f5 fix(layer4): resolve IPv6/IPv4 localhost mismatch — sidecarHealthy() now reachable
+- Current state: init.sh should be green. Layer 4 now active on audits. sidecarHealthy()=true confirmed.
+- Next session should:
+    Run a full audit end-to-end (e.g. Cetus mainnet) with Layer 4 active and confirm layer4 appears
+    in layersRun[], findings include ML-INT-L4-001, and the report page shows Layer 4 badge.
+    Deadline: June 21, 2026 — 3 days remaining.
+- Issues found:
+    The IPv6/IPv4 mismatch was a silent regression — the fallback `?? "http://localhost:8765"` in
+    layer4.ts and lancedb-memory.ts also bypassed any .env fix, so even correcting .env alone would
+    not have been sufficient. All five locations needed changing.
+    test/check-balance.ts has pre-existing TS errors (SuiClient import) — unrelated to this fix.
+- Artifacts: none
