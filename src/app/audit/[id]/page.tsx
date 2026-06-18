@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { AuroraBackground } from "@/components/landing/home/AuroraBackground";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -377,11 +376,6 @@ export default function AuditPage() {
 
   return (
     <div style={{ minHeight:"100vh", background:BG, color:"#fff", position:"relative" }}>
-
-      {/* Aurora */}
-      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
-        <AuroraBackground />
-      </div>
 
       {/* ── NAV ─────────────────────────────────────────────────────────────── */}
       <nav style={{
