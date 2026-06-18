@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { AuroraBackground } from "@/components/landing/home/AuroraBackground";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -101,9 +100,11 @@ function LoadingScreen({ job }: { job:JobStatus }) {
       display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center", padding:"80px 28px", textAlign:"center",
     }}>
-      {/* Aurora image */}
-      <div style={{ position:"absolute", inset:0, pointerEvents:"none", zIndex:0 }}>
-        <AuroraBackground />
+      {/* Aurora — fixed so it covers the full viewport including the header gap */}
+      <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0 }}>
+        <img src="/Aurora.png" alt="" style={{ position:"absolute", top:0, left:0, width:"100%", opacity:0.85 }} />
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:220, background:"linear-gradient(to bottom, black, transparent)" }} />
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:420, background:"linear-gradient(to top, black 30%, transparent)" }} />
       </div>
 
       {/* Content above aurora */}
