@@ -96,15 +96,13 @@ const STAGE_SUB: Record<AuditStatus, string> = {
 function LoadingScreen({ job }: { job:JobStatus }) {
   return (
     <div style={{
-      position:"relative", minHeight:"calc(100vh - 64px)", overflow:"hidden",
+      position:"relative", minHeight:"calc(100vh - 104px)", overflow:"hidden",
       display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center", padding:"80px 28px", textAlign:"center",
     }}>
-      {/* Aurora — fixed so it covers the full viewport including the header gap */}
+      {/* Aurora — fixed, full-viewport cover, no gradient overlays */}
       <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0 }}>
-        <img src="/Aurora.png" alt="" style={{ position:"absolute", top:0, left:0, width:"100%", opacity:0.85 }} />
-        <div style={{ position:"absolute", top:0, left:0, right:0, height:220, background:"linear-gradient(to bottom, black, transparent)" }} />
-        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:420, background:"linear-gradient(to top, black 30%, transparent)" }} />
+        <img src="/Aurora.png" alt="" style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top", opacity:0.92 }} />
       </div>
 
       {/* Content above aurora */}
@@ -380,15 +378,14 @@ export default function AuditPage() {
 
       {/* ── NAV ─────────────────────────────────────────────────────────────── */}
       <nav style={{
-        position:"fixed", top:0, left:0, right:0, height:64, zIndex:100,
-        background:"rgba(10,10,10,0.88)", backdropFilter:"blur(16px)",
+        position:"fixed", top:0, left:0, right:0, zIndex:100,
+        background:"rgba(10,10,10,0.72)", backdropFilter:"blur(16px)",
         WebkitBackdropFilter:"blur(16px)", borderBottom:"1px solid rgba(255,255,255,0.06)",
-        display:"flex", alignItems:"center", padding:"0 32px",
+        display:"flex", alignItems:"center", padding:"20px 32px",
       }}>
         <div style={{ display:"flex", alignItems:"center", gap:20, flex:1, minWidth:0 }}>
           <Link href="/" style={{ display:"flex", alignItems:"center", gap:9, textDecoration:"none", flexShrink:0 }}>
-            <img src="/Logo.png" alt="MoveLens" style={{ height:26 }} />
-            <span className="font-display" style={{ fontSize:14, fontWeight:600, color:"#fff", letterSpacing:"-0.02em" }}>MoveLens</span>
+            <img src="/Logo.png" alt="MoveLens" style={{ height:64 }} />
           </Link>
           <div style={{ width:1, height:16, background:"rgba(255,255,255,0.1)", flexShrink:0 }} />
           <div style={{ display:"flex", alignItems:"center", gap:6, overflow:"hidden", minWidth:0 }}>
@@ -407,7 +404,7 @@ export default function AuditPage() {
       </nav>
 
       {/* Fixed nav spacer */}
-      <div style={{ height:64, position:"relative", zIndex:10 }} />
+      <div style={{ height:104, position:"relative", zIndex:10 }} />
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       <div style={{ position:"relative", zIndex:10 }}>
