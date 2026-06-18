@@ -93,24 +93,17 @@ if [ -f scripts/layer4_server.py ]; then
     bad "Layer 4 sidecar NOT running — start it: python scripts/layer4_server.py (required before any audit once Layer 4 exists)"
   fi
   [ -d lancedb_store ] && ok "lancedb_store/ seeded" || bad "lancedb_store/ missing — run: npx tsx scripts/seedLanceDB.ts"
-  if curl -s -o /dev/null http://localhost:11434/api/tags 2>/dev/null; then
-    ok "Ollama running on :11434"
-  else
-    bad "Ollama NOT running on :11434 — start it: ollama serve (required for DeepSeek Model B; heuristic fallback active but Ollama must be running)"
-  fi
 else
   ok "Layer 4 not built yet (deferred until Phases 1-5 green per BRIEFING.md)"
 fi
 
 step "9/9 Layer 3/4 readiness + gallery validity"
 
-# Ollama model check (not just port — verify deepseek-coder model is pulled)
-if command -v ollama >/dev/null 2>&1; then
-  if ollama list 2>/dev/null | grep -q "deepseek-coder"; then
-    ok "deepseek-coder model available in Ollama"
-  else
-    bad "deepseek-coder:1.3b not pulled — run: ollama pull deepseek-coder:1.3b"
-  fi
+# Groq API key check
+if [ -z "${GROQ_API_KEY:-}" ]; then
+  bad "GROQ_API_KEY not set — Layer 4 will run in keyword-heuristic-only fallback mode (no real AI classification). Get a free key at console.groq.com"
+else
+  ok "GROQ_API_KEY configured — Layer 4 will use Groq llama-3.3-70b-versatile for classification"
 fi
 
 # LanceDB corpus size check via sidecar /health

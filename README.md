@@ -17,7 +17,7 @@ hybrid engine that is cheap, fast, and auditable:
 Layer 1 — 65 deterministic regex rules across 13 vulnerability sectors (confidence: 1.0, cost: $0)
 Layer 2 — 10 OpenZeppelin deviation checks, Cetus-class patterns (confidence: 0.95, cost: $0)
 Layer 3 — LanceDB semantic recall: 52-snippet corpus, finds similar past exploits (confidence: variable)
-Layer 4 — DeepSeek-1.3B via Ollama + Groq confirmation (runs by default, cost: $0)
+Layer 4 — Groq llama-3.3-70b-versatile (free tier); keyword heuristic fallback if unavailable (cost: $0)
 ```
 
 Findings are **Seal-encrypted** so only the owner can read the full report.
@@ -41,7 +41,7 @@ POST /api/audit
     │       ├─► Layer 1: 65 regex rules (13 sectors)
     │       ├─► Layer 2: 10 OZ deviation checks
     │       ├─► Layer 3: LanceDB recall (past exploit patterns)
-    │       └─► Layer 4: DeepSeek-1.3B via Ollama (port 8765, local inference)
+    │       └─► Layer 4: Groq llama-3.3-70b-versatile (free tier) + Jina similarity (local, port 8765)
     │
     ├─► encryptReport (Seal IBE threshold encryption)
     │
@@ -66,7 +66,8 @@ GET /api/report/[id] ─► full report JSON + findings
 | Encryption | Seal IBE (`@mysten/seal`) |
 | Registry | MVR / PackageInfo on-chain metadata |
 | Memory | LanceDB-backed semantic recall (via Python sidecar) |
-| ML sidecar | Python · sentence-transformers · LanceDB (port 8765) |
+| ML classification | Groq llama-3.3-70b-versatile (free tier via `GROQ_API_KEY`) |
+| ML sidecar | Python · sentence-transformers (Jina) · LanceDB (port 8765) |
 
 ---
 
@@ -160,21 +161,21 @@ npx tsx test/f14-verify.ts    # Walrus upload + fetch
 
 ## Layer 4 Setup
 
-Layer 4 (DeepSeek-1.3B via Ollama + Groq confirmation) runs by default when
-`init.sh` detects the sidecar on port 8765. If not running, the audit completes
-with Layers 1–3 only.
+Layer 4 uses Groq's free-tier `llama-3.3-70b-versatile` as its primary classifier.
+A keyword-heuristic fallback runs automatically if Groq is unavailable or rate-limited.
+The Python sidecar provides Jina embeddings (Model A similarity) and the fallback `/classify` endpoint.
 
 ```bash
-# Install Python deps
+# 1. Get a free Groq API key at console.groq.com and add it to .env:
+#    GROQ_API_KEY=your_key_here
+
+# 2. Install Python deps
 pip install -r requirements.txt
 
-# Pull the DeepSeek model into Ollama
-ollama pull deepseek-coder:1.3b
-
-# Seed LanceDB corpus (52 reference snippets)
+# 3. Seed LanceDB corpus (52 reference snippets for similarity matching)
 npx tsx scripts/seedLanceDB.ts
 
-# Start sidecar (keep running alongside the dev server)
+# 4. Start sidecar (keep running alongside the dev server)
 python scripts/layer4_server.py
 ```
 
@@ -182,9 +183,8 @@ python scripts/layer4_server.py
 
 ## Beyond the Hackathon
 
-MoveLens is free for open-source Move projects today — all AI layers run locally
-(DeepSeek-1.3B via Ollama, Jina embeddings) or on free tiers (Groq). Zero marginal
-cost per audit.
+MoveLens is free for open-source Move projects today — Jina embeddings run locally,
+classification uses the Groq free tier (llama-3.3-70b-versatile). Zero marginal cost per audit.
 
 Potential paths to sustainability:
 
