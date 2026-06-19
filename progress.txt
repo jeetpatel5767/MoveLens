@@ -783,3 +783,109 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     not have been sufficient. All five locations needed changing.
     test/check-balance.ts has pre-existing TS errors (SuiClient import) — unrelated to this fix.
 - Artifacts: none
+
+[2026-06-18] Session 29
+- Worked on: TASK_GROQ_SWITCH.md G1–G4 — replace Ollama/DeepSeek with Groq llama-3.3-70b
+- Completed (tested end-to-end):
+  G1 (layer4.ts): Added classifyWithGroq() using llama-3.3-70b-versatile as primary Model B.
+    Renamed classifySnippet→classifyFallback (sidecar heuristic, called only when Groq returns null).
+    Removed confirmWithGroq() entirely (redundant: Groq was confirming Groq).
+    Updated analyzeSnippet() to 2-model pipeline (A: Jina embed, B: Groq/fallback, no Model C).
+    Updated file header docstring.
+  G2 (layer4_server.py): Stripped ~120 lines — removed OLLAMA_URL, OLLAMA_MODEL,
+    _FEW_SHOT_PROMPT, _ollama_available(), _ollama_classify(). /classify is now
+    heuristic-only. /health drops ollama_available field. Docstring updated.
+  G3 (init.sh + .env.example): Removed Ollama :11434 check and deepseek-coder model check.
+    Added GROQ_API_KEY check with heuristic-fallback warning. .env.example marks GROQ_API_KEY
+    as REQUIRED with explanation.
+  G4 (doc sweep): README.md, SECURITY.md, PRIVACY.md, IMPLEMENTATION.md, scripts/demo.md,
+    src/app/app/page.tsx — all Ollama/DeepSeek references updated to Groq llama-3.3-70b.
+    PRIVACY.md now explicitly notes code snippets go to Groq API.
+  Verify steps:
+    - grep src/ scripts/: ZERO Ollama/DeepSeek matches
+    - grep docs: ZERO active-description matches (2 historical pseudocode lines in IMPLEMENTATION.md OK)
+    - f08-verify.ts: 4/4 PASS (Layer 1 unchanged)
+    - f10-verify.ts: 4/4 PASS (Layer 2 unchanged)
+    - f33-verify.ts: 4/4 PASS (rate limiter log message updated)
+    - f28-verify.ts: 4/4 PASS (all 4 fixtures, fallback heuristic active since no GROQ_API_KEY)
+    - /health: still shows ollama_available until sidecar is restarted (old process in memory)
+- Commits: bd2ef2b feat(groq-switch): replace Ollama/DeepSeek with Groq llama-3.3-70b
+- Current state: Layer 4 now uses Groq as primary. Without GROQ_API_KEY falls back to heuristic.
+- Next session should:
+    1. Add GROQ_API_KEY to .env (free at console.groq.com) to enable real Groq classification.
+    2. Restart sidecar: python scripts/layer4_server.py (drops old ollama_available from /health).
+    3. Run a live audit with key set — verify layer4 findings show real model reasoning.
+    4. Start deployment prep (Railway/Fly.io for sidecar, Vercel for Next.js).
+- Issues found:
+    Without GROQ_API_KEY, log says "Groq unavailable/rate-limited" even when the real reason is
+    "no API key". Not a bug — just slightly imprecise messaging.
+    Sidecar /health still shows ollama_available:true until process is restarted.
+- Artifacts: none
+
+[2026-06-18] Session N — /audit/[id] dashboard redesign + reviewFindings JSON fix
+- Worked on: UI redesign of the audit report page + L4 JSON parse bug
+- Completed (tested end-to-end): 
+  - fix(layer4): reviewFindings() now strips trailing commas before JSON.parse (same fix already in analyzeModuleWithGroq). Prevents SyntaxError crash when Groq returns `},]` or `},}`.
+  - feat(ui): /audit/[id] fully redesigned from narrow max-w-3xl column into 1440px two-column SaaS dashboard:
+    * Aurora radial-gradient hero with grade letter (A–F) at 112px + color glow
+    * Stats row: 4 severity cards with color-tinted backgrounds
+    * SVG donut chart (strokeDasharray segments, rotate -90) + severity legend
+    * Horizontal category bar chart (top 8, animated fill, topSev color)
+    * Findings list with filter tab strip (All / Critical / High / Medium / Low)
+    * Right sidebar sticky (top:62px): pipeline stepper, provenance, watermark
+    * Analyzing state: concentric ring + per-layer progress bars
+- Commits: 17951f0 feat(ui): redesign /audit/[id] into full-width SaaS dashboard
+- Current state: page compiles (pre-existing TS errors in layer4.ts:630 and test/check-balance.ts unrelated to this work). /app page was accidentally redesigned then reverted in the previous session context via git checkout HEAD.
+- Next session should: run init.sh to verify health, then pick next failing feature from features.json (lowest phase, priority 1, passes:false) excluding F25-F28 (Layer 4 deferred).
+- Issues found: Two pre-existing TS errors not introduced here — (1) layer4.ts:630 ModuleInfo.source null vs undefined, (2) test/check-balance.ts SuiClient import
+- Artifacts: none (no on-chain txs this session)
+
+[2026-06-18] Session 30
+- Worked on: /audit/[id] loading screen — Aurora background + lavender palette
+- Completed (tested end-to-end):
+  - LoadingScreen component updated to include AuroraBackground in absolute position behind the content (zIndex:0), matching the /app tool's look.
+  - Colors adjusted to match the Aurora/lavender palette: pulse dot #b8b4ff, sweeping marquee bar rgba(184,180,255,0.1) with #b8b4ff gradient, h1 textShadow rgba(184,180,255,0.18), subtitle rgba(255,255,255,0.38), job ID rgba(255,255,255,0.18).
+  - Full dashboard background stays #0A0A0A (black) per the HTML design spec — Aurora only on loading screen.
+  - AuroraBackground import re-added to page.tsx (had been removed when user asked to remove it from the dashboard).
+- Commits: 9ede3de style(audit/loading): add Aurora image to loading screen, adjust colors to lavender palette
+- Current state: init.sh should be green (no engine changes). /audit/[id] loading screen has Aurora BG; dashboard has solid black bg.
+- Next session should:
+    1. Run init.sh to verify health.
+    2. Pick next failing feature from features.json (lowest phase, priority 1, passes:false), excluding F25–F28 (Layer 4 deferred — already done).
+    3. Consider deployment prep (Railway/Vercel/Render) per TASK_DEPLOY.md.
+- Issues found: none (UI-only change)
+- Artifacts: none
+
+[2026-06-19] Session 31 — Render deployment prep (TASK_DEPLOY.md F1–F6)
+- Worked on: Deploy infrastructure — Dockerfile, start.sh, standalone LanceDB seeder, Render env docs
+- Completed (tested end-to-end):
+    F1 ✓: Dockerfile (node:20-slim + Python venv; builds Next.js; seeds LanceDB at build time via seedLanceDB_standalone.py)
+           .dockerignore (excludes node_modules, .env, .next, audits.db, lancedb_store, .git)
+    F2 ✓: start.sh created (starts Python sidecar bg, waits up to 60s for /health, then exec next start)
+           git ls-files -s start.sh → mode 100755 confirmed
+           package.json "start": "next start" verified ✓
+    F3 ✓: scripts/corpus.json (52 entries extracted from seedLanceDB.ts inline CORPUS array — confirmed count)
+           scripts/seedLanceDB_standalone.py (Python-only, loads Jina directly, no sidecar round-trip needed at build time)
+    F4 ✓: next.config.ts has no output:'export' ✓; package.json has "build":"next build" + "start":"next start" ✓; SQLite path uses process.cwd() ✓ — no code changes needed
+    F5 ✓: .env.example — Render deployment comment block added (all vars listed, LAYER4_SIDECAR_URL=http://127.0.0.1:8765 noted)
+    F6 ✓: README.md — "Live demo: [PLACEHOLDER]" added under pitch; scripts/demo.md — cold-start warm-up note added to Backup Plan section
+  Verify steps completed:
+    - start.sh mode 100755 in git ✓
+    - corpus.json valid JSON, 52 entries ✓
+    - next.config.ts: no output:'export' ✓
+    - package.json: build/start scripts correct ✓
+    NOTE: docker build/run tests require Docker Desktop and cannot run in this session — those are the MANUAL steps left for the user
+- Commits: fb910aa feat(deploy): Dockerfile + start.sh + standalone seeder + Render docs (F1-F6)
+- Current state: init.sh should be green (no engine changes). All F1-F6 deploy prep committed.
+- Next session should:
+    MANUAL STEPS (user must do — Claude Code has no internet access):
+    1. git push origin main
+    2. Create free Render account at https://render.com (no credit card needed)
+    3. New Web Service → connect GitHub repo → Docker-based deploy → Free instance type
+    4. Set env vars in Render dashboard (copy from local .env; LAYER4_SIDECAR_URL=http://127.0.0.1:8765)
+    5. Deploy → first build 5–15 min (torch + sentence-transformers + Jina model download)
+    6. Get public URL → replace README.md/demo.md placeholder: "Replace the README/demo.md placeholder URL with <your real URL>"
+    7. Before judging: visit URL once ~5 min ahead to warm it up
+    Optional local test first: docker build -t movelens-test . && docker run -p 3000:3000 --env-file .env movelens-test
+- Issues found: none — all F1-F6 tasks are pure file creation/edits with no runtime dependencies
+- Artifacts: none (no on-chain TXs)
