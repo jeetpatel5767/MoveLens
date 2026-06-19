@@ -2,6 +2,8 @@
 
 > **Sui Overflow 2026 · Walrus Specialized Track**
 
+**Live demo:** [PLACEHOLDER — fill in after Render deploy completes]
+
 MoveLens is a zero-cost, 4-layer security engine for Sui Move smart contracts.
 Paste a package address or upload source code — get an encrypted, permanently-stored
 audit report in under 2 minutes.
