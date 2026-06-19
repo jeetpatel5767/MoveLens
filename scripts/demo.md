@@ -121,6 +121,9 @@ Show judges:
 
 ## Backup Plan
 
+If the live URL is cold (idle >15 min), the first request takes ~30-60s to wake
+up. Visit the URL once, 5 minutes before presenting, to warm it up.
+
 If live Walrus upload fails during the demo, the UI automatically shows a cached
 reference audit (controlled by `DEMO_MODE_BLOB_ID` in `.env`, set to the Cetus blob)
 with a clear amber "Cached reference audit shown" banner. The findings displayed are
