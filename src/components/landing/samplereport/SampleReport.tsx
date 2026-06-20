@@ -291,7 +291,7 @@ export function SampleReport() {
   const byLayer = { layer1: 2, layer2: 0, layer3: 0, layer4: 1 };
 
   return (
-    <section id="demo" className="relative w-full px-6 py-20 sm:py-28" style={{ background: BG }}>
+    <section id="demo" className="relative w-full px-6 py-20 sm:py-28">
       {/* Section heading */}
       <div className="max-w-[1100px] mx-auto text-center flex flex-col items-center mb-14 sm:mb-20">
         <h2 className="font-display font-bold text-[40px] sm:text-[64px] md:text-[78px] leading-[0.98] tracking-[-0.03em] text-white">
