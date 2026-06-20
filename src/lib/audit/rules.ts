@@ -51,10 +51,12 @@ const ACC_RULES: Rule[] = [
   {
     id: "ML-ACC-001",
     type: "regex",
-    pattern: /public\s+(entry\s+)?fun\s+\w+[^{]*\{(?!.*(?:AdminCap|OwnerCap|ctx\.sender))/gm,
-    severity: "critical",
-    description: "Public function with no capability or sender guard — anyone can call privileged state mutations.",
-    recommendation: "Change to `fun` (private) or add `_: &AdminCap` parameter.",
+    // Check the parameter list (between parens, same line) for capability types instead of the body.
+    // Narrowed to `public entry fun` only — plain public fns are callable from other modules but not PTBs directly.
+    pattern: /public\s+entry\s+fun\s+\w+[^(]*\((?![^)]*(?:AdminCap|OwnerCap|[A-Z]\w*Cap\b))[^)]*\)/gm,
+    severity: "high",
+    description: "Public entry function with no capability parameter — transaction-callable by anyone without an authorization guard.",
+    recommendation: "Add `_: &AdminCap` parameter or assert `ctx.sender()` inside the body before any privileged state mutation.",
     category: "access_control",
   },
   {
@@ -169,10 +171,12 @@ const OBJ_RULES: Rule[] = [
   {
     id: "ML-OBJ-001",
     type: "regex",
-    pattern: /fun\s+\w+[^(]*\(&mut\s+\w+[^)]*\)(?!.*assert!.*\.owner\s*==\s*ctx\.sender)/gm,
+    // Narrowed to shared-object type names (Pool/Vault/Treasury/Market/Config/State) — these are the objects
+    // where missing owner checks are most dangerous. Plain `&mut T` on any type was too broad.
+    pattern: /public\s+(?:entry\s+)?fun\s+\w+[^(]*\(&mut\s+\w*(?:Pool|Vault|Treasury|Market|Config|State|Registry|Store)\w*[^)]*\)/gm,
     severity: "high",
-    description: "Function takes &mut T without asserting ctx.sender() == object.owner — anyone can mutate.",
-    recommendation: "Add `assert!(obj.owner == ctx.sender(), ENotOwner);` before any mutation.",
+    description: "Public function mutates a shared object (&mut Pool/Vault/Market) — verify ctx.sender() has authority.",
+    recommendation: "Add `assert!(obj.owner == ctx.sender(), ENotOwner);` or require a capability parameter before any mutation.",
     category: "object_ownership",
   },
   {
@@ -335,10 +339,12 @@ const INT_RULES: Rule[] = [
   {
     id: "ML-INT-006",
     type: "regex",
-    pattern: /as\s+u(?:64|32|16|8)(?!.*assert!)/gm,
+    // Require an explicit upcast from u128/u256 before the narrowing cast — that's the real truncation risk.
+    // `as u64` on a u64 or literal is not a truncation; only downcast from wider types matters.
+    pattern: /\bu(?:128|256)\b[^;\n]*\bas\s+u(?:64|32|16|8)\b/gm,
     severity: "high",
-    description: "Narrowing cast (u256/u128 → u64/u32) without preceding max-value assertion — silent truncation.",
-    recommendation: "Assert value fits before casting: `assert!(value <= MAX_U64, EOverflow);`.",
+    description: "Narrowing cast from u128/u256 to a smaller type — intermediate high bits silently truncated.",
+    recommendation: "Assert value fits before casting: `assert!(value <= (MAX_U64 as u128), EOverflow);`.",
     category: "integer_overflow",
   },
 ];
@@ -428,9 +434,11 @@ const HOT_RULES: Rule[] = [
   {
     id: "ML-HOT-002",
     type: "regex",
-    pattern: /fun\s+\w*(?:repay|return_loan|finish)\w*[^{]*\{(?!.*assert!.*(?:pool_id|source_id)\s*==\s*object::id)/gm,
-    severity: "critical",
-    description: "Repayment function doesn't assert receipt.pool_id == object::id(pool) — cross-pool drain attack.",
+    // Match repay/finish functions that accept a Receipt/Loan-type parameter — the cross-pool check must be in the body
+    // which cannot be validated by single-line regex. Flag for manual review instead of false-positive critical.
+    pattern: /fun\s+\w*(?:repay|return_loan|finish_loan|finish)\w*[^(]*\([^)]*(?:Receipt|FlashLoan|Potato|Loan|Borrow)[^)]*\)/gm,
+    severity: "high",
+    description: "Repayment function accepts a receipt/loan struct — verify receipt.pool_id == object::id(pool) to prevent cross-pool drain.",
     recommendation: "Store source ID in receipt at creation; assert on repay: `assert!(receipt.pool_id == object::id(pool), EMismatch)`.",
     category: "hot_potato",
   },
@@ -686,10 +694,12 @@ const DOS_RULES: Rule[] = [
   {
     id: "ML-DOS-001",
     type: "regex",
-    pattern: /(?:while|vector::for_each|loop)\s*[({](?!.*(?:MAX_SIZE|max_size|assert!.*length))/gm,
-    severity: "high",
-    description: "Unbounded loop over user-controlled collection — gas cost grows without bound, eventual DoS.",
-    recommendation: "Cap collection size: `assert!(vector::length(&col) < MAX_SIZE, EFull)`. Process in batches.",
+    // Removed broken same-line negative lookahead (MAX_SIZE check is in the body, not after the opening brace).
+    // Now only flags iteration over user-controlled inputs by looking for common unbounded-growth patterns.
+    pattern: /vector::for_each(?:_ref|_mut)?\s*\(\s*&(?:mut\s+)?\w*(?:user|input|entries|items|list)\w*/gm,
+    severity: "medium",
+    description: "Iterating over a user-supplied collection — gas cost grows with input size, potential DoS.",
+    recommendation: "Cap collection size before iterating: `assert!(vector::length(&col) < MAX_SIZE, EFull)`. Process in batches.",
     category: "denial_of_service",
   },
   {
@@ -829,10 +839,12 @@ const LOG_RULES: Rule[] = [
   {
     id: "ML-LOG-008",
     type: "regex",
-    pattern: /fun\s+\w+<[A-Z]\w*>[^(]*\([^)]*\w+:\s*u(?:64|8|32|16|128|256)[^)]*\)(?!.*(?:type_name::get|coin_type))/gm,
-    severity: "critical",
-    description: "Generic type param + user-supplied index without type_name validation — Navi Protocol asset theft class.",
-    recommendation: "Validate `assert!(type_name::get<T>() == config.coin_type, ETypeMismatch);`.",
+    // Narrowed to only flag when the uint param is named like an index/id (common in asset-registry exploits).
+    // The original body lookahead was single-line and fired on every generic fn with a uint param.
+    pattern: /fun\s+\w+<[A-Z]\w*>[^(]*\([^)]*(?:index|asset_id|token_id|coin_id|market_id)\s*:\s*u(?:64|8|32|16|128|256)[^)]*\)/gm,
+    severity: "high",
+    description: "Generic function with index/id parameter and no type_name validation — Navi Protocol asset theft class.",
+    recommendation: "Validate `assert!(type_name::get<T>() == config.coin_type, ETypeMismatch);` before using the index to look up assets.",
     category: "design_logic",
   },
   {
