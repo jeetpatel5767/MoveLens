@@ -11,7 +11,7 @@
 
 import { runLayer1 } from "./layer1";
 import { runLayer2 } from "./layer2";
-import { runLayer4 } from "./layer4";
+import { runLayer4, reviewFindings } from "./layer4";
 import { sanitizeForPatterns } from "./sanitize";
 import {
   AuditReportSchema,
@@ -203,6 +203,27 @@ export function mergeAndDedupe(findings: Finding[]): Finding[] {
     }
   }
 
+  // Pass 1b — same rule_id + same module cap: keep max 2 per (rule_id, module)
+  // Prevents Layer 1 rules like ML-ACC-001 from firing on every public function.
+  // Keeps the 2 highest-confidence instances to preserve positional context.
+  const ruleModuleGroups = new Map<string, Finding[]>();
+  for (const f of best.values()) {
+    const groupKey = `${f.rule_id}:${f.module}`;
+    const group = ruleModuleGroups.get(groupKey) ?? [];
+    group.push(f);
+    ruleModuleGroups.set(groupKey, group);
+  }
+  const capped = new Map<string, Finding>();
+  for (const group of ruleModuleGroups.values()) {
+    const sorted = group.sort((a, b) => b.confidence - a.confidence).slice(0, 2);
+    for (const f of sorted) {
+      capped.set(`${f.rule_id}:${f.module}:${f.line_start}`, f);
+    }
+  }
+  // Replace best with capped
+  best.clear();
+  for (const [k, v] of capped) best.set(k, v);
+
   // Pass 2 — sector-level cross-layer dedup
   const deduped = [...best.values()];
   const isL4 = (f: Finding) => f.rule_id.includes("-L4-");
@@ -315,21 +336,33 @@ export async function runAudit(
   let l4: Finding[] = [];
   let l4Ms = 0;
   const l4Start = Date.now();
-  if (await sidecarHealthy()) {
+  const groqAvailable   = Boolean(env.GROQ_API_KEY);
+  const sidecarReachable = await sidecarHealthy();
+
+  if (groqAvailable || sidecarReachable) {
     try {
-      l4 = await runLayer4(ctx, memHits);
+      l4 = await Promise.race([
+        runLayer4(ctx, memHits),
+        new Promise<Finding[]>((_, reject) =>
+          setTimeout(() => reject(new Error("Layer 4 timeout (90s)")), 90_000)
+        ),
+      ]);
       layersRun.push("layer4");
     } catch (err) {
       console.warn("[engine] Layer 4 threw — continuing with Layers 1–2 only:", err);
     }
   } else {
-    console.warn("[engine] Layer 4 sidecar unreachable — continuing with Layers 1–2 only");
+    console.warn("[engine] Layer 4 unavailable (no Groq key, sidecar unreachable) — Layers 1–2 only");
   }
   l4Ms = Date.now() - l4Start;
 
   // ── Merge, deduplicate, sort ─────────────────────────────────
-  const merged  = mergeAndDedupe([...l1, ...l2, ...l4]);
-  const findings = sortFindings(merged);
+  const merged = mergeAndDedupe([...l1, ...l2, ...l4]);
+  const sorted = sortFindings(merged);
+
+  // ── Review pass: Groq removes cross-layer duplicates + false positives ──
+  console.log(`[engine] Running Groq review pass on ${sorted.length} finding(s)...`);
+  const findings = await reviewFindings(sorted);
 
   // ── Layer 3 remember: persist high-confidence findings for future recall ─
   for (const f of findings.filter((f) => f.confidence >= 0.8)) {
