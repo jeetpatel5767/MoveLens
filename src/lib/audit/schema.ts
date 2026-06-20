@@ -34,6 +34,10 @@ export const PackageContextSummarySchema = z.object({
   version: z.number().int().nonnegative(),
   moduleCount: z.number().int().nonnegative(),
   fetchedAt: z.string(),
+  sourceRepo: z.string().nullable().optional(),
+  inputType: z.string().optional(),
+  fileCount: z.number().int().nonnegative().optional(),
+  cappedAt: z.number().int().nonnegative().nullable().optional(),
 });
 export type PackageContextSummary = z.infer<typeof PackageContextSummarySchema>;
 
