@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "movelens": {
+      "command": "npx",
+      "args": ["tsx", "/FULL/PATH/TO/movelens/mcp-server.ts"],
+      "env": {
+        "MOVELENS_URL": "https://movelens.onrender.com"
+      }
+    }
+  }
+}
