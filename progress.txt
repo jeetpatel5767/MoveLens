@@ -889,3 +889,49 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
     Optional local test first: docker build -t movelens-test . && docker run -p 3000:3000 --env-file .env movelens-test
 - Issues found: none — all F1-F6 tasks are pure file creation/edits with no runtime dependencies
 - Artifacts: none (no on-chain TXs)
+
+[2026-06-20] Session 32 — F36 GitHub Repository Auditing
+- Worked on: F36 — User pastes GitHub repo URL → MoveLens clones it, audits all .move files, returns unified report
+- Completed (tested end-to-end):
+  F36 ✓ (all verify steps):
+    1. POST /api/audit with { repoUrl: "https://github.com/MystenLabs/move-book" } → auditId immediately ✓
+    2. Poll status → observed "cloning" in stagesVisited before "fetching"/"auditing" ✓
+    3. Report: 50 modules (capped from 104 files), 43 findings across 22 distinct modules ✓
+       (hello_world, buffer, ticket, assert_abort, config, etc.)
+    4. POST with { repoUrl: "https://github.com/nonexistent/repo-xyz-404" } → status="failed"
+       error: "Failed to clone ... repo may be private, nonexistent, or too large" ✓
+    5. POST with { repoUrl: "https://evil.com/malicious" } → 400 immediately (URL validation) ✓
+    6. Landing page /app shows three tabs: "Package Address", "Paste Source", "GitHub Repo" ✓
+    7. npx tsc --noEmit → zero errors ✓
+    8. npm run build → clean production build ✓
+  blobId from test run: O7UJKmfE_TyHXdW1tjNyGOngHVmaOQqZOPhiB8rJxOQ (MystenLabs/move-book)
+
+  Files created/modified:
+    - src/lib/ingest/git.ts (NEW): buildPackageContextFromGit(), GitCloneError, shallow clone + find .move files
+    - src/lib/store/audits.ts: AuditStatus gains "cloning" stage
+    - src/lib/sui/queries.ts: PackageContext gets optional inputType/fileCount/cappedAt fields
+    - src/lib/audit/schema.ts: PackageContextSummarySchema gets sourceRepo/inputType/fileCount/cappedAt
+    - src/lib/audit/engine.ts: assembleReport() passes git metadata through
+    - src/app/api/audit/route.ts: AuditInput gains "git" mode, repoUrl branch, GitCloneError handling
+    - src/app/api/report/[id]/route.ts: returns sourceRepo/inputType/fileCount/cappedAt in package
+    - src/app/audit/[id]/page.tsx: cloning stage label/subtitle, FullReport.package extended type, git hero UI
+    - src/app/app/page.tsx: "GitHub Repo" tab with URL validation
+    - Dockerfile: adds git to apt-get
+    - features.json: F36 added (passes: false → passes: true below)
+    - package.json: simple-git dependency added
+
+- Commits: 6d9d5af feat(F36): GitHub repo auditing — paste a URL, get a unified multi-file report
+- Current state: init.sh should be green (no engine changes). F36 fully implemented + tested.
+  Render will redeploy with F36 (git in apt-get + new simple-git dep).
+- Next session should:
+    No more failing features listed in features.json except F18 (blocked on mainnet SUI) and F36 which passes.
+    Deadline is June 21, 2026 — TOMORROW. Project is ready to submit.
+    Run ./init.sh to verify health before final submission.
+    Ensure DEMO_MODE_BLOB_ID is set in .env for demo insurance.
+- Issues found:
+    /api/report/[id] route was manually projecting package fields and forgot to include the new git fields —
+    fixed by adding sourceRepo/inputType/fileCount/cappedAt to the JSON response.
+    MystenLabs/sui-move-intro-course repo no longer exists (404) — used MystenLabs/move-book instead.
+- Artifacts:
+    blobId: O7UJKmfE_TyHXdW1tjNyGOngHVmaOQqZOPhiB8rJxOQ (MystenLabs/move-book git audit)
+    blobId: hcw09P6oilliTdNCm5zTA_D-m9YqYRXyA7uNaSZZJXs (first test run, same repo)

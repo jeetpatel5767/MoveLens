@@ -497,7 +497,7 @@
                 "Verify a private or nonexistent repo returns a clear error (not a crash)",
                 "Verify the landing page has a third input tab: 'GitHub Repo' alongside 'Package Address' and 'Paste Source'"
             ],
-            "passes": false
+            "passes": true
         }
     ]
 }
