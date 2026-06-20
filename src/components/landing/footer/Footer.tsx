@@ -37,9 +37,13 @@ export function Footer() {
             <div className="flex flex-col gap-5">
               <span className="font-mono-plex text-[11px] uppercase tracking-[0.1em]" style={{ color: "var(--brand-lavender)" }}>Resources</span>
               <ul className="flex flex-col gap-4">
-                {[{ label: "GitHub" }, { label: "Docs" }].map((item) => (
+                {[
+                  { label: "GitHub", href: "https://github.com/jeetpatel5767/movelens" },
+                  { label: "Docs",   href: "https://movelens.mintlify.io" },
+                  { label: "MCP",    href: "https://movelens.mintlify.io/mcp/setup" },
+                ].map((item) => (
                   <li key={item.label}>
-                    <a href="#" className="flex items-center gap-1.5 text-[16px] text-white hover:text-[var(--text-secondary)] transition-colors font-sans-switzer">
+                    <a href={item.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[16px] text-white hover:text-[var(--text-secondary)] transition-colors font-sans-switzer">
                       {item.label}<span className="text-[13px] opacity-50">↗</span>
                     </a>
                   </li>
