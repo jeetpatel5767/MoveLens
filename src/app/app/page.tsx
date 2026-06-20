@@ -128,6 +128,18 @@ export default function AppPage() {
           : { source: { files: [{ name: fileName, content: sourceText }] }, network, publishOnChain };
 
       const res  = await fetch("/api/audit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+
+      // Guard against Render cold-start 502s that return HTML instead of JSON
+      const contentType = res.headers.get("content-type") ?? "";
+      if (!contentType.includes("application/json")) {
+        if (res.status === 502 || res.status === 503) {
+          setApiError("Server is waking up (cold start). Wait ~30 seconds and try again.");
+        } else {
+          setApiError(`Server error ${res.status} — please try again.`);
+        }
+        return;
+      }
+
       const data = await res.json() as { auditId?: string; error?: string };
 
       if (!res.ok || !data.auditId) { setApiError(data.error ?? `Server error ${res.status}`); return; }
