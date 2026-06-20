@@ -627,7 +627,7 @@ export async function runLayer4(
   if (hasGroq) {
     console.log(`[layer4] Full-source Groq analysis across ${ctx.modules.length} module(s)...`);
     const results = await Promise.all(
-      ctx.modules.map((mod) => analyzeModuleWithGroq(mod, memoryHits)),
+      ctx.modules.map((mod) => analyzeModuleWithGroq({ ...mod, source: mod.source ?? undefined }, memoryHits)),
     );
     const findings = results.flat();
     console.log(`[layer4] Produced ${findings.length} finding(s) total.`);
