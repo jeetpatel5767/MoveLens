@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { buildPackageContextFromUpload, UploadValidationError } from "@/lib/ingest/upload";
+import { buildPackageContextFromGit, GitCloneError } from "@/lib/ingest/git";
 import { fetchPackage, InvalidAddressError, PackageNotFoundError } from "@/lib/sui/queries";
 import { resolvePackageName } from "@/lib/mvr/resolve";
 import { runAudit, assembleReport } from "@/lib/audit/engine";
@@ -61,10 +62,12 @@ function humanReadable(err: unknown): string {
 // ── Build PackageContext from input ───────────────────────────────────────────
 
 interface AuditInput {
-  mode: "packageId" | "source";
+  mode: "packageId" | "source" | "git";
   packageId?: string;
   network?: "testnet" | "mainnet";
   files?: { name: string; content: string }[];
+  repoUrl?: string;
+  branch?: string;
   /** If false (default), skip MVR set_metadata — no on-chain tx sent. */
   publishOnChain?: boolean;
 }
@@ -82,7 +85,11 @@ async function buildPackageContext(input: AuditInput): Promise<PackageContext> {
     return buildPackageContextFromUpload(input.files, input.network ?? "testnet");
   }
 
-  throw new Error("Invalid audit input: must provide packageId or source.files");
+  if (input.mode === "git" && input.repoUrl) {
+    return buildPackageContextFromGit({ repoUrl: input.repoUrl, branch: input.branch });
+  }
+
+  throw new Error("Invalid audit input: must provide packageId, source.files, or repoUrl");
 }
 
 // ── MVR linking (demo package only) ───────────────────────────────────────────
@@ -119,9 +126,19 @@ async function tryAttachToMvr(
  */
 async function runPipeline(job: AuditJob, input: AuditInput): Promise<void> {
   try {
-    // ── Stage 1: fetch / parse ───────────────────────────────────────────────
-    updateJob(job, { status: "fetching" });
-    const ctx = await buildPackageContext(input);
+    // ── Stage 1: fetch / parse / clone ──────────────────────────────────────
+    updateJob(job, { status: input.mode === "git" ? "cloning" : "fetching" });
+    let ctx: PackageContext;
+    try {
+      ctx = await buildPackageContext(input);
+    } catch (err) {
+      if (err instanceof GitCloneError) {
+        updateJob(job, { status: "failed", error: err.message });
+        return;
+      }
+      throw err;
+    }
+    if (input.mode === "git") updateJob(job, { status: "fetching" });
 
     // ── Stage 2: audit ───────────────────────────────────────────────────────
     updateJob(job, { status: "auditing" });
@@ -245,8 +262,28 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ auditId: job.id }, { status: 202 });
   }
 
+  // ── Git repo path ────────────────────────────────────────────────────────────
+  if (input.repoUrl) {
+    const repoUrl = String(input.repoUrl);
+    if (!repoUrl.startsWith("https://github.com/")) {
+      return NextResponse.json(
+        { error: "repoUrl must be a valid https://github.com/... URL" },
+        { status: 400 },
+      );
+    }
+    const auditInput: AuditInput = {
+      mode:           "git",
+      repoUrl,
+      branch:         input.branch ? String(input.branch) : undefined,
+      publishOnChain: false,
+    };
+    const job = createJob();
+    void runPipeline(job, auditInput);
+    return NextResponse.json({ auditId: job.id }, { status: 202 });
+  }
+
   return NextResponse.json(
-    { error: "Provide either 'packageId' or 'source.files'" },
+    { error: "Provide 'packageId', 'source.files', or 'repoUrl'" },
     { status: 400 },
   );
 }

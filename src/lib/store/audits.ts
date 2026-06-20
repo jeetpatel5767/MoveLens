@@ -14,6 +14,7 @@ import type { AuditReport } from "../audit/schema";
 
 export type AuditStatus =
   | "queued"
+  | "cloning"
   | "fetching"
   | "auditing"
   | "encrypting"

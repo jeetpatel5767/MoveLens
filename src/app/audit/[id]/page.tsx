@@ -6,7 +6,7 @@ import Link from "next/link";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type AuditStatus = "queued"|"fetching"|"auditing"|"encrypting"|"uploading"|"linking"|"done"|"failed";
+type AuditStatus = "queued"|"cloning"|"fetching"|"auditing"|"encrypting"|"uploading"|"linking"|"done"|"failed";
 type Severity = "critical"|"high"|"medium"|"low";
 type FindingSource = "layer1"|"layer2"|"layer3"|"layer4";
 
@@ -19,7 +19,10 @@ interface Finding {
 interface SeverityCounts { critical:number; high:number; medium:number; low:number }
 interface FullReport {
   id:string; status:string; watermark:string; report_id:string; generated_at:string;
-  package:{ packageId:string; network:string; mvrName?:string|null; version:number; moduleCount:number };
+  package:{
+    packageId:string; network:string; mvrName?:string|null; version:number; moduleCount:number;
+    sourceRepo?:string|null; inputType?:string; fileCount?:number; cappedAt?:number|null;
+  };
   risk_grade:"A"|"B"|"C"|"D"|"F";
   severity_counts:SeverityCounts;
   layer4_used:boolean; memory_context_used:boolean; layer3_hits?:number;
@@ -73,6 +76,7 @@ const EYE: React.CSSProperties = {
 
 const STAGE_LABEL: Record<AuditStatus, string> = {
   queued:     "Queued",
+  cloning:    "Cloning Repository",
   fetching:   "Fetching Package",
   auditing:   "Running Analysis",
   encrypting: "Encrypting Report",
@@ -84,6 +88,7 @@ const STAGE_LABEL: Record<AuditStatus, string> = {
 
 const STAGE_SUB: Record<AuditStatus, string> = {
   queued:     "Waiting for a worker slot…",
+  cloning:    "Shallow-cloning repo · finding .move files",
   fetching:   "Pulling modules via Sui GraphQL",
   auditing:   "65 rules · OZ benchmarks · LanceDB recall · Groq ML",
   encrypting: "IBE threshold encryption via Seal",
@@ -462,31 +467,58 @@ export default function AuditPage() {
               <div style={{ flex:1, minWidth:0 }}>
                 <div className="font-display" style={EYE}>Security Report</div>
                 <div className="font-display" style={{ fontSize:44, fontWeight:700, color:"#fff", letterSpacing:"-0.03em", lineHeight:1.08, marginBottom:10 }}>
-                  Move Package Audit
+                  {report.package.inputType === "git" ? "GitHub Repository Audit" : "Move Package Audit"}
                 </div>
                 <div className="font-display" style={{ fontSize:24, fontWeight:400, color:"rgba(255,255,255,0.45)", letterSpacing:"-0.015em", marginBottom:36 }}>
-                  {report.package.mvrName ?? `${report.package.packageId.slice(0,20)}…`}
+                  {report.package.inputType === "git"
+                    ? report.package.packageId.replace("github:", "")
+                    : (report.package.mvrName ?? `${report.package.packageId.slice(0,20)}…`)}
                 </div>
 
                 <div style={{ marginBottom:40 }}>
-                  <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"10px 16px", background:SURFACE, border:"1px solid rgba(255,255,255,0.07)", borderRadius:10 }}>
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink:0 }}>
-                      <rect x="1.5" y="1.5" width="9" height="9" rx="1.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" fill="none"/>
-                      <path d="M4 6h4" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" strokeLinecap="round"/>
-                    </svg>
-                    <span className="font-mono-plex" style={{ fontSize:12, color:"rgba(255,255,255,0.32)", letterSpacing:"0.04em" }}>
-                      {report.package.packageId.slice(0,10)}…{report.package.packageId.slice(-8)}
-                    </span>
-                  </div>
+                  {report.package.inputType === "git" && report.package.sourceRepo ? (
+                    <a href={report.package.sourceRepo} target="_blank" rel="noopener noreferrer"
+                      style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"10px 16px", background:SURFACE, border:"1px solid rgba(255,255,255,0.07)", borderRadius:10, textDecoration:"none" }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink:0 }}>
+                        <path d="M6 1C3.24 1 1 3.24 1 6c0 2.21 1.43 4.09 3.42 4.75.25.05.34-.11.34-.24v-.85c-1.39.3-1.68-.67-1.68-.67-.23-.58-.56-.73-.56-.73-.46-.31.03-.31.03-.31.5.03.77.52.77.52.45.77 1.18.55 1.47.42.04-.33.18-.55.32-.68-1.12-.13-2.29-.56-2.29-2.49 0-.55.2-1 .52-1.35-.05-.13-.23-.64.05-1.33 0 0 .42-.14 1.38.51.4-.11.83-.17 1.26-.17.43 0 .86.06 1.26.17.96-.65 1.38-.51 1.38-.51.28.69.1 1.2.05 1.33.32.35.52.8.52 1.35 0 1.94-1.18 2.36-2.3 2.49.18.16.34.47.34.94v1.4c0 .13.09.29.34.24C9.57 10.09 11 8.21 11 6c0-2.76-2.24-5-5-5z" fill="rgba(255,255,255,0.3)"/>
+                      </svg>
+                      <span className="font-mono-plex" style={{ fontSize:12, color:"rgba(255,255,255,0.5)", letterSpacing:"0.04em" }}>
+                        {report.package.sourceRepo.replace("https://", "")}
+                      </span>
+                    </a>
+                  ) : (
+                    <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"10px 16px", background:SURFACE, border:"1px solid rgba(255,255,255,0.07)", borderRadius:10 }}>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink:0 }}>
+                        <rect x="1.5" y="1.5" width="9" height="9" rx="1.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" fill="none"/>
+                        <path d="M4 6h4" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" strokeLinecap="round"/>
+                      </svg>
+                      <span className="font-mono-plex" style={{ fontSize:12, color:"rgba(255,255,255,0.32)", letterSpacing:"0.04em" }}>
+                        {report.package.packageId.slice(0,10)}…{report.package.packageId.slice(-8)}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
+                {report.package.inputType === "git" && report.package.cappedAt !== null && report.package.cappedAt !== undefined && (
+                  <div style={{ marginBottom:24, padding:"10px 16px", background:"rgba(251,191,36,0.06)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:10 }}>
+                    <span className="font-display" style={{ fontSize:12, color:"#FBBF24" }}>
+                      ⚠ Large repo — showing findings from first {report.package.cappedAt} files only
+                    </span>
+                  </div>
+                )}
+
                 <div style={{ display:"flex", gap:48, flexWrap:"wrap" }}>
-                  {[
+                  {(report.package.inputType === "git" ? [
+                    { label:"Files",     val: String(report.package.fileCount ?? report.package.moduleCount) },
+                    { label:"Modules",   val: String(report.package.moduleCount) },
+                    { label:"Network",   val: report.package.network[0].toUpperCase()+report.package.network.slice(1) },
+                    { label:"Generated", val: new Date(report.generated_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) },
+                  ] : [
                     { label:"Modules",   val: String(report.package.moduleCount) },
                     { label:"Version",   val: `v${report.package.version}` },
                     { label:"Network",   val: report.package.network[0].toUpperCase()+report.package.network.slice(1) },
                     { label:"Generated", val: new Date(report.generated_at).toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"}) },
-                  ].map(({ label, val }) => (
+                  ]).map(({ label, val }) => (
                     <div key={label}>
                       <div className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.25)", marginBottom:6, letterSpacing:"0.04em" }}>{label}</div>
                       <div className="font-display" style={{ fontSize:15, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>{val}</div>

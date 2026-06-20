@@ -26,7 +26,8 @@ interface GalleryEntry {
 }
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{64}$/;
-type Tab = "address" | "source";
+const GITHUB_RE  = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
+type Tab = "address" | "source" | "git";
 type Network = "testnet" | "mainnet";
 
 // ── Risk grade badge ──────────────────────────────────────────────────────────
@@ -85,6 +86,8 @@ export default function AppPage() {
   const [sourceText, setSourceText]         = useState("");
   const [fileName, setFileName]             = useState("contract.move");
   const fileRef                             = useRef<HTMLInputElement>(null);
+  const [gitUrl, setGitUrl]                 = useState("");
+  const [gitUrlError, setGitUrlError]       = useState<string | null>(null);
   const [publishOnChain, setPublishOnChain] = useState(false);
   const [submitting, setSubmitting]         = useState(false);
   const [apiError, setApiError]             = useState<string | null>(null);
@@ -109,6 +112,12 @@ export default function AppPage() {
     reader.readAsText(file);
   }
 
+  function validateGitUrl(val: string): string | null {
+    if (!val.trim()) return "GitHub URL is required";
+    if (!GITHUB_RE.test(val.trim())) return "Must be a valid https://github.com/owner/repo URL";
+    return null;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setApiError(null);
@@ -116,8 +125,11 @@ export default function AppPage() {
     if (tab === "address") {
       const err = validateAddress(address);
       if (err) { setAddressError(err); return; }
-    } else {
+    } else if (tab === "source") {
       if (!sourceText.trim()) { setApiError("Paste or upload at least one .move file"); return; }
+    } else {
+      const err = validateGitUrl(gitUrl);
+      if (err) { setGitUrlError(err); return; }
     }
 
     setSubmitting(true);
@@ -125,7 +137,9 @@ export default function AppPage() {
       const body =
         tab === "address"
           ? { packageId: address.trim(), network, publishOnChain }
-          : { source: { files: [{ name: fileName, content: sourceText }] }, network, publishOnChain };
+          : tab === "source"
+          ? { source: { files: [{ name: fileName, content: sourceText }] }, network, publishOnChain }
+          : { repoUrl: gitUrl.trim() };
 
       const res  = await fetch("/api/audit", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
 
@@ -184,18 +198,18 @@ export default function AppPage() {
               border: "1px solid rgba(255,255,255,0.1)",
             }}
           >
-            {(["address", "source"] as Tab[]).map((t) => (
+            {(["address", "source", "git"] as Tab[]).map((t) => (
               <button
                 key={t}
                 type="button"
-                onClick={() => { setTab(t); setApiError(null); }}
+                onClick={() => { setTab(t); setApiError(null); setGitUrlError(null); }}
                 className="px-6 py-2.5 rounded-full font-sans-switzer text-sm font-medium transition-all"
                 style={{
                   background: tab === t ? "var(--brand-lavender)" : "transparent",
                   color:      tab === t ? "var(--ink)"            : "var(--text-secondary)",
                 }}
               >
-                {t === "address" ? "Package Address" : "Paste Source"}
+                {t === "address" ? "Package Address" : t === "source" ? "Paste Source" : "GitHub Repo"}
               </button>
             ))}
           </div>
@@ -211,7 +225,7 @@ export default function AppPage() {
               <div className="flex items-center gap-3.5">
                 <img src="/Logo.png" alt="MoveLens" className="h-10 w-auto object-contain" />
                 <span className="font-display font-semibold text-[22px] text-white leading-none">
-                  {tab === "address" ? "Sui Package Address" : "Move Source"}
+                  {tab === "address" ? "Sui Package Address" : tab === "source" ? "Move Source" : "GitHub Repository"}
                 </span>
               </div>
               <div
@@ -236,7 +250,32 @@ export default function AppPage() {
             </div>
 
             {/* ── Zone 2: Input area ── */}
-            {tab === "address" ? (
+            {tab === "git" ? (
+              <div className="px-10 pb-10">
+                <input
+                  type="url"
+                  value={gitUrl}
+                  onChange={(e) => { setGitUrl(e.target.value); if (gitUrlError) setGitUrlError(null); }}
+                  onBlur={() => setGitUrlError(validateGitUrl(gitUrl))}
+                  placeholder="https://github.com/owner/repo"
+                  spellCheck={false}
+                  className="w-full bg-transparent font-mono-plex text-[17px] text-white focus:outline-none leading-relaxed placeholder-[rgba(255,255,255,0.22)]"
+                  style={{ caretColor: "var(--brand-lavender)" }}
+                />
+                <div
+                  className="mt-6 h-px transition-colors"
+                  style={{ background: gitUrlError ? "rgba(255,92,92,0.55)" : "rgba(255,255,255,0.08)" }}
+                />
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="font-display text-[13px]" style={{ color: gitUrlError ? "var(--severity-critical)" : "var(--text-tertiary)" }}>
+                    {gitUrlError ? `⚠ ${gitUrlError}` : "Public repos only · Max 50 .move files analysed"}
+                  </span>
+                  {gitUrl && !gitUrlError && GITHUB_RE.test(gitUrl.trim()) && (
+                    <span className="font-display text-[13px]" style={{ color: "var(--severity-safe)" }}>✓ valid</span>
+                  )}
+                </div>
+              </div>
+            ) : tab === "address" ? (
               <div className="px-10 pb-10">
                 <input
                   type="text"

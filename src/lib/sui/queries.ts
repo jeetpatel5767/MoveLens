@@ -17,6 +17,10 @@ export interface PackageContext {
   upgradeCount: number;
   modules: ModuleInfo[];
   fetchedAt: string;
+  // Optional git-audit metadata — only set when input was a GitHub repo URL
+  inputType?: string;
+  fileCount?: number;
+  cappedAt?: number | null;
 }
 
 export class InvalidAddressError extends Error {

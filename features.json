@@ -483,6 +483,21 @@
                 "Clicking a Walrus link opens the blob in a new tab"
             ],
             "passes": true
+        },
+        {
+            "id": "F36",
+            "phase": 10,
+            "priority": 1,
+            "category": "ingest",
+            "description": "User pastes a GitHub repo URL → MoveLens clones it, finds all .move files, audits them as one combined PackageContext, returns unified report",
+            "steps": [
+                "POST /api/audit with { repoUrl: 'https://github.com/owner/repo' } returns auditId immediately",
+                "Poll GET /api/audit?id=... and observe status progressing through cloning/fetching/auditing/uploading to done",
+                "Verify the finished report shows findings from MULTIPLE .move files with per-file module attribution",
+                "Verify a private or nonexistent repo returns a clear error (not a crash)",
+                "Verify the landing page has a third input tab: 'GitHub Repo' alongside 'Package Address' and 'Paste Source'"
+            ],
+            "passes": false
         }
     ]
 }
