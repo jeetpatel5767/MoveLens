@@ -7,9 +7,13 @@ export function Header() {
         </div>
 
         <nav className="hidden md:flex gap-8 text-sm text-[var(--text-secondary)] font-medium items-center">
-          <a href="#discover" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Discover <span className="opacity-60">↓</span></a>
-          <a href="#rules" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Rules <span className="opacity-60">↓</span></a>
-          <a href="#ecosystem" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Ecosystem <span className="opacity-60">↓</span></a>
+          <a href="#solution" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Solution <span className="opacity-60">↓</span></a>
+          <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">How It Works <span className="opacity-60">↓</span></a>
+          <a href="#demo" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Live Demo <span className="opacity-60">↓</span></a>
+          <a href="#trust" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Trust <span className="opacity-60">↓</span></a>
+          <a href="/mcp" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-1.5">
+            <span className="text-xs bg-white/10 px-1.5 py-0.5 rounded font-mono">MCP</span>
+          </a>
         </nav>
 
         <div>
