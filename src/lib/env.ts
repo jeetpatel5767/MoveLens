@@ -25,6 +25,12 @@ const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 
 function loadEnv(): Env {
+  // During `docker build` (static analysis / page data collection), env vars
+  // aren't available — Render injects them only at runtime. Skip validation
+  // at build time; the server startup will catch any missing vars.
+  if (process.env.SKIP_ENV_VALIDATION === "1") {
+    return {} as Env;
+  }
   const parsed = EnvSchema.safeParse(process.env);
   if (!parsed.success) {
     const errors = parsed.error.flatten().fieldErrors;

@@ -24,8 +24,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # --- App source ---
 COPY . .
 
-# Build Next.js for production
-RUN npm run build
+# Build Next.js for production.
+# SKIP_ENV_VALIDATION=1 tells env.ts to skip zod validation at build time —
+# Render injects the real env vars at runtime, not during docker build.
+RUN SKIP_ENV_VALIDATION=1 npm run build
 
 # Pre-download the Jina embedding model + pre-seed LanceDB AT BUILD TIME,
 # so the container never has a slow "first request" cold-load in production.
