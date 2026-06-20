@@ -21,12 +21,12 @@ export default function LandingPage() {
           Audit package <span className="opacity-80 text-xs">↗</span>
         </a>
       </Hero>
-      <Solution />
-      <HowItWorks />
-      <LiveDemoHero />
+      <div id="solution"><Solution /></div>
+      <div id="how-it-works"><HowItWorks /></div>
+      <div id="demo"><LiveDemoHero /></div>
       <SampleReport />
-      <Differentiators />
-      <TrustVerification />
+      <div id="differentiators"><Differentiators /></div>
+      <div id="trust"><TrustVerification /></div>
       <CTA />
       <Footer />
     </div>
