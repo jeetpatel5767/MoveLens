@@ -1,0 +1,128 @@
+---
+title: "Pipeline Overview"
+description: "How MoveLens processes a Move package through four analysis layers and stores the result on Walrus."
+---
+
+## The four-layer pipeline
+
+Every audit runs through the same deterministic sequence:
+
+```
+Input (address / source / GitHub)
+        │
+        ▼
+┌───────────────────────────────────────┐
+│  INGEST                               │
+│  fetchPackage (GraphQL) OR            │
+│  parse uploaded source OR             │
+│  git clone + find .move files         │
+│  → PackageContext { modules[] }       │
+└───────────────┬───────────────────────┘
+                │
+        ┌───────▼────────┐
+        │  LAYER 1       │  65 deterministic regex rules
+        │  layer1.ts     │  Fires on raw sanitized source
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │  LAYER 2       │  10 OpenZeppelin benchmark checks
+        │  layer2.ts     │  Pattern-absence detection
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │  LAYER 3       │  LanceDB semantic recall
+        │  memory/       │  52-snippet corpus, cosine similarity
+        │  lancedb-mem.  │  Appended to Layer 4 prompt context
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │  LAYER 4       │  ML ensemble (optional, graceful fallback)
+        │  layer4.ts     │  Model A: Jina embed → cosine > 0.75
+        │  Python sidecar│  Model B: Groq llama-3.3-70b-versatile
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │  ENGINE        │  Merge + dedupe + severity floor
+        │  engine.ts     │  Sort (Cetus-class first, then severity)
+        │                │  Risk grade A–F
+        │                │  AuditReport (zod-validated)
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │  SEAL          │  IBE threshold-encrypt findings.enc
+        │  seal.ts       │  Falls back to plaintext if Seal fails
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │  QUILT         │  Bundle 3 entries:
+        │  quilt.ts      │  report.json (public metadata)
+        │                │  findings.enc (encrypted findings)
+        │                │  summary.md  (human-readable)
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐
+        │  WALRUS        │  uploadAuditQuilt() → blobId
+        │  upload.ts     │  4 retries + exponential backoff
+        │                │  DEMO_MODE_BLOB_ID fallback if empty
+        └───────┬────────┘
+                │
+        ┌───────▼────────┐  (optional — requires publishOnChain=true)
+        │  MVR           │  attachAuditToPackage() → txDigest
+        │  metadata.ts   │  Links blobId to PackageInfo on-chain
+        └────────────────┘
+```
+
+---
+
+## Key design decisions
+
+### Why no paid AI APIs?
+
+A hard rule enforced by `init.sh` grep: zero occurrences of `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `callClaude()`, or any paid LLM call. Layer 4 uses **Groq free tier** (20 RPM cap, gracefully rate-limited) and **Jina embeddings** (runs locally via Python). The audit engine is fully functional without any API keys — Layer 4 simply skips with a fallback heuristic.
+
+### Why Sui GraphQL only?
+
+Sui JSON-RPC sunsets **July 31, 2026**. MoveLens uses the Sui GraphQL endpoint (`https://graphql.testnet.sui.io/graphql` / mainnet) for all on-chain reads. A `grep -ri "jsonrpc" src/` pre-commit check enforces this.
+
+### Layer 4 is optional
+
+If the Python sidecar is unreachable (port 8765 ECONNREFUSED, timeout, wrong IP), the engine catches the error, logs a warning, and returns a complete report from Layers 1 + 2 only. The `sidecarHealthy()` check runs before the audit begins; if unhealthy, Layer 4 is skipped entirely.
+
+### Severity floor
+
+Layer 4 cannot silently downgrade a finding that Layers 1/2 already escalated. The engine applies a per-sector severity floor after merging:
+
+| Sector | Floor |
+|---|---|
+| ML-INT | high |
+| ML-OZ | high |
+| ML-HOT | high |
+| ML-ACC | medium |
+| ML-ARI, ML-RET, ML-TOK, ML-WRP, ML-DEP, ML-LOG | medium |
+| ML-RAC, ML-DOS | low |
+
+### Deduplication
+
+Same `(rule_id, module, line_start)` tuple → keep the finding with the **highest confidence**. A second pass drops L4 heuristic-fallback duplicates at the same sector + module ± 2 lines when there is no LanceDB corpus match to justify them.
+
+### Sort order
+
+1. `ML-OZ-001` / `ML-INT-001` absolute first (Cetus-class — most impactful in practice)
+2. Severity descending (critical → high → medium → low)
+3. Confidence descending within the same severity
+
+---
+
+## Async API architecture
+
+The Next.js API route (`/api/audit`) starts an async job and returns `auditId` immediately. The browser polls `/api/audit?id=<id>` every second; the `stagesVisited[]` array fills in as each pipeline stage completes. The full report is fetched from `/api/report/<id>` once `status === "done"`.
+
+Job state is persisted in **SQLite** (`audits.db`, WAL mode) so audits survive dev-server restarts. Jobs older than 24 hours are pruned on startup.
+
+```
+POST /api/audit  →  { auditId }
+  ↓
+GET  /api/audit?id=<id>  →  { status, stagesVisited[] }  (poll)
+  ↓
+GET  /api/report/<id>    →  { findings[], risk_grade, blobId, … }
+```

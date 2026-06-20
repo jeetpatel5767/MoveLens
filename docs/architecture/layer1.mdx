@@ -1,0 +1,108 @@
+---
+title: "Layer 1 — Deterministic Rules"
+description: "65 compiled regex patterns across 13 vulnerability sectors, run against sanitized Move source with binary-search line tracking."
+---
+
+## What it does
+
+Layer 1 (`src/lib/audit/layer1.ts`) is the **fastest and most reliable layer**. It runs 65 compiled regular-expression rules over every module's sanitized source code and emits schema-validated `Finding` objects with `confidence: 1.0` and `source: "layer1"`.
+
+Runtime on a full 50-module package: **under 5 seconds**.
+
+---
+
+## How it works
+
+### Step 1 — Sanitize
+
+Before any pattern is applied, `sanitizeForPatterns(source, preserveLines: true)` strips:
+- Block comments (`/* … */`)
+- Line comments (`// …`)
+- String literals (`"…"`, `'…'`)
+
+The `preserveLines: true` flag preserves newlines so line numbers stay accurate after sanitization. This eliminates the comment-injection false-positive class entirely (e.g. a comment `// public fun foo()` used to trigger `ML-ACC-001` before sanitization was added in D1).
+
+### Step 2 — Pattern matching
+
+Each rule has a compiled `RegExp` (flags `gm` — global + multiline). `matchPattern()` runs the regex over the cleaned source and:
+
+1. Collects all match offsets
+2. Uses **binary search** over a precomputed `lineOffsets[]` array to map each character offset to a line number in O(log n) time
+3. Emits one `Finding` per match with `line_start`, `line_end`, `module`, `description`, `recommendation`, `category`
+
+The first rule to run is always `ML-INT-001` (unchecked integer overflow) — the most critical finding class.
+
+### Step 3 — Deduplicate
+
+`deduplicateFindings()` removes exact duplicates: same `(rule_id, module, line_start)` → keep one. Cross-layer deduplication happens later in the engine's `mergeAndDedupe()`.
+
+---
+
+## Rule types
+
+| Type | Count | How it works |
+|---|---|---|
+| `REGEX` | 65 | Compiled pattern, runs on sanitized source |
+| `AST` | 19 | Placeholder stubs — marked as skip for MVP |
+| `SKIP_MVP` | 9 | Intentionally skipped (too noisy or needs AST) |
+
+All 93 Layer 1 rule IDs are registered in `src/lib/audit/rule-ids.ts`. Any finding that emits a rule ID not in the registry is **dropped and logged** — it can never reach the report.
+
+---
+
+## Example: ML-INT-001
+
+```typescript
+{
+  id: "ML-INT-001",
+  type: "REGEX",
+  severity: "critical",
+  category: "Integer Overflow & Bitwise Arithmetic",
+  pattern: /checked_shlw\s*\(/gm,
+  description: "Use of unchecked shift-left-wrapping (checked_shlw) — can overflow on large inputs, as exploited in the Cetus $223M hack.",
+  recommendation: "Replace checked_shlw with checked_shl. If overflow is intended, add explicit bounds checks and document the invariant.",
+}
+```
+
+The Cetus CLMM package triggers this rule **34 times** across deposit, withdrawal, and swap functions.
+
+---
+
+## Finding schema (Layer 1 output)
+
+```typescript
+{
+  rule_id:       "ML-INT-001",          // validated against VALID_RULE_IDS
+  severity:      "critical",
+  confidence:    1.0,                   // always 1.0 for Layer 1
+  source:        "layer1",
+  module:        "integer_mate",
+  line_start:    42,
+  line_end:      44,
+  description:   "Use of unchecked shift-left-wrapping (checked_shlw)…",
+  recommendation: "Replace checked_shlw with checked_shl…",
+  category:      "Integer Overflow & Bitwise Arithmetic",
+}
+```
+
+---
+
+## All 13 sectors
+
+| Sector prefix | Full name | Rules |
+|---|---|---|
+| `ML-ACC` | Access Control & Visibility | 13 |
+| `ML-OBJ` | Object Ownership & Permission Checks | 13 |
+| `ML-INT` | Integer Overflow & Bitwise Arithmetic | 6 |
+| `ML-ARI` | Arithmetic Precision Loss | 7 |
+| `ML-HOT` | Hot Potato / Flash Loan Misuse | 4 |
+| `ML-UPG` | Unsafe Upgrade Patterns | 4 |
+| `ML-RAC` | Race Conditions / Transaction Ordering | 3 |
+| `ML-RET` | Unchecked Return Values | 4 |
+| `ML-TOK` | Token / Coin Management | 8 |
+| `ML-WRP` | Object Wrapping / Unwrapping | 3 |
+| `ML-DOS` | Denial of Service | 4 |
+| `ML-EXT` | External Module / Dependency Security | 4 |
+| `ML-LOG` | Design Logic Flaws | 20 |
+
+See [Rule Registry → Sectors](/rules/sectors) for every rule ID and its description.

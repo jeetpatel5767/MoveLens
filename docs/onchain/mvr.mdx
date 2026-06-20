@@ -1,0 +1,64 @@
+---
+title: "MVR On-Chain Attestation"
+description: "MoveLens can optionally attach the Walrus blob ID to a Sui PackageInfo object via MVR (Move Version Registry), creating a permanent on-chain link between a package and its audit report."
+---
+
+## What is MVR?
+
+The [Move Version Registry](https://docs.sui.io/concepts/sui-move-concepts/packages/version-registry) is a Sui on-chain registry that maps human-readable package names (e.g. `@deepbook/core`) to package addresses and versioned metadata.
+
+Each registered package has a `PackageInfo` object. MoveLens calls `set_metadata` on that object to store the Walrus blob ID as a key-value entry — creating a permanent, verifiable link: **"this package was audited; here is the proof."**
+
+---
+
+## How it works
+
+```typescript
+// src/lib/mvr/metadata.ts
+attachAuditToPackage({
+  packageInfoId: "0xcc7af44f...",  // PackageInfo object ID
+  blobId:        "5cN1fBWk5T...", // Walrus blob ID
+  signer:        keypair,
+})
+→ { txDigest: "85rKhcZx..." }
+```
+
+The function:
+1. Reads the current `PackageInfo` metadata via GraphQL to check if `"movelens_audit"` key already exists
+2. If it exists: calls `unset_metadata` first (vec_map aborts on duplicate key insert)
+3. Calls `set_metadata("movelens_audit", blobId)`
+4. Waits for indexer confirmation with retry (up to 6 attempts, 3s delay — indexer lag is common)
+
+---
+
+## Opt-in only
+
+MVR attestation requires the user to **check "Publish audit on-chain"** in the audit form. This sets `publishOnChain: true` in the request body.
+
+If `publishOnChain: false` (default):
+- Stage 5 (MVR attach) is skipped
+- `txDigest` is `null` in the report
+- `mvr_name` is excluded from the public Walrus quilt metadata
+- The trust panel shows "Not published on-chain (opt-in)"
+
+---
+
+## Demo package
+
+A live demonstration of this flow exists on Sui testnet:
+
+| Item | Value |
+|---|---|
+| Demo package ID | `0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698` |
+| PackageInfo ID | `0xcc7af44f578839df65cd69705c640559aa594b6528161653b91416cdec7a50e2` |
+| UpgradeCap ID | `0x675b9ea40fe5ec9510faf1434e157685e047e32a527fc318e15f726e7761d365` |
+| Publish TX | `85rKhcZxaSpubzxHs81P1o57wfQqQL1rD5Rqf2YBJCZH` |
+| Audit attach TX | `HmhWjcJymAsaLmVXMA3qWN5B4rBDJSZNM8P87QosfF9B` |
+
+The vault module was written with intentional audit targets: integer overflow in `deposit()`, fee arithmetic vulnerability in `calculate_fee()`, and an admin `emergency_drain()` function.
+
+---
+
+## MVR name resolution
+
+`src/lib/mvr/resolve.ts` provides `resolvePackageName(packageId)` — a reverse lookup from package address to MVR name (e.g. `0x2eeaab...` → `@deepbook/core`). This populates `mvrName` in the report header. Unregistered packages return `null`; the address is shown instead.

@@ -1,0 +1,96 @@
+---
+title: "Layer 3 — Semantic Memory"
+description: "LanceDB-backed vector memory of 52 historically exploited Move snippets. Finds code that resembles past vulnerabilities even when the exact pattern differs."
+---
+
+## What it does
+
+Layer 3 uses a local [LanceDB](https://lancedb.github.io/lancedb/) vector database containing **52 semantically labelled Move code snippets** from known exploits and vulnerability classes. Before the audit runs, the engine sends the first module's source through the `/embed` endpoint on the Python sidecar, retrieves the top-5 most similar corpus entries (cosine similarity ≥ 0.5), and uses those hits to:
+
+1. **Enrich Layer 4's prompt** — the memory context tells the LLM what patterns from similar code it should look for
+2. **Boost confidence** — if a Layer 4 finding's embedding similarity exceeds 0.75 and the model confidence is below 0.8, add +0.15 to confidence
+
+---
+
+## Architecture
+
+```
+Engine (TypeScript)
+    │
+    │ recall({ source, namespace: "movelens/all" })
+    ▼
+LanceDBMemory (src/lib/memory/lancedb-memory.ts)
+    │
+    │ POST /embed  { code: sanitized_first_module[:500] }
+    ▼
+Python sidecar (scripts/layer4_server.py)
+    │
+    │ Jina jina-embeddings-v2-base-code (local)
+    │ LanceDB table: "snippets"
+    │ cosine similarity search, top_k=5, threshold=0.5
+    ▼
+MemoryHit[]  { rule_id, description, similarity, snippet }
+    │
+    ▼
+buildMemoryContext() → string injected into Groq prompt
+```
+
+---
+
+## The 52-snippet corpus
+
+The corpus was seeded from `movelens_vuln_corpus_classified.md` — a classified vulnerability dataset covering real Move exploits. Each entry has:
+
+| Field | Description |
+|---|---|
+| `id` | Unique slug, e.g. `cetus_checked_shlw` |
+| `code` | The vulnerable Move snippet |
+| `rule_id` | Which Layer 1/2 rule it maps to |
+| `description` | Human-readable description |
+| `sector` | Vulnerability sector (ML-INT, ML-ACC, etc.) |
+| `severity` | critical / high / medium / low |
+
+Seed with:
+```bash
+python scripts/layer4_server.py &          # sidecar must be running
+npx tsx scripts/seedLanceDB.ts             # embeds 52 snippets via /embed-raw
+curl http://127.0.0.1:8765/reload          # re-opens the LanceDB table
+```
+
+Or at Docker build time, `scripts/seedLanceDB_standalone.py` does the same without needing the sidecar (direct Python import of the Jina model).
+
+---
+
+## Memory is also a "remember" loop
+
+When Layer 4 produces a high-quality finding (`confidence ≥ 0.8`, `impacted_code` present), `remember()` adds the triggering code snippet back into the LanceDB table. The corpus grows from 52 → 53 → 54 as the auditor runs on real-world packages.
+
+<Note>
+  In-process `remember()` adds to the LanceDB table in memory. Persistence across restarts requires the sidecar to call `/reload` from the same working directory as the `lancedb_store/` directory.
+</Note>
+
+---
+
+## Fallback behaviour
+
+If the sidecar is unreachable or `healthy()` returns false:
+
+- `createMemory()` returns a `NoopMemory` instance
+- `recall()` returns `[]` — no memory context injected
+- `memory_context_used` in the report is `false`
+- The audit continues normally with Layers 1, 2, and 4 (which has its own sidecar dependency)
+
+The UI trust panel shows **"Layer 3 · Memory · N hits"** when `memory_context_used === true`, where N is `layer3_hits`.
+
+---
+
+## Key numbers
+
+| Metric | Value |
+|---|---|
+| Corpus rows at seed | 52 |
+| Embedding model | `jinaai/jina-embeddings-v2-base-code` (local) |
+| Similarity threshold | 0.5 (recall), 0.75 (confidence boost) |
+| Top-K results | 5 |
+| Namespace | `movelens/all` |
+| Cetus `checked_shlw` similarity | 0.9581 (verified in F25 step 3) |

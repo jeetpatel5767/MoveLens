@@ -11,7 +11,7 @@ export function Header() {
           <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">How It Works <span className="opacity-60">↓</span></a>
           <a href="#demo" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Live Demo <span className="opacity-60">↓</span></a>
           <a href="#trust" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">Trust <span className="opacity-60">↓</span></a>
-          <a href="/mcp" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">MCP <span className="opacity-60">↓</span></a>
+          <a href="https://movelens.mintlify.app/mcp/setup" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--text-primary)] transition-all flex items-center gap-0.5">MCP <span className="opacity-60">↓</span></a>
         </nav>
 
         <div>

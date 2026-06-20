@@ -1,0 +1,104 @@
+---
+title: "GitHub Repository Auditing"
+description: "Paste a public GitHub URL and MoveLens shallow-clones the repo, discovers all .move files, and runs the full 4-layer pipeline across every module."
+---
+
+## Overview
+
+Feature F36 adds a third audit mode: **GitHub repository URL**. Instead of a package address or pasted source, you provide a URL like `https://github.com/MystenLabs/move-book` and MoveLens:
+
+1. Shallow-clones the repo (`depth: 1`) to a temporary directory
+2. Recursively finds all `.move` files
+3. Excludes build artifacts: `build/`, `target/`, `.git/`, `node_modules/`, `deps/`
+4. Caps at **50 files** (the first 50 found)
+5. Runs the full 4-layer pipeline across all files as a unified `PackageContext`
+6. Returns a single report covering every module
+
+---
+
+## How to use it
+
+### In the browser
+
+1. Open `/app` on the MoveLens site
+2. Click the **GitHub Repo** tab
+3. Paste a URL: `https://github.com/<owner>/<repo>`
+4. Click **Run Audit**
+
+The status stepper shows an extra **Cloning** stage before the normal pipeline stages.
+
+### Via MCP
+
+```
+audit_github_repo(repoUrl: "https://github.com/MystenLabs/sui")
+```
+
+### Via API
+
+```bash
+curl -X POST https://movelens.onrender.com/api/audit \
+  -H "Content-Type: application/json" \
+  -d '{ "repoUrl": "https://github.com/MystenLabs/move-book" }'
+```
+
+Returns `{ "auditId": "..." }` immediately. Poll `/api/audit?id=<id>` until `status === "done"`.
+
+---
+
+## URL validation
+
+Only `https://github.com/<owner>/<repo>` URLs are accepted. Requests to other domains are rejected with HTTP 400 immediately — no cloning is attempted.
+
+```typescript
+const GITHUB_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
+if (!GITHUB_RE.test(repoUrl)) return 400;
+```
+
+---
+
+## Large repo handling
+
+If a repo contains more than 50 `.move` files, the report header shows:
+
+- `fileCount`: total `.move` files found (e.g. 104)
+- `cappedAt`: 50 (the cap limit)
+- A warning banner: *"Large repository — only 50 of 104 files analysed"*
+
+The cap exists to keep audit time reasonable. Future versions may allow configuring the cap or prioritising files by recency.
+
+---
+
+## Test run: MystenLabs/move-book
+
+```
+Repo: https://github.com/MystenLabs/move-book
+Files found: 104
+Files analysed: 50 (capped)
+Modules: 50
+Findings: 43 across 22 distinct modules
+Risk grade: C
+blobId: O7UJKmfE_TyHXdW1tjNyGOngHVmaOQqZOPhiB8rJxOQ
+```
+
+Modules flagged include: `hello_world`, `buffer`, `ticket`, `assert_abort`, `config`, and 17 others.
+
+---
+
+## Error cases
+
+| Condition | Response |
+|---|---|
+| Non-GitHub URL | HTTP 400: "Only public GitHub repos are supported" |
+| Private or nonexistent repo | `status: "failed"`, `error: "Failed to clone… repo may be private, nonexistent, or too large"` |
+| Zero `.move` files found | `status: "failed"`, `error: "No .move files found in repository"` |
+| Clone timeout | `status: "failed"` with clone error message |
+
+---
+
+## Implementation details
+
+- **Library:** `simple-git` npm package
+- **Clone:** `git.clone(repoUrl, tmpDir, ['--depth=1', '--single-branch'])`
+- **Discovery:** Recursive `fs.readdir` with exclusion list
+- **Tmp dir:** System temp directory, cleaned up after audit
+- **Docker:** `git` binary added to `apt-get install` in the Dockerfile for Render deployment

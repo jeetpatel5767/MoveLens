@@ -1,0 +1,66 @@
+---
+title: "Rule Registry Overview"
+description: "116 rule IDs across 13 vulnerability sectors — 93 Layer 1 deterministic rules, 10 Layer 2 OZ benchmarks, and 13 Layer 4 ML markers."
+---
+
+## Registry design
+
+Every finding emitted by MoveLens must have a `rule_id` that:
+
+1. **Matches the format** `ML-XXX-NNN` (Layer 1/2) or `ML-XXX-L4-NNN` (Layer 4)
+2. **Exists in `VALID_RULE_IDS`** in `src/lib/audit/rule-ids.ts` — the immutable registry
+
+Any finding with an unknown rule ID is **dropped and logged at warning level** before it can reach the report. This prevents Layer 4's LLM from hallucinating rule IDs.
+
+---
+
+## Summary counts
+
+| Layer | Count | ID format | Confidence |
+|---|---|---|---|
+| Layer 1 (REGEX) | 65 | `ML-XXX-NNN` | 1.0 |
+| Layer 1 (AST stubs) | 19 | `ML-XXX-NNN` | 1.0 |
+| Layer 1 (SKIP_MVP) | 9 | `ML-XXX-NNN` | — |
+| Layer 2 (OZ) | 10 | `ML-OZ-NNN` | 0.95 |
+| Layer 4 (ML markers) | 13 | `ML-XXX-L4-NNN` | model-dependent |
+| **Total registered** | **116** | — | — |
+
+---
+
+## Risk grading
+
+The engine computes risk grade after merging all findings:
+
+| Grade | Condition |
+|---|---|
+| **F** | Any critical finding |
+| **D** | 2 or more high findings, no critical |
+| **C** | Exactly 1 high finding, no critical |
+| **B** | Medium findings only |
+| **A** | Low or info findings only / no findings |
+
+---
+
+## The watermark
+
+Every `AuditReport` contains a `z.literal()` watermark field:
+
+```
+"Automated pre-screen — not a substitute for a human audit."
+```
+
+This is schema-enforced — any report without this exact string fails Zod validation and cannot be returned by the API. It appears verbatim on the report page and in the Walrus `summary.md` entry.
+
+---
+
+## Adding a new rule (contributors)
+
+1. Add the rule ID to `src/lib/audit/rule-ids.ts` in `VALID_RULE_IDS` and increment `RULE_COUNT`
+2. Add the rule definition to `src/lib/audit/rules.ts` with `type: "REGEX"`, `pattern`, `severity`, `description`, `recommendation`
+3. Add a test fixture if the pattern is non-trivial
+4. Update `src/lib/audit/engine.ts` `CATEGORY_SEVERITY_FLOOR` if the new sector needs a floor
+5. Run `npx tsc --noEmit && npx tsx test/f06-verify.ts` to verify registry integrity
+
+<Warning>
+  Never remove or rename existing rule IDs. The `passes` field in `features.json` is the only field that changes post-build. Rule IDs in reports, Walrus blobs, and the LanceDB corpus reference specific IDs — renaming breaks auditability.
+</Warning>

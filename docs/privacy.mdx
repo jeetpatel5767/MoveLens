@@ -1,0 +1,62 @@
+---
+title: "Privacy"
+description: "What data MoveLens collects, what is public on Walrus, what is encrypted, and how to opt out of on-chain publishing."
+---
+
+## What is public
+
+| Data | Where | Notes |
+|---|---|---|
+| `package_ref` (SHA-256 of packageId) | Walrus `report.json` | 64-char hex, cannot be reversed without knowing the original address |
+| Risk grade | Walrus `report.json` | A–F |
+| Severity counts | Walrus `report.json` | `{ critical, high, medium, low }` |
+| `generated_at` | Walrus `report.json` | ISO timestamp |
+| Watermark | Walrus `report.json`, `summary.md` | Verbatim string |
+| Top module list | Walrus `summary.md` | Module names without findings |
+| `mvr_name` | Walrus `report.json` | Only if `publishOnChain: true` |
+
+## What is encrypted
+
+| Data | Where | Encryption |
+|---|---|---|
+| Full `findings[]` array | Walrus `findings.enc` | Seal IBE (or plaintext fallback) |
+| Rule IDs, line numbers, descriptions | Inside `findings.enc` | Same |
+| Raw `packageId` | Inside `findings.enc` | Same |
+
+## What is processed but not stored
+
+| Data | Processing location | Retention |
+|---|---|---|
+| Move source code (pasted) | MoveLens backend (in-process) | Discarded after audit |
+| Move modules (fetched on-chain) | MoveLens backend (in-process) | Discarded after audit |
+| Cloned Git files | Temp directory | Deleted after audit |
+| Audit job (status, findings) | SQLite `audits.db` | Pruned after 24 hours |
+
+## Code snippets sent to Groq
+
+When Layer 4 is active and `GROQ_API_KEY` is set, sanitized code snippets (20 max, comments and string literals stripped) are sent to the Groq API for classification. Groq's [privacy policy](https://groq.com/privacy-policy/) applies. Snippets contain only sanitized Move code — no user identity, no wallet addresses, no package IDs.
+
+## On-chain publishing (opt-in)
+
+By default (`publishOnChain: false`):
+- No MVR `set_metadata` call is made
+- `txDigest` is `null` in the report
+- `mvr_name` is excluded from the Walrus public metadata
+
+Checking "Publish audit on-chain" in the UI sets `publishOnChain: true`. This permanently links the Walrus blob to the package's `PackageInfo` object on Sui. **This action is irreversible** — the on-chain record cannot be deleted.
+
+## Seal encryption limitation
+
+In the current version, `sealId` is set to the MoveLens signer address (`0x8a271c5a...`). This means the MoveLens keypair can decrypt findings — the encryption protects against general public access but not against the MoveLens operator.
+
+A v2 milestone (post-hackathon) will use the package owner's address as `sealId`, so only the owner's Sui wallet can request decryption from the Seal committee.
+
+## Data retention summary
+
+| Store | Contents | TTL |
+|---|---|---|
+| `audits.db` (SQLite) | Job status, findings, blobId | 24 hours (auto-pruned on startup) |
+| Walrus testnet | Quilt blob | ~5 days (5 epochs) |
+| Walrus mainnet | Quilt blob | Permanent |
+| LanceDB (in-process) | Layer 3 corpus | Until process restart |
+| Groq API | Sanitized snippets | Per Groq's privacy policy |

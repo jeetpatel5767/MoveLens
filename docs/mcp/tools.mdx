@@ -1,0 +1,131 @@
+---
+title: "MCP Tools Reference"
+description: "The three tools exposed by the MoveLens MCP server — audit_move_source, audit_package_id, and audit_github_repo."
+---
+
+## audit_move_source
+
+Audit raw Move source code pasted directly into the conversation.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `source` | `string` | ✅ | The Move source code to audit (one or more modules) |
+| `filename` | `string` | No | Filename hint (default: `contract.move`) |
+| `network` | `"testnet" \| "mainnet"` | No | Sui network context (default: `testnet`) |
+
+### Example
+
+```
+audit_move_source(
+  source: "module vault::vault { ... }",
+  filename: "vault.move",
+  network: "testnet"
+)
+```
+
+### Use case
+
+- Quick pre-deploy audit of any Move module
+- No on-chain interaction required
+- Good for contract review during development
+
+---
+
+## audit_package_id
+
+Fetch and audit a live on-chain Sui package by its address.
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `packageId` | `string` | ✅ | Sui package address — must be `0x` + 64 hex characters |
+| `network` | `"testnet" \| "mainnet"` | No | Sui network (default: `testnet`) |
+
+### Example
+
+```
+audit_package_id(
+  packageId: "0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92",
+  network: "mainnet"
+)
+```
+
+The above audits the Cetus CLMM package on mainnet — the one that suffered the \$223M exploit.
+
+### Use case
+
+- Audit any deployed contract before interacting with it
+- Reproduce the Cetus audit as a demo
+- Audit a package you're about to integrate with
+
+---
+
+## audit_github_repo
+
+Clone a public GitHub repository and audit all `.move` files (up to 50).
+
+### Parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `repoUrl` | `string` | ✅ | Public GitHub URL (`https://github.com/owner/repo`) |
+
+### Example
+
+```
+audit_github_repo(
+  repoUrl: "https://github.com/MystenLabs/move-book"
+)
+```
+
+### Use case
+
+- Audit an entire protocol's codebase before deployment
+- Review a dependency before adding it to your project
+- Audit open-source Move libraries
+
+### Notes
+
+- Only public GitHub repos are supported (private repos return a 400)
+- Files in `build/`, `target/`, `.git/`, `deps/`, `node_modules/` are excluded
+- If more than 50 `.move` files exist, the first 50 found are analysed
+- The report shows `fileCount` (total found) and whether files were capped
+
+---
+
+## Report format (all tools)
+
+Every tool returns a rich markdown report:
+
+```markdown
+## MoveLens Security Report
+
+**Package:** @deepbook/core
+**Network:** mainnet
+**Risk Grade:** 🔴 **F**
+**Findings:** 34 total (34 critical · 0 high · 0 medium · 0 low)
+**Layers run:** Layer 1 (rules) + Layer 2 (OZ) + Layer 4 (ML) + Layer 3 (LanceDB)
+**Walrus blob:** `5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA`
+**Audit ID:** `7f3a1c2d-...`
+
+> Automated pre-screen — not a substitute for a human audit.
+
+---
+
+### 1. 🔴 [CRITICAL] ML-INT-001
+**Module:** `integer_mate` · **Line:** 42 · **Confidence:** 100%
+**Issue:** Use of unchecked shift-left-wrapping (checked_shlw) — can overflow on large inputs.
+**Fix:** Replace checked_shlw with checked_shl.
+
+```move
+// ✅ Suggested fix:
+let result = checked_shl(value, shift);
+```
+
+…
+```
+
+The first 20 findings are shown inline. If more exist, a link to the full report at `movelens.onrender.com/audit/<id>` is included.
