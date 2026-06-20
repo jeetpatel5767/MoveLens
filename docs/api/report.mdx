@@ -1,0 +1,136 @@
+---
+title: "GET /api/report/:id"
+description: "Fetch a completed audit report. Returns the full finding list, risk grade, severity counts, and Walrus provenance."
+---
+
+## Fetch a report
+
+```
+GET /api/report/<auditId>
+```
+
+Only call this after `GET /api/audit?id=<auditId>` returns `status: "done"`.
+
+---
+
+## Response `200 OK`
+
+```json
+{
+  "id": "7f3a1c2d-4b5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "status": "done",
+  "watermark": "Automated pre-screen — not a substitute for a human audit.",
+  "report_id": "a1b2c3d4-...",
+  "generated_at": "2026-06-20T14:32:00.000Z",
+  "package": {
+    "packageId": "0xa9b0ffe2...",
+    "network": "mainnet",
+    "mvrName": "@cetus-clmm/core",
+    "version": 1,
+    "moduleCount": 8,
+    "sourceRepo": null,
+    "inputType": "address",
+    "fileCount": null,
+    "cappedAt": null
+  },
+  "risk_grade": "F",
+  "severity_counts": {
+    "critical": 34,
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  },
+  "layer4_used": true,
+  "memory_context_used": true,
+  "layer3_hits": 4,
+  "sealed": true,
+  "findings": [ ... ],
+  "blobId": "5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+  "txDigest": null,
+  "walrus_url": "https://aggregator.walrus-testnet.walrus.space/v1/blobs/5cN1fBWk5T..."
+}
+```
+
+---
+
+## Response fields
+
+### Top level
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Audit job ID |
+| `status` | `"done"` | Always `"done"` for this endpoint |
+| `watermark` | `string` | Verbatim: `"Automated pre-screen — not a substitute for a human audit."` |
+| `report_id` | `string` (UUID) | Stable UUID for this specific report version |
+| `generated_at` | `string` (ISO 8601) | Timestamp of report generation |
+| `risk_grade` | `"A" \| "B" \| "C" \| "D" \| "F"` | Overall risk grade |
+| `layer4_used` | `boolean` | Whether Layer 4 (ML) ran |
+| `memory_context_used` | `boolean` | Whether Layer 3 (LanceDB) contributed |
+| `layer3_hits` | `number` | Number of LanceDB corpus hits |
+| `sealed` | `boolean` | Whether `findings.enc` is Seal-encrypted in the Walrus quilt |
+| `blobId` | `string \| null` | Walrus blob ID |
+| `txDigest` | `string \| null` | MVR attestation tx digest (if publishOnChain=true) |
+| `walrus_url` | `string \| null` | Full Walrus aggregator URL for the blob |
+
+### `package` object
+
+| Field | Type | Description |
+|---|---|---|
+| `packageId` | `string` | Package address (raw, not hashed — the public quilt hashes it) |
+| `network` | `string` | `"testnet"` or `"mainnet"` |
+| `mvrName` | `string \| null` | MVR human-readable name if registered |
+| `version` | `number` | Package version from Sui |
+| `moduleCount` | `number` | Number of modules analysed |
+| `sourceRepo` | `string \| null` | GitHub URL (git mode only) |
+| `inputType` | `string` | `"address"`, `"source"`, or `"git"` |
+| `fileCount` | `number \| null` | Total `.move` files found (git mode) |
+| `cappedAt` | `number \| null` | Cap limit if files were truncated (git mode) |
+
+### `findings[]` array
+
+Each finding:
+
+```json
+{
+  "rule_id": "ML-INT-001",
+  "severity": "critical",
+  "confidence": 1.0,
+  "source": "layer1",
+  "module": "integer_mate",
+  "line_start": 42,
+  "line_end": 44,
+  "description": "Use of unchecked shift-left-wrapping (checked_shlw)…",
+  "recommendation": "Replace checked_shlw with checked_shl…",
+  "category": "Integer Overflow & Bitwise Arithmetic",
+  "impacted_code": "let result = checked_shlw(value, shift);",
+  "patch_before": "checked_shlw(value, shift)",
+  "patch_after": "checked_shl(value, shift)"
+}
+```
+
+| Field | Type | Description |
+|---|---|---|
+| `rule_id` | `string` | Registry-validated rule ID |
+| `severity` | `string` | `critical \| high \| medium \| low` |
+| `confidence` | `number` | 0–1 (Layer 1 = 1.0, Layer 2 = 0.95, Layer 4 = model-dependent) |
+| `source` | `string` | `layer1 \| layer2 \| layer3 \| layer4` |
+| `module` | `string` | Move module name |
+| `line_start` | `number` | Starting line in sanitized source |
+| `line_end` | `number` | Ending line |
+| `description` | `string` | What was found |
+| `recommendation` | `string` | How to fix it |
+| `category` | `string` | Human-readable category |
+| `impacted_code` | `string \| null` | Triggering code snippet (Layer 4 only) |
+| `patch_before` | `string \| null` | Vulnerable pattern (Layer 4, selected categories) |
+| `patch_after` | `string \| null` | Fixed pattern (Layer 4, selected categories) |
+
+---
+
+## Error responses
+
+| Code | Condition |
+|---|---|
+| `404` | Audit ID not found (expired after 24h or never created) |
+| `202` | Audit still in progress — poll `/api/audit?id=<id>` instead |
+| `422` | Audit failed — body has `{ error: "..." }` |

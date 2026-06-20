@@ -1,0 +1,69 @@
+---
+title: "GET /api/gallery"
+description: "Returns the curated list of pre-audited protocol reports shown on the MoveLens landing page."
+---
+
+## Endpoint
+
+```
+GET /api/gallery
+```
+
+No authentication required. Returns a static JSON array from `src/app/gallery.json`.
+
+---
+
+## Response `200 OK`
+
+```json
+[
+  {
+    "id": "cetus-clmm-mainnet",
+    "name": "Cetus CLMM",
+    "description": "Concentrated liquidity market maker — site of the $223M checked_shlw exploit",
+    "packageId": "0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92",
+    "network": "mainnet",
+    "mvrName": null,
+    "riskGrade": "F",
+    "severity": {
+      "critical": 34,
+      "high": 0,
+      "medium": 0,
+      "low": 0
+    },
+    "layersRun": ["layer1", "layer2", "layer4"],
+    "blobId": "5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+    "highlight": "ML-INT-001",
+    "auditDate": "2026-06-13"
+  },
+  ...
+]
+```
+
+---
+
+## Gallery entries
+
+The gallery is seeded with three pre-audited entries representing different risk profiles:
+
+| Name | Risk Grade | Key finding | Walrus blob |
+|---|---|---|---|
+| Cetus CLMM (mainnet) | **F** | 34× `ML-INT-001` critical — the `checked_shlw` exploit | `5cN1fBWk5T...` |
+| FlashLoan Pool | **F** | Hot potato not consumed, missing balance checks | `VReKsGr5Eb...` |
+| Governance Module | **F** | Capability misuse, unrestricted admin drain | `otfJcF6bqn...` |
+
+---
+
+## Updating the gallery
+
+To add a new entry:
+
+1. Run an audit and get the `blobId`
+2. Add an entry to `src/app/gallery.json`
+3. Run `npx tsx scripts/gallery-audits.ts` to verify all blobs are fetchable (HTTP 200)
+
+The gallery is displayed on the landing page (`/`) as clickable cards that link to `/audit/<id>` for live-fetched reports.
+
+<Note>
+  The gallery endpoint is read-only and statically served. It does not reflect real-time audit results — only the curated entries in `gallery.json`.
+</Note>

@@ -1,0 +1,62 @@
+---
+title: "Seal Encryption"
+description: "MoveLens encrypts the findings.enc quilt entry using Mysten Labs' Seal threshold encryption — only the package owner can decrypt the full findings list."
+---
+
+## What is Seal?
+
+[Seal](https://docs.sui.io/concepts/cryptography/seal) is Mysten Labs' Identity-Based Encryption (IBE) system built on Sui. It uses a decentralised committee of key servers to provide threshold encryption — no single party holds the full decryption key.
+
+MoveLens uses Seal to encrypt the `findings.enc` quilt entry so that full findings are only accessible to the address that owns the audited package.
+
+---
+
+## How it works
+
+```
+encrypt(
+  plaintext: Uint8Array,        // JSON.stringify(findings)
+  sealId:    ownerAddress,      // the package owner's Sui address
+  packageId: SEAL_TESTNET_PACKAGE_ID,
+  committee:  testnet committee  // 0xb012378...e98
+)
+→ { ciphertext: Uint8Array, sealId }
+```
+
+The committee key servers are queried via the aggregator at `https://seal-aggregator-testnet.mystenlabs.com`. The testnet Seal package is `0xc5ce2742...07`.
+
+**Fallback:** If Seal encryption fails (network error, committee unavailable), the engine falls back to storing plaintext findings with `sealed: false` and logs a console warning. The report page indicates whether findings are sealed or plaintext.
+
+---
+
+## Current limitation
+
+In the MVP, `sealId` is set to the **MoveLens signer address** (not the package owner's address). This means only the MoveLens keypair can decrypt findings — which is equivalent to the findings being visible to the auditor only.
+
+A v2 milestone would accept the package owner's address as `sealId`, making the encryption truly owner-centric. This limitation is documented in `PRIVACY.md`.
+
+---
+
+## Decryption (for future owner access)
+
+In a production deployment, the package owner would:
+
+1. Connect their Sui wallet
+2. Request decryption from the Seal committee using their wallet signature as proof of identity
+3. The committee releases key shares; the client reassembles the DEM key
+4. `findings.enc` is decrypted client-side
+
+For the hackathon demo, findings are returned directly from the in-process store (before encryption) so judges can see the security analysis without needing the owner's keypair.
+
+---
+
+## Report field
+
+```json
+{
+  "sealed": true,
+  "blobId": "5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA"
+}
+```
+
+`sealed: true` means IBE encryption was applied. `sealed: false` means the fallback plaintext path was used.

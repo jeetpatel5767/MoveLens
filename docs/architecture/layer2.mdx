@@ -1,0 +1,66 @@
+---
+title: "Layer 2 — OZ Benchmark"
+description: "10 OpenZeppelin-class pattern-absence checks that verify safe coding patterns are present, not just that dangerous ones are absent."
+---
+
+## Philosophy: absence detection
+
+Layer 1 checks for dangerous patterns that **are** present. Layer 2 flips the question: are the safe, recommended patterns **absent** where they should be required?
+
+This mirrors how [OpenZeppelin](https://www.openzeppelin.com/) security benchmarks work — not just "no reentrancy", but "is the reentrancy guard present?"
+
+---
+
+## The 10 OZ rules
+
+| Rule ID | Name | Severity | Fires when |
+|---|---|---|---|
+| `ML-OZ-001` | Integer overflow check missing | critical | Arithmetic without checked ops or explicit bounds |
+| `ML-OZ-002` | Capability access control missing | high | Public entry functions with no capability parameter |
+| `ML-OZ-003` | Object deletion without field zeroing | high | `delete` call without prior field destruction |
+| `ML-OZ-004` | Unchecked vector bounds | high | Vector access without length check in scope |
+| `ML-OZ-005` | Balance check before transfer missing | high | `coin::split` / `transfer` without balance assertion |
+| `ML-OZ-006` | Signer validation missing | medium | Functions claiming to be admin without `assert!` |
+| `ML-OZ-007` | Upgrade cap stored in shared object | high | `UpgradeCap` stored in `Shared` position |
+| `ML-OZ-008` | Flash loan not consumed | critical | Hot potato created but no matching consume call found |
+| `ML-OZ-009` | Epoch/time dependency without guard | medium | `tx_context::epoch()` / `clock::timestamp_ms()` without sanity bounds |
+| `ML-OZ-010` | Module init not entry | low | `init` function is public (should be private) |
+
+---
+
+## How it works
+
+Layer 2 (`src/lib/audit/layer2.ts`) uses the same compiled-regex approach as Layer 1, but each rule's `pattern` is designed to **match the absence** of something — for example, a function body that contains `<<` (raw shift) but does not contain `checked_shl` anywhere nearby.
+
+All 10 rules run with `confidence: 0.95` and `source: "layer2"`. The sort order in the engine places `ML-OZ-001` immediately after `ML-INT-001` as the highest-priority finding class.
+
+---
+
+## Sort priority: Cetus-class first
+
+The engine's sort function gives `ML-OZ-001` and `ML-INT-001` absolute priority regardless of other findings. These two rules represent the class of vulnerabilities that caused the largest DeFi losses in Sui's history, so judges and auditors see them first.
+
+---
+
+## Example finding
+
+```json
+{
+  "rule_id": "ML-OZ-001",
+  "severity": "critical",
+  "confidence": 0.95,
+  "source": "layer2",
+  "module": "pool",
+  "line_start": 18,
+  "line_end": 19,
+  "description": "Arithmetic operation without overflow protection detected — no checked_* operation in scope.",
+  "recommendation": "Use checked_add / checked_sub / checked_mul, or assert bounds explicitly before the operation.",
+  "category": "OpenZeppelin Deviation"
+}
+```
+
+---
+
+## Relationship to Layer 1
+
+Layer 1 and Layer 2 findings are merged by the engine. If the same `(rule_id, module, line_start)` appears in both layers (impossible in practice since L1 uses `ML-*-NNN` and L2 uses `ML-OZ-NNN`), the higher-confidence one wins. In practice the two layers are complementary: L1 finds the specific dangerous call, L2 verifies the safe alternative is missing.

@@ -1,0 +1,103 @@
+---
+title: "Quick Start"
+description: "Run your first Move audit in three ways — on-chain address, pasted source, or a GitHub repository."
+---
+
+## Option 1 — Audit a live on-chain package
+
+1. Go to [movelens.onrender.com/app](https://movelens.onrender.com/app)
+2. Select the **Package Address** tab
+3. Paste a Sui package address, e.g. the Cetus CLMM on mainnet:
+   ```
+   0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92
+   ```
+4. Select **Mainnet**
+5. Click **Run Audit**
+
+The stepper shows six stages: Fetching → Analysing → Layer 1 → Layer 2 → Layer 3/4 → Uploading. The report page loads automatically when done.
+
+---
+
+## Option 2 — Paste source code
+
+1. Select the **Paste Source** tab
+2. Paste one or more `.move` module files
+3. Click **Run Audit**
+
+No deployment required. Good for auditing contracts before publishing.
+
+---
+
+## Option 3 — Audit a GitHub repository
+
+1. Select the **GitHub Repo** tab
+2. Paste a public GitHub URL:
+   ```
+   https://github.com/MystenLabs/move-book
+   ```
+3. Click **Run Audit**
+
+MoveLens shallow-clones the repo, finds all `.move` files (excluding `build/`, `target/`, `.git/`, `deps/`), caps at **50 files**, and runs the full pipeline across all of them as a unified package.
+
+<Tip>
+  Large repos with hundreds of `.move` files are capped at 50. The report shows `fileCount` (total found) and `cappedAt` (50 if truncated). Prioritise the 50 most recently modified files.
+</Tip>
+
+---
+
+## Option 4 — MCP (Claude Desktop / Claude Code)
+
+Install the MoveLens MCP server once and audit from inside any Claude conversation:
+
+```bash
+# In your project directory
+claude mcp add movelens -- npx tsx /path/to/movelens/mcp-server.ts
+```
+
+Then just ask Claude: *"Audit this Move contract: [paste code]"*
+
+See the full [MCP setup guide](/mcp/setup) for Claude Desktop instructions.
+
+---
+
+## Reading the report
+
+<Steps>
+  <Step title="Risk grade (A–F)">
+    **F** = any critical finding. **D** = 2+ high. **C** = exactly 1 high. **B** = medium findings only. **A** = low/info only.
+  </Step>
+  <Step title="Findings">
+    Each finding shows: rule ID, severity, confidence (0–1), source layer, module name, line range, description, and recommendation.
+
+    Findings with `confidence < 0.4` are shown at reduced opacity with a "low confidence" label — treat these as hints, not confirmed bugs.
+  </Step>
+  <Step title="Patch suggestions">
+    Layer 4 findings for ML-INT, ML-ACC, ML-ARI, ML-HOT, and ML-UPG include a side-by-side **before/after** code panel with a "Copy fix" button.
+  </Step>
+  <Step title="Trust panel">
+    Shows which layers ran, how many Layer 3 memory hits contributed, whether the report is Seal-encrypted, and the Walrus blob ID (permanent proof the audit ran).
+  </Step>
+  <Step title="Walrus link">
+    Every completed audit writes a blob to Walrus. Click the blob ID to fetch the raw quilt from the decentralised storage network.
+  </Step>
+</Steps>
+
+---
+
+## Self-host / run locally
+
+```bash
+git clone https://github.com/jeetpatel5767/movelens.git
+cd movelens
+npm install
+cp .env.example .env        # fill in SUI_KEYPAIR_B64 + GROQ_API_KEY
+python scripts/layer4_server.py &   # start Python sidecar on :8765
+npx tsx scripts/seedLanceDB.ts       # seed the 52-snippet corpus
+npm run dev                          # Next.js on :3000
+```
+
+Then open [localhost:3000](http://localhost:3000).
+
+<Note>
+  `GROQ_API_KEY` is free at [console.groq.com](https://console.groq.com). Without it Layer 4 falls back to the keyword heuristic classifier — still useful, but less precise.
+</Note>

@@ -1,0 +1,101 @@
+---
+title: "MCP Server Setup"
+description: "Install the MoveLens MCP server to audit Sui Move contracts directly from Claude Desktop or Claude Code — no browser required."
+---
+
+## What is MCP?
+
+The [Model Context Protocol](https://modelcontextprotocol.io) is Anthropic's open standard for exposing tools to AI assistants. Once the MoveLens MCP server is connected, any Claude conversation can call `audit_move_source`, `audit_package_id`, or `audit_github_repo` as native tools.
+
+---
+
+## Prerequisites
+
+- Node.js 18+
+- The MoveLens repo cloned locally
+- (Optional) A `GROQ_API_KEY` for Layer 4 LLM classification
+
+```bash
+git clone https://github.com/jeetpatel5767/movelens.git
+cd movelens
+npm install
+```
+
+---
+
+## Claude Desktop setup
+
+<Steps>
+  <Step title="Locate the config file">
+    - **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+    - **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+  </Step>
+
+  <Step title="Add MoveLens to mcpServers">
+    ```json
+    {
+      "mcpServers": {
+        "movelens": {
+          "command": "npx",
+          "args": ["tsx", "/ABSOLUTE/PATH/TO/movelens/mcp-server.ts"],
+          "env": {
+            "MOVELENS_URL": "https://movelens.onrender.com"
+          }
+        }
+      }
+    }
+    ```
+
+    Replace `/ABSOLUTE/PATH/TO/movelens/` with the actual path on your machine.
+
+    <Tip>
+      Set `MOVELENS_URL` to `http://localhost:3000` if you're running MoveLens locally for faster audits without cold-start delays.
+    </Tip>
+  </Step>
+
+  <Step title="Restart Claude Desktop">
+    Fully quit and relaunch. The MoveLens tools appear automatically in the tool picker (hammer icon).
+  </Step>
+
+  <Step title="Test it">
+    Ask Claude: *"Audit this Move contract:"* and paste any `.move` source. Claude calls `audit_move_source` and returns a full security report inline.
+  </Step>
+</Steps>
+
+---
+
+## Claude Code setup
+
+```bash
+# Add to the current project
+claude mcp add movelens -- npx tsx /path/to/movelens/mcp-server.ts
+
+# Or with a custom backend URL
+MOVELENS_URL=http://localhost:3000 claude mcp add movelens -- npx tsx /path/to/movelens/mcp-server.ts
+```
+
+The tools are then available in any `claude` session within that project.
+
+---
+
+## Environment variables
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `MOVELENS_URL` | No | `https://movelens.onrender.com` | Base URL of the MoveLens backend |
+
+The MCP server itself is a thin client — it submits audit jobs to the backend and polls for completion. All analysis runs on the backend.
+
+---
+
+## Timeouts & cold starts
+
+The MCP server polls every **3 seconds** and times out after **3 minutes**. On Render free tier, the first request after a 15-minute idle period triggers a cold start (~30s). The server waits through this automatically.
+
+If the audit times out, retry — the cold start only happens once per 15-minute idle window.
+
+---
+
+## Supported transports
+
+The server uses `StdioServerTransport` — the standard MCP stdio transport compatible with Claude Desktop, Claude Code, and any MCP-compatible client.

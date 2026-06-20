@@ -1,0 +1,225 @@
+---
+title: "Vulnerability Sectors"
+description: "All 13 vulnerability sectors with every rule ID, severity, and description."
+---
+
+## ML-ACC — Access Control & Visibility (13 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-ACC-001 | high | Unrestricted public entry function — no capability or signer check |
+| ML-ACC-002 | high | Admin function callable by anyone — missing capability parameter |
+| ML-ACC-003 | medium | Capability object passed by reference (not consumed) — can be reused |
+| ML-ACC-004 | high | Missing `assert!` on admin capability ownership |
+| ML-ACC-005 | high | `transfer::public_transfer` to arbitrary address without check |
+| ML-ACC-006 | critical | Emergency drain function with no time-lock or multisig |
+| ML-ACC-007 | high | Shared object mutation without capability check |
+| ML-ACC-008 | critical | UpgradeCap not burned — upgrade authority retained indefinitely |
+| ML-ACC-009 | high | Module init is public — can be called post-deployment |
+| ML-ACC-010 | medium | Admin role transferred without two-step confirmation |
+| ML-ACC-011 | high | Freeze-object bypass via internal reference |
+| ML-ACC-012 | medium | Dynamic field access without type assertion |
+| ML-ACC-013 | medium | Entry function visibility wider than needed |
+
+---
+
+## ML-OBJ — Object Ownership & Permission Checks (13 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-OBJ-001 | high | Object passed to function not verified as owned by caller |
+| ML-OBJ-002 | high | Shared object used as singleton lock — TOCTOU risk |
+| ML-OBJ-003 | high | Parent object relationship not checked before child mutation |
+| ML-OBJ-004 | critical | Object deleted without consuming all wrapped children |
+| ML-OBJ-005 | high | Transfer to dead address (`@0x0`) |
+| ML-OBJ-006 | high | Wrapped object unpacked without checking wrapper |
+| ML-OBJ-007 | high | Missing `assert!(object::id(&obj) == expected_id, ...)` |
+| ML-OBJ-008 | critical | Dynamic object field key collision possible |
+| ML-OBJ-009 | medium | Object version not incremented after mutation |
+| ML-OBJ-010 | high | Borrow of shared object across transaction boundaries |
+| ML-OBJ-011 | high | Object field set to `none` without deletion |
+| ML-OBJ-012 | medium | Object ID used as map key — prone to aliasing |
+| ML-OBJ-013 | medium | Object capability not scoped to a single use |
+
+---
+
+## ML-INT — Integer Overflow & Bitwise Arithmetic (6 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-INT-001 | critical | `checked_shlw` (shift-left-wrapping) — can overflow, Cetus exploit class |
+| ML-INT-002 | critical | Raw `<<` shift without bounds check |
+| ML-INT-003 | high | `*` multiplication without checked_mul or u128 cast |
+| ML-INT-004 | medium | Addition without checked_add on user-controlled inputs |
+| ML-INT-005 | high | Subtraction underflow — no check before `a - b` |
+| ML-INT-006 | high | Division before multiplication — precision loss in fee calculation |
+
+---
+
+## ML-ARI — Arithmetic Precision Loss (7 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-ARI-001 | high | Integer division truncation in fee/ratio calculation |
+| ML-ARI-002 | medium | Percentage calculation without scaling to basis points |
+| ML-ARI-003 | medium | Price calculation with low-precision integer math |
+| ML-ARI-004 | medium | Rounding direction not specified — protocol can lose or gain dust |
+| ML-ARI-005 | medium | Accumulated rounding error in loop arithmetic |
+| ML-ARI-006 | medium | Fixed-point math without explicit denominator tracking |
+| ML-ARI-007 | high | Exchange rate calculation susceptible to manipulation via small inputs |
+
+---
+
+## ML-HOT — Hot Potato / Flash Loan Misuse (4 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-HOT-001 | critical | Hot potato struct has `store` ability — can escape the transaction |
+| ML-HOT-002 | critical | Flash loan receipt not verified on return |
+| ML-HOT-003 | high | Hot potato consumed in a different module than created |
+| ML-HOT-004 | high | Flash loan borrow amount not bounded |
+
+---
+
+## ML-UPG — Unsafe Upgrade Patterns (4 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-UPG-001 | critical | UpgradeCap not burned after final upgrade |
+| ML-UPG-002 | high | Package ID not asserted in upgrade function |
+| ML-UPG-003 | high | Upgrade policy allows arbitrary code replacement |
+| ML-UPG-004 | medium | UpgradeCap stored in a shared object (accessible to anyone) |
+
+---
+
+## ML-RAC — Race Conditions / Transaction Ordering (3 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-RAC-001 | high | Price read from shared object in same tx as trade — TOCTOU |
+| ML-RAC-002 | high | Epoch-based nonce not incremented atomically |
+| ML-RAC-003 | low | Optimistic concurrency pattern without conflict detection |
+
+---
+
+## ML-RET — Unchecked Return Values (4 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-RET-001 | high | `option::some` return not unwrapped — None case ignored |
+| ML-RET-002 | high | Coin split result discarded — funds lost |
+| ML-RET-003 | medium | Result of `vector::remove` not checked against expected value |
+| ML-RET-004 | medium | External module call return value ignored |
+
+---
+
+## ML-TOK — Token / Coin Management (8 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-TOK-001 | critical | Mint without supply cap enforcement |
+| ML-TOK-002 | critical | Burn without verifying coin belongs to treasury |
+| ML-TOK-003 | high | `coin::join` after `coin::split` — double-spend window |
+| ML-TOK-004 | high | Treasury cap not locked after TGE |
+| ML-TOK-005 | medium | Transfer of zero-value coin (wasted gas, potential DoS) |
+| ML-TOK-006 | high | Token metadata mutable after deployment |
+| ML-TOK-007 | medium | Balance not checked before split — panics on insufficient balance |
+| ML-TOK-008 | medium | Multiple coin objects not merged before transfer |
+
+---
+
+## ML-WRP — Object Wrapping / Unwrapping (3 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-WRP-001 | high | Object wrapped inside vector — can be lost if vector dropped |
+| ML-WRP-002 | high | Unwrap destroys wrapper but not inner object's fields |
+| ML-WRP-003 | medium | Nested wrap depth > 2 — hard to reason about ownership |
+
+---
+
+## ML-DOS — Denial of Service (4 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-DOS-001 | high | Unbounded loop over user-controlled vector |
+| ML-DOS-002 | high | Recursive function without depth limit |
+| ML-DOS-003 | low | Large struct stored in shared object — storage bloat |
+| ML-DOS-004 | high | Event emission inside loop — gas exhaustion risk |
+
+---
+
+## ML-EXT — External Module / Dependency Security (4 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-EXT-001 | high | External package called by address, not by name — upgrade drift |
+| ML-EXT-002 | medium | Oracle price consumed without staleness check |
+| ML-EXT-003 | medium | Cross-module state dependency without version pin |
+| ML-EXT-004 | medium | Dependency package ID hardcoded — breaks on mainnet |
+
+---
+
+## ML-LOG — Design Logic Flaws (20 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-LOG-001 | high | Invariant not checked after state mutation |
+| ML-LOG-002 | high | State updated before external call — reentrancy risk |
+| ML-LOG-003 | high | Fee bypass possible via zero-amount input |
+| ML-LOG-004 | high | Off-by-one in index bounds check |
+| ML-LOG-005 | high | Liquidity pool allows zero-amount LP token mint |
+| ML-LOG-006 | medium | Business logic differs between entry and internal version |
+| ML-LOG-007 | medium | Deadline/expiry check uses `>=` instead of `>` |
+| ML-LOG-008 | medium | Slippage protection not enforced — user gets worse price |
+| ML-LOG-009 | medium | Governance vote weight not snapshotted at proposal time |
+| ML-LOG-010 | medium | Emergency pause does not prevent withdrawal |
+| ML-LOG-011 | medium | Multi-sig threshold not validated on setup |
+| ML-LOG-012 | medium | Precision loss in time-weighted average price |
+| ML-LOG-013 | medium | Reward calculation uses block height instead of timestamp |
+| ML-LOG-014 | medium | Vesting schedule cliff not enforced |
+| ML-LOG-015 | medium | Protocol fee recipient is hardcoded, not configurable |
+| ML-LOG-016 | low | Event not emitted on state change — off-chain indexers may miss it |
+| ML-LOG-017 | medium | Incorrect decimal scaling in price feed consumption |
+| ML-LOG-018 | high | Sandwich attack vector — price sensitive to single tx |
+| ML-LOG-019 | medium | Stale configuration used after upgrade |
+| ML-LOG-020 | medium | Zero-address check missing on configurable recipient |
+
+---
+
+## Layer 2 — OZ Benchmarks (10 rules)
+
+| Rule ID | Severity | Description |
+|---|---|---|
+| ML-OZ-001 | critical | Arithmetic without overflow protection (safe alternative absent) |
+| ML-OZ-002 | high | Public entry with no access control pattern |
+| ML-OZ-003 | high | Object deleted without field zeroing |
+| ML-OZ-004 | high | Vector access without length bounds check |
+| ML-OZ-005 | high | Balance not checked before transfer |
+| ML-OZ-006 | medium | Signer not validated in admin function |
+| ML-OZ-007 | high | UpgradeCap in shared object |
+| ML-OZ-008 | critical | Flash loan hot potato not consumed |
+| ML-OZ-009 | medium | Time dependency without guard |
+| ML-OZ-010 | low | Init function is public |
+
+---
+
+## Layer 4 — ML Markers (13 rules)
+
+One marker per sector. These are coarser than Layer 1 rules — the LLM classifies at sector level.
+
+| Rule ID | Sector |
+|---|---|
+| ML-ACC-L4-001 | Access Control |
+| ML-INT-L4-001 | Integer Overflow |
+| ML-HOT-L4-001 | Hot Potato / Flash Loan |
+| ML-OWN-L4-001 | Object Ownership |
+| ML-ARI-L4-001 | Arithmetic Precision |
+| ML-UPG-L4-001 | Unsafe Upgrade |
+| ML-RAC-L4-001 | Race Conditions |
+| ML-RET-L4-001 | Unchecked Returns |
+| ML-TOK-L4-001 | Token / Coin Management |
+| ML-WRP-L4-001 | Object Wrapping |
+| ML-DOS-L4-001 | Denial of Service |
+| ML-DEP-L4-001 | External Dependencies |
+| ML-LOG-L4-001 | Design Logic Flaws |

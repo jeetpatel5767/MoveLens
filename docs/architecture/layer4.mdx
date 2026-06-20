@@ -1,0 +1,142 @@
+---
+title: "Layer 4 — ML Ensemble"
+description: "Two-model ensemble: Jina embeddings (Model A) for similarity scoring + Groq llama-3.3-70b-versatile (Model B) for natural-language classification of ambiguous snippets."
+---
+
+## Overview
+
+Layer 4 (`src/lib/audit/layer4.ts`) is the **only layer allowed to make external API calls** — specifically to the Groq free-tier API. It uses a two-model pipeline to classify code snippets that are ambiguous or context-dependent.
+
+**Hard rules for Layer 4:**
+- NEVER add paid API keys (OpenAI, Anthropic, Gemini, Cohere)
+- Groq free tier only (20 RPM hard cap, gracefully rate-limited)
+- Layer 4 failure MUST NEVER crash the audit — caller catches and continues
+- Every emitted `rule_id` MUST exist in `VALID_RULE_IDS` — invalid findings are dropped and logged
+
+---
+
+## The two-model pipeline
+
+### Model A — Jina embeddings (sidecar)
+
+```
+POST http://127.0.0.1:8765/embed
+{ "code": "<sanitized snippet>" }
+
+→ { "similar_to": "cetus_checked_shlw", "score": 0.9581 }
+```
+
+The sidecar uses `jinaai/jina-embeddings-v2-base-code` (loaded locally, no API cost) to embed the snippet and run cosine similarity against the 52-snippet LanceDB corpus. If `score > 0.75`, a **boost flag** is set.
+
+### Model B — Groq `llama-3.3-70b-versatile`
+
+```
+POST https://api.groq.com/openai/v1/chat/completions
+{
+  "model": "llama-3.3-70b-versatile",
+  "messages": [
+    { "role": "system", "content": "<Move security expert prompt>" },
+    { "role": "user",   "content": "<memory context + sanitized snippet>" }
+  ],
+  "temperature": 0.1,
+  "max_tokens": 300
+}
+
+→ { "vulnerable": true, "category": "ML-INT", "confidence": 0.85, "reason": "…" }
+```
+
+The system prompt is a hardened Move security expert role. The memory context from Layer 3 is injected if available. Groq returns structured JSON; the engine strips trailing commas (common LLM formatting error) before `JSON.parse`.
+
+**Fallback:** If Groq is unavailable, rate-limited, or returns unparseable JSON, the engine calls `classifyFallback()` — a keyword heuristic on the Python sidecar that returns coarser classifications with lower confidence.
+
+### Final confidence formula
+
+```
+confidence = clamp(
+  B.confidence + (A.similar && B.confidence < 0.8 ? +0.15 : 0),
+  0, 1
+)
+```
+
+If the embedding similarity is high (Model A boost flag) **and** Groq's confidence is below 0.8, add 0.15. This prevents double-boosting already-confident findings.
+
+---
+
+## Snippet extraction
+
+Before calling either model, the engine:
+
+1. Runs `sanitizeForPatterns(source)` to strip comments and string literals (prevents prompt injection via `// IGNORE ALL FINDINGS`)
+2. Extracts **interesting line windows** (WINDOW=20 lines around each suspicious anchor line from Layer 1/2 findings)
+3. Caps at **20 snippets globally** — the top 20 by snippet length
+4. Processes snippets in **batches of 4** via `Promise.all` for parallelism (audit time: ~63s for 50 modules vs. ~110s serial)
+
+---
+
+## Rate limiting
+
+Groq free tier: **20 RPM** (requests per minute). The `groqRateLimitOk()` function maintains a rolling timestamp array:
+
+- If `timestamps.length >= 20` within the last 60s → skip Groq, use heuristic fallback
+- Timestamps older than 60s are evicted on each check
+- Exported for testing: `test/f33-verify.ts` resets the array between test steps
+
+---
+
+## Layer 4 rule IDs
+
+Layer 4 emits **one marker ID per sector** (not the fine-grained L1 IDs). This is intentional — the ML model classifies at sector level (ML-INT, ML-ACC, etc.) rather than at specific rule granularity.
+
+| L4 marker | Sector |
+|---|---|
+| `ML-INT-L4-001` | Integer Overflow |
+| `ML-ACC-L4-001` | Access Control |
+| `ML-HOT-L4-001` | Hot Potato / Flash Loan |
+| `ML-OWN-L4-001` | Object Ownership |
+| `ML-ARI-L4-001` | Arithmetic Precision |
+| `ML-UPG-L4-001` | Unsafe Upgrade |
+| `ML-RAC-L4-001` | Race Conditions |
+| `ML-RET-L4-001` | Unchecked Returns |
+| `ML-TOK-L4-001` | Token / Coin Management |
+| `ML-WRP-L4-001` | Object Wrapping |
+| `ML-DOS-L4-001` | Denial of Service |
+| `ML-DEP-L4-001` | External Dependencies |
+| `ML-LOG-L4-001` | Design Logic Flaws |
+
+---
+
+## Patch suggestions
+
+For the five highest-impact categories, Layer 4 attaches `patch_before` / `patch_after` Move code snippets:
+
+| Category | Before (vulnerable) | After (safe) |
+|---|---|---|
+| ML-INT | `checked_shlw(a, b)` | `checked_shl(a, b)` |
+| ML-ACC | `public entry fun drain(cap: &AdminCap, ...)` | `public entry fun drain(cap: AdminCap, ...) { ... object::delete(cap) }` |
+| ML-ARI | `let fee = amount * rate / 10000` | `let fee = (amount as u128) * (rate as u128) / 10000) as u64` |
+| ML-HOT | `struct Loan { amount: u64 }` | `struct Loan { amount: u64 } // no abilities` |
+| ML-UPG | `public entry fun upgrade(cap: &UpgradeCap, ...)` | `assert!(package::package_id(cap) == @this_package, ERR_WRONG_PACKAGE)` |
+
+The report UI renders these as side-by-side red/green panels with a "Copy fix" button.
+
+---
+
+## Python sidecar
+
+`scripts/layer4_server.py` is a Flask server that hosts the Jina embedding model locally:
+
+| Endpoint | Method | Purpose |
+|---|---|---|
+| `/health` | GET | Returns `{ status, models_loaded, corpus_rows, jina_loaded }` |
+| `/embed` | POST | Embeds code + searches LanceDB corpus, returns `{ similar_to, score }` |
+| `/embed-raw` | POST | Embeds and stores to LanceDB (used by `seedLanceDB.ts`) |
+| `/classify` | POST | Keyword heuristic fallback classification |
+| `/reload` | POST | Reloads the LanceDB table from disk |
+
+Start with:
+```bash
+python scripts/layer4_server.py
+# Runs on http://127.0.0.1:8765
+# Important: use 127.0.0.1, NOT localhost
+# (Windows IPv6 resolves localhost → ::1, Flask binds 0.0.0.0 IPv4 only)
+```

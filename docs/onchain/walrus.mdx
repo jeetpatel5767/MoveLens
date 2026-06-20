@@ -1,0 +1,84 @@
+---
+title: "Walrus Storage"
+description: "Every MoveLens audit report is stored as a permanent Walrus blob — a three-entry quilt containing public metadata, encrypted findings, and a human-readable summary."
+---
+
+## What is Walrus?
+
+[Walrus](https://docs.walrus.site) is Mysten Labs' decentralised blob storage network built on Sui. Files are erasure-coded across storage nodes; any blob can be retrieved from the aggregator without a central server.
+
+MoveLens stores every audit report on Walrus testnet (5 epochs ≈ 5 days; mainnet is permanent).
+
+---
+
+## The audit quilt
+
+Each audit produces a **quilt** — a bundle of three logical entries uploaded as a single Walrus blob:
+
+| Entry | Name | Content | Public? |
+|---|---|---|---|
+| 1 | `report.json` | Public metadata: risk grade, severity counts, package hash (SHA-256, no raw ID), generated_at, watermark | ✅ Yes |
+| 2 | `findings.enc` | Seal-encrypted findings (all `Finding` objects) | 🔒 Owner only |
+| 3 | `summary.md` | Human-readable markdown: grade, counts, watermark, top module list | ✅ Yes |
+
+The quilt patch IDs follow the format `<blobId>B<offset>A<length>` and are returned in the upload response for direct entry access.
+
+---
+
+## Privacy: package ID hashing
+
+The `report.json` entry does **not** contain the raw package address. Instead it stores `package_ref` — a SHA-256 hex digest of the package ID (no `0x` prefix, 64 hex characters). The raw package ID is only present inside `findings.enc` (Seal-encrypted).
+
+This means the public blob does not leak which contract was audited — only the auditor's keypair can link the blob back to a specific package.
+
+---
+
+## Upload pipeline
+
+```typescript
+// src/lib/walrus/upload.ts
+uploadAuditQuilt(entries: QuiltEntry[]) → { blobId, quiltPatchIds }
+```
+
+1. Load keypair from `SUI_KEYPAIR_B64` (bech32 or raw base64)
+2. Create `WalrusClient` with `storageApiUrl`, `aggregatorUrl`, signer
+3. Upload with `epochs: 5` — 5 storage epochs
+4. Retry once on failure (testnet nodes can be unreliable)
+5. Batch `getObjects` in chunks of 30 to stay under GraphQL 5000-byte limit
+
+**DEMO_MODE_BLOB_ID fallback:** If the upload fails after retries (e.g. testnet wallet empty), the engine falls back to the `DEMO_MODE_BLOB_ID` env var. The report page shows a yellow degraded banner explaining this. The findings are still real — only the storage step is degraded.
+
+---
+
+## Fetch a blob
+
+```bash
+# Fetch the public report.json entry directly
+curl https://aggregator.walrus-testnet.walrus.space/v1/blobs/<blobId>
+
+# Or fetch a specific quilt entry (patch ID)
+curl https://aggregator.walrus-testnet.walrus.space/v1/blobs/<quiltPatchId>
+```
+
+The MoveLens report page shows the Walrus URL and opens it in a new tab. The trust panel includes the `blobId` and `txDigest` (if MVR-attested).
+
+---
+
+## Key blob IDs from development
+
+| Package | blobId | Notes |
+|---|---|---|
+| Cetus CLMM (mainnet) | `5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA` | 445KB, 34 critical findings |
+| FlashLoan Pool | `VReKsGr5Ebvovx19W4nYAoBT3Jin6vrBLvN5CoDZqFE` | Gallery entry |
+| Governance Module | `otfJcF6bqnD4PKM4NiUoCUTBRqPuNBkM1IyF9V1WOc4` | Gallery entry |
+| MystenLabs/move-book (GitHub) | `O7UJKmfE_TyHXdW1tjNyGOngHVmaOQqZOPhiB8rJxOQ` | F36 test, 50 files |
+
+---
+
+## Signer address
+
+```
+0x8a271c5a35e7fdac64fd811b57d6e605f81697fd12b8a1867300abf867429d57
+```
+
+This is the keypair used to sign Walrus uploads. In production each user would use their own wallet.

@@ -1,0 +1,88 @@
+---
+title: "What is MoveLens?"
+description: "AI-powered security auditor for Sui Move smart contracts — 4-layer hybrid engine, zero paid AI APIs, permanent Walrus storage."
+---
+
+<img
+  className="block"
+  src="/Logo.png"
+  alt="MoveLens"
+  style={{ width: "160px", marginBottom: "24px" }}
+/>
+
+## Overview
+
+MoveLens is an open-source security auditor for [Sui Move](https://docs.sui.io/guides/developer/first-app/write-package) smart contracts. It runs a **four-layer hybrid analysis pipeline** on any Move package — from a live on-chain address, pasted source code, or a public GitHub repository — and produces a permanent, encrypted audit report stored on **Walrus decentralised storage**.
+
+Built for the **Sui Overflow 2026 hackathon** (Walrus track), MoveLens is the first auditor to integrate:
+
+- Deterministic regex + AST rule engine (Layer 1)
+- OpenZeppelin benchmark comparisons (Layer 2)
+- LanceDB semantic memory recall (Layer 3)
+- Groq `llama-3.3-70b-versatile` + Jina embedding ensemble (Layer 4)
+- **Walrus** blob storage for permanent, verifiable reports
+- **Seal** threshold encryption so only the package owner can decrypt findings
+- **MVR** on-chain attestation linking a Walrus blob to a Sui package
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="bolt" href="/quickstart">
+    Run your first audit in 60 seconds
+  </Card>
+  <Card title="Architecture" icon="layer-group" href="/architecture/overview">
+    How the 4-layer pipeline works
+  </Card>
+  <Card title="Rule Registry" icon="list-check" href="/rules/overview">
+    103 rules across 13 vulnerability sectors
+  </Card>
+  <Card title="MCP Setup" icon="plug" href="/mcp/setup">
+    Audit from Claude Desktop or Claude Code
+  </Card>
+</CardGroup>
+
+---
+
+## Why MoveLens?
+
+### The problem
+
+Sui Move is memory-safe and object-centric, but move-specific vulnerabilities — integer overflow via unchecked bitwise shifts, capability object misuse, hot-potato flash loan abuse — have caused **hundreds of millions in losses** (Cetus: \$223M, 2024).
+
+Existing Solidity auditors don't understand Move's object model. Human audits are expensive and slow. There was no open, automated pre-screening tool for Move.
+
+### The solution
+
+MoveLens sits between "no audit" and "full human engagement." It:
+
+1. **Screens instantly** — 65 deterministic regex rules catch the most common patterns in milliseconds.
+2. **Benchmarks against OZ** — 10 OpenZeppelin-class deviation checks verify safe patterns are present.
+3. **Recalls past vulnerabilities** — 52-snippet LanceDB corpus finds code that resembles historically exploited patterns.
+4. **Uses a real LLM for context** — Groq `llama-3.3-70b-versatile` (free tier) classifies ambiguous snippets with natural-language reasoning.
+5. **Stores reports on-chain** — every report is a Walrus blob with a permanent ID, optionally Seal-encrypted and MVR-attested.
+
+<Warning>
+  MoveLens is an automated pre-screen. It **is not a substitute for a human audit**. This watermark appears verbatim on every report and cannot be removed.
+</Warning>
+
+---
+
+## Key facts
+
+| Property | Value |
+|---|---|
+| Layer 1 rules | 65 regex + 19 AST stubs across 13 sectors |
+| Layer 2 rules | 10 OZ benchmark deviations |
+| Layer 4 model | Groq `llama-3.3-70b-versatile` (free tier, 20 RPM cap) |
+| Layer 4 embeddings | Jina `jina-embeddings-v2-base-code` (local, no cost) |
+| LanceDB corpus | 52 known-vulnerable Move snippets |
+| Storage | Walrus testnet (5 epochs ≈ 5 days; permanent on mainnet) |
+| Encryption | Seal IBE threshold encryption |
+| Total rule IDs | 116 (93 L1 + 10 L2 + 13 L4 markers) |
+| Live demo | [movelens.onrender.com](https://movelens.onrender.com) |
+
+---
+
+## The Cetus exploit — why this matters
+
+In 2024 the Cetus protocol lost **\$223M** to a single integer overflow: `checked_shlw` (checked shift-left-wrapping) was used instead of the safe `checked_shl`. The difference is one character. Every deposit, withdrawal, and swap function was affected across 34 call sites.
+
+MoveLens catches this. Run the Cetus CLMM package (`0xa9b0ffe2...`) through the auditor: rule `ML-INT-001` fires at every instance, risk grade returns **F**, and the report links to the Walrus blob that proves the audit happened.

@@ -1,0 +1,77 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "MoveLens",
+  "logo": {
+    "dark": "/Logo.png",
+    "light": "/Logo.png"
+  },
+  "favicon": "/favicon.ico",
+  "colors": {
+    "primary": "#4DA2FF",
+    "light": "#4DA2FF",
+    "dark": "#1A6FCC",
+    "anchors": {
+      "from": "#4DA2FF",
+      "to": "#7EC8E3"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/jeetpatel5767/movelens"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Launch Audit",
+    "url": "https://movelens.onrender.com/app"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": ["introduction", "quickstart"]
+    },
+    {
+      "group": "Architecture",
+      "pages": [
+        "architecture/overview",
+        "architecture/layer1",
+        "architecture/layer2",
+        "architecture/layer3",
+        "architecture/layer4"
+      ]
+    },
+    {
+      "group": "Rule Registry",
+      "pages": ["rules/overview", "rules/sectors"]
+    },
+    {
+      "group": "On-Chain Stack",
+      "pages": ["onchain/walrus", "onchain/seal", "onchain/mvr"]
+    },
+    {
+      "group": "Integrations",
+      "pages": ["mcp/setup", "mcp/tools", "github-auditing"]
+    },
+    {
+      "group": "API Reference",
+      "pages": ["api/audit", "api/report", "api/gallery"]
+    },
+    {
+      "group": "Trust & Safety",
+      "pages": ["security", "privacy"]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/jeetpatel5767/movelens"
+  },
+  "backgroundImage": "/images/aurora.png",
+  "modeToggle": {
+    "default": "dark"
+  }
+}

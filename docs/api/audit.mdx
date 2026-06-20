@@ -1,0 +1,138 @@
+---
+title: "POST /api/audit"
+description: "Start an asynchronous audit job. Returns an auditId immediately; poll GET /api/audit?id to check status."
+---
+
+## Start an audit
+
+<ParamField body="packageId" type="string">
+  Sui package address (`0x` + 64 hex characters). Use for on-chain packages.
+</ParamField>
+
+<ParamField body="network" type="string" default="testnet">
+  `"testnet"` or `"mainnet"`. Required when using `packageId`.
+</ParamField>
+
+<ParamField body="source" type="object">
+  Source upload. Use when pasting Move code directly.
+  ```json
+  {
+    "source": {
+      "files": [
+        { "name": "vault.move", "content": "module vault::vault { ... }" }
+      ]
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField body="repoUrl" type="string">
+  Public GitHub URL (`https://github.com/owner/repo`). Use for repository audits.
+</ParamField>
+
+<ParamField body="publishOnChain" type="boolean" default="false">
+  If `true`, attaches the Walrus blob ID to the package's MVR `PackageInfo` object after upload. Requires `packageId` and a funded keypair.
+</ParamField>
+
+---
+
+### Response `200 OK`
+
+```json
+{
+  "auditId": "7f3a1c2d-4b5e-6f7a-8b9c-0d1e2f3a4b5c"
+}
+```
+
+---
+
+## Poll audit status
+
+```
+GET /api/audit?id=<auditId>
+```
+
+### Response while running `202 Accepted`
+
+```json
+{
+  "id": "7f3a1c2d-...",
+  "status": "analysing",
+  "stagesVisited": ["fetching", "analysing"],
+  "blobId": null,
+  "error": null,
+  "degraded": false
+}
+```
+
+### Status values
+
+| Value | Meaning |
+|---|---|
+| `pending` | Job created, not yet started |
+| `cloning` | Cloning the GitHub repository (git mode only) |
+| `fetching` | Fetching modules from Sui GraphQL |
+| `analysing` | Running Layers 1–4 |
+| `uploading` | Writing quilt to Walrus |
+| `attaching` | Calling MVR `set_metadata` (only if publishOnChain=true) |
+| `done` | Complete — fetch the report from `/api/report/<id>` |
+| `failed` | Pipeline error — `error` field has the message |
+
+### Response when done `200 OK`
+
+```json
+{
+  "id": "7f3a1c2d-...",
+  "status": "done",
+  "stagesVisited": ["fetching", "analysing", "uploading"],
+  "blobId": "5cN1fBWk5TIXUlJv-Do7pWYjc3AknRCJ-buNt_JdnPA",
+  "txDigest": null,
+  "error": null,
+  "degraded": false
+}
+```
+
+### Response when failed `200 OK`
+
+```json
+{
+  "id": "7f3a1c2d-...",
+  "status": "failed",
+  "stagesVisited": ["fetching", "analysing"],
+  "blobId": null,
+  "error": "Package not found on testnet",
+  "degraded": false
+}
+```
+
+---
+
+## Error responses
+
+| Code | Condition |
+|---|---|
+| `400` | Missing body, non-GitHub URL, invalid packageId format |
+| `500` | Internal server error |
+
+---
+
+## Example: full audit flow
+
+```bash
+# 1. Start audit
+AUDIT_ID=$(curl -sX POST https://movelens.onrender.com/api/audit \
+  -H "Content-Type: application/json" \
+  -d '{ "packageId": "0xa9b0ffe2f8e713a66ad1aa361cf1984526a5048c6de786b4dd292f3eed204b92", "network": "mainnet" }' \
+  | jq -r '.auditId')
+
+# 2. Poll until done
+while true; do
+  STATUS=$(curl -s "https://movelens.onrender.com/api/audit?id=$AUDIT_ID" | jq -r '.status')
+  echo "Status: $STATUS"
+  [ "$STATUS" = "done" ] || [ "$STATUS" = "failed" ] && break
+  sleep 3
+done
+
+# 3. Fetch report
+curl -s "https://movelens.onrender.com/api/report/$AUDIT_ID" | jq '.risk_grade, .severity_counts'
+```
