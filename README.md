@@ -2,211 +2,110 @@
 
 > **Sui Overflow 2026 · Walrus Specialized Track**
 
-**Live demo:** [PLACEHOLDER — fill in after Render deploy completes]
+**Live:** [http://16.171.224.235:3000](http://16.171.224.235:3000) · **Docs:** [movelens.mintlify.io](https://movelens.mintlify.io) · **MCP:** [Setup guide](https://movelens.mintlify.io/mcp/setup)
 
-MoveLens is a zero-cost, 4-layer security engine for Sui Move smart contracts.
-Paste a package address or upload source code — get an encrypted, permanently-stored
-audit report in under 2 minutes.
+MoveLens is a 4-layer hybrid security engine for Sui Move smart contracts. Paste a package address, upload source code, or point at a GitHub repo — get a severity-ranked, encrypted, permanently stored audit report in under 60 seconds.
 
 ---
 
-## Why MoveLens?
-
-Most security tools call an LLM and hope for the best. MoveLens uses a **deterministic-first**
-hybrid engine that is cheap, fast, and auditable:
+## How it works
 
 ```
-Layer 1 — 65 deterministic regex rules across 13 vulnerability sectors (confidence: 1.0, cost: $0)
-Layer 2 — 10 OpenZeppelin deviation checks, Cetus-class patterns (confidence: 0.95, cost: $0)
-Layer 3 — LanceDB semantic recall: 52-snippet corpus, finds similar past exploits (confidence: variable)
-Layer 4 — Groq llama-3.3-70b-versatile (free tier); keyword heuristic fallback if unavailable (cost: $0)
-```
-
-Findings are **Seal-encrypted** so only the owner can read the full report.
-The encrypted quilt (report.json + findings.enc + summary.md) is stored on **Walrus**
-for permanent on-chain provenance. The blob ID is attached to the package in **MVR**.
-
----
-
-## Architecture
-
-```
-Browser / CLI
-    │
-    ▼
-POST /api/audit
-    │
-    ├─► fetchPackage (Sui GraphQL — never JSON-RPC)
-    │       └─► resolvePackageName (MVR reverse-resolution)
-    │
-    ├─► runAudit
-    │       ├─► Layer 1: 65 regex rules (13 sectors)
-    │       ├─► Layer 2: 10 OZ deviation checks
-    │       ├─► Layer 3: LanceDB recall (past exploit patterns)
-    │       └─► Layer 4: Groq llama-3.3-70b-versatile (free tier) + Jina similarity (local, port 8765)
-    │
-    ├─► encryptReport (Seal IBE threshold encryption)
-    │
-    ├─► buildQuilt + uploadAuditQuilt (Walrus testnet, 5 epochs)
-    │
-    └─► attachAuditToPackage (MVR set_metadata, demo pkg only)
-
-GET /api/audit?id= ─► job status + stagesVisited[]
-GET /api/report/[id] ─► full report JSON + findings
+Input (package address / Move source / GitHub URL)
+  │
+  ├─ Layer 1: 65 deterministic regex rules → findings (confidence 1.0, cost $0)
+  ├─ Layer 2: 10 OpenZeppelin deviation checks → findings (confidence 0.95, cost $0)
+  ├─ Layer 3: LanceDB semantic recall → similar past exploits injected into Layer 4
+  └─ Layer 4: Groq llama-3.3-70b-versatile → ML classification (free tier)
+       │
+       └─ Merge + dedupe + severity sort
+            │
+            └─ Seal-encrypt findings → Walrus quilt (permanent blob) → MVR attestation
 ```
 
 ---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Framework | Next.js 15 (App Router, TypeScript) |
-| Styling | Tailwind CSS v4 |
-| Blockchain | Sui testnet — GraphQL only (`@mysten/sui/graphql`) |
-| Storage | Walrus testnet (`@mysten/walrus@1.1.7`, WASM) |
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15, TypeScript, Tailwind CSS v4 |
+| Blockchain | Sui GraphQL (`@mysten/sui`) — no JSON-RPC |
+| Storage | Walrus testnet (`@mysten/walrus`) |
 | Encryption | Seal IBE (`@mysten/seal`) |
-| Registry | MVR / PackageInfo on-chain metadata |
-| Memory | LanceDB-backed semantic recall (via Python sidecar) |
-| ML classification | Groq llama-3.3-70b-versatile (free tier via `GROQ_API_KEY`) |
-| ML sidecar | Python · sentence-transformers (Jina) · LanceDB (port 8765) |
+| Registry | MVR on-chain metadata |
+| Vector memory | LanceDB + Python sidecar (port 8765) |
+| ML | Groq `llama-3.3-70b-versatile` (free tier) + Jina embeddings |
+| MCP | HTTP endpoint at `/api/mcp` — one URL, zero install |
 
 ---
 
-## Setup (under 5 minutes)
+## MCP Integration
+
+Connect to Claude Desktop or Claude Code in one step:
+
+**Claude Desktop** — add to `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "movelens": {
+      "url": "http://16.171.224.235:3000/api/mcp"
+    }
+  }
+}
+```
+
+**Claude Code:**
+```bash
+claude mcp add --transport http movelens http://16.171.224.235:3000/api/mcp
+```
+
+Three tools become available: `audit_move_source`, `audit_package_id`, `audit_github_repo`.
+
+---
+
+## Self-hosting
 
 ### Prerequisites
+- Node.js 20+, Python 3.10+
+- Funded Sui testnet keypair (for Walrus uploads)
+- Free Groq API key (Layer 4, optional)
 
-- Node.js 20+ and npm
-- A funded Sui **testnet** keypair (for Walrus uploads and MVR linking)
-
-### Steps
+### Run locally
 
 ```bash
-# 1. Clone
-git clone <repo-url> movelens
+git clone https://github.com/jeetpatel5767/movelens.git
 cd movelens
-
-# 2. Install dependencies
 npm install
+cp .env.example .env   # fill in SUI_KEYPAIR_B64 and GROQ_API_KEY
 
-# 3. Configure environment
-cp .env.example .env
-```
-
-Edit `.env` and fill in:
-
-| Variable | How to get it |
-|----------|--------------|
-| `SUI_KEYPAIR_B64` | `sui keytool export --key-identity <alias> --json` then base64 the output |
-| `GROQ_API_KEY` | Free at [console.groq.com](https://console.groq.com) (Layer 4 only) |
-
-The other variables (`SUI_GRAPHQL_URL`, `SUI_NETWORK`, etc.) are pre-filled with working testnet defaults.
-
-```bash
-# 4. Health check (starts dev server automatically if not running)
-./init.sh
-
-# 5. Open the app
-open http://localhost:3000
-```
-
-### Quick audit
-
-1. Go to `http://localhost:3000`
-2. Click **Paste Source**, paste any `.move` file
-3. Click **Run Audit**
-4. Watch the 6-stage pipeline stepper
-5. View findings grouped by severity with confidence bars and recommendations
-6. Trust panel shows: Walrus blob ID link, Seal badge, MVR TX digest
-
----
-
-## Demo Package
-
-A pre-deployed demo vault contract lives on Sui testnet:
-
-- **Package ID**: `0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698`
-- **PackageInfo**: `0xcc7af44f578839df65cd69705c640559aa594b6528161653b91416cdec7a50e2`
-- **Pre-recorded blob**: `lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8`
-
-Paste the package ID in the address tab to audit it live, or view the pre-recorded blob directly:
-[aggregator.walrus-testnet.walrus.space/v1/blobs/lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8](https://aggregator.walrus-testnet.walrus.space/v1/blobs/lFiTFEnn-pRmpu4kfLnC1w0dLoiWR4MvWW5Wbu4UuM8)
-
-### Intentional vulnerabilities in the demo vault
-
-The demo package contains intentional audit targets:
-
-| Finding | Rule | Severity |
-|---------|------|----------|
-| Integer overflow in `deposit()` | `ML-INT-001` | Critical |
-| Unchecked arithmetic in fee calculation | `ML-OZ-001` | Critical |
-| AdminCap emergency drain (no access control) | `ML-ACC-008` | High |
-| Upgradeable contract without cap guard | `ML-UPG-001` | Medium |
-
----
-
-## Running Tests
-
-```bash
-# Individual feature tests
-npx tsx test/f19-verify.ts    # Audit API (async pipeline)
-npx tsx test/f20-verify.ts    # Landing page (Playwright)
-npx tsx test/f21-verify.ts    # Report page (Playwright)
-
-# All earlier layer tests
-npx tsx test/f08-verify.ts    # Layer 1 deterministic rules
-npx tsx test/f14-verify.ts    # Walrus upload + fetch
-```
-
----
-
-## Layer 4 Setup
-
-Layer 4 uses Groq's free-tier `llama-3.3-70b-versatile` as its primary classifier.
-A keyword-heuristic fallback runs automatically if Groq is unavailable or rate-limited.
-The Python sidecar provides Jina embeddings (Model A similarity) and the fallback `/classify` endpoint.
-
-```bash
-# 1. Get a free Groq API key at console.groq.com and add it to .env:
-#    GROQ_API_KEY=your_key_here
-
-# 2. Install Python deps
+# Start Python sidecar (Layer 3 + 4)
 pip install -r requirements.txt
-
-# 3. Seed LanceDB corpus (52 reference snippets for similarity matching)
 npx tsx scripts/seedLanceDB.ts
+python scripts/layer4_server.py &
 
-# 4. Start sidecar (keep running alongside the dev server)
-python scripts/layer4_server.py
+# Start Next.js
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Docker
+
+```bash
+docker build -t movelens .
+docker run -d -p 3000:3000 --env-file .env --name movelens movelens
 ```
 
 ---
 
-## Beyond the Hackathon
+## Key rules
 
-MoveLens is free for open-source Move projects today — Jina embeddings run locally,
-classification uses the Groq free tier (llama-3.3-70b-versatile). Zero marginal cost per audit.
-
-Potential paths to sustainability:
-
-- **CI integration**: a GitHub Action that runs MoveLens on every PR to a Move package,
-  posting Layer 1 findings as a review comment — the natural extension of the
-  "audit before you ship" workflow this tool already enables.
-- **Ecosystem infrastructure**: the Walrus + Seal + MVR combination used here is a
-  general pattern for on-chain-verifiable, privacy-respecting attestations — applicable
-  beyond security audits (code quality scores, compliance checks, dependency audits).
-- **Managed tier**: for teams wanting faster Layer 4 inference (larger models, dedicated
-  compute) or private corpora, a hosted option could fund continued development while
-  the local/free path remains available to all.
-
----
-
-## Watermark
-
-All audit reports carry the watermark:
-
-> **Automated pre-screen — not a substitute for a human audit.**
+- 65 Layer 1 regex rules across 13 vulnerability sectors
+- 10 Layer 2 OpenZeppelin deviation benchmarks
+- ML-INT-001 detects the Cetus-class bit-shift overflow ($223M, May 2025)
+- All findings carry a watermark: *"Automated pre-screen — not a substitute for a human audit."*
+- Zero paid AI APIs in the audit engine — Groq free tier only, with keyword fallback
 
 ---
 

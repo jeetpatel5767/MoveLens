@@ -13,3 +13,9 @@ __pycache__/
 audits.db
 audits.db-shm
 audits.db-wal
+
+# Docs / internal markdown (live at https://movelens.mintlify.io)
+docs/
+*.md
+!README.md
+*.mdx
