@@ -150,7 +150,7 @@ function sectorOf(ruleId: string): string {
 }
 
 function deduction(severity: string, confidence: number): number {
-  const base = ({ critical:35, high:20, medium:8, low:2, info:0 } as Record<string,number>)[severity] ?? 0;
+  const base = ({ critical:50, high:20, medium:8, low:2, info:0 } as Record<string,number>)[severity] ?? 0;
   return Math.round(base * confidence); // confidence-weighted
 }
 
