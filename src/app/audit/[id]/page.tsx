@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -364,25 +364,29 @@ export default function AuditPage() {
   const [err,     setErr]     = useState<string|null>(null);
   const [showAll, setShowAll] = useState(false);
 
+  const ivRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const pollJob = useCallback(async () => {
     try {
       const res = await fetch(`/api/audit?id=${auditId}`);
       if (!res.ok) { setErr(`HTTP ${res.status}`); return; }
       const data = await res.json() as JobStatus;
       setJob(data);
-      if (data.status === "done") {
-        const rr = await fetch(`/api/report/${auditId}`);
-        if (rr.ok) setReport(await rr.json() as FullReport);
+      if (TERMINAL.includes(data.status as AuditStatus)) {
+        // Stop polling as soon as we hit a terminal state
+        if (ivRef.current) { clearInterval(ivRef.current); ivRef.current = null; }
+        if (data.status === "done") {
+          const rr = await fetch(`/api/report/${auditId}`);
+          if (rr.ok) setReport(await rr.json() as FullReport);
+        }
       }
     } catch (e) { console.warn("[audit]", e); }
   }, [auditId]);
 
   useEffect(() => {
     void pollJob();
-    const iv = setInterval(() => {
-      setJob(j => { if (!j || !TERMINAL.includes(j.status)) void pollJob(); return j; });
-    }, 2500);
-    return () => clearInterval(iv);
+    ivRef.current = setInterval(pollJob, 2500);
+    return () => { if (ivRef.current) { clearInterval(ivRef.current); ivRef.current = null; } };
   }, [pollJob]);
 
   const isDone   = job?.status === "done";
