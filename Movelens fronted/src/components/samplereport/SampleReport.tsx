@@ -237,15 +237,15 @@ export function SampleReport() {
                 style={
                   filter === f
                     ? {
-                        background: "rgba(255,255,255,0.1)",
-                        color: "white",
-                        border: "1px solid rgba(255,255,255,0.18)",
-                      }
+                      background: "rgba(255,255,255,0.1)",
+                      color: "white",
+                      border: "1px solid rgba(255,255,255,0.18)",
+                    }
                     : {
-                        background: "transparent",
-                        color: "var(--text-tertiary)",
-                        border: "1px solid transparent",
-                      }
+                      background: "transparent",
+                      color: "var(--text-tertiary)",
+                      border: "1px solid transparent",
+                    }
                 }
               >
                 {f === "ALL" ? `All ${FINDINGS.length}` : f}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/landing/layout/Header";
 import { Footer } from "@/components/landing/footer/Footer";
@@ -8,6 +8,36 @@ import { AuroraBackground } from "@/components/landing/home/AuroraBackground";
 
 const ADDRESS_RE = /^0x[0-9a-fA-F]{64}$/;
 const GITHUB_RE  = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
+
+const DEMO_PACKAGE_ID = "0x6bcb6936da7f7df80741e0abb7aa5fb78d160a7be227f48b0a6f0c9c83648698";
+const DEMO_REPO_URL   = "https://github.com/MystenLabs/move-book";
+const DEMO_SOURCE     = `module demo::vault {
+  use sui::object::{Self, UID};
+  use sui::tx_context::TxContext;
+
+  struct AdminCap has key { id: UID }
+  struct Vault has key { id: UID, balance: u64 }
+
+  fun init(ctx: &mut TxContext) {
+    transfer::transfer(AdminCap { id: object::new(ctx) }, tx_context::sender(ctx));
+  }
+
+  public fun deposit(_cap: &AdminCap, vault: &mut Vault, amount: u64) {
+    vault.balance = vault.balance + amount;
+  }
+
+  // Missing cap check — anyone can drain
+  public fun withdraw(vault: &mut Vault, amount: u64): u64 {
+    vault.balance = vault.balance - amount;
+    amount
+  }
+}`;
+
+const DEMOS = [
+  { label: "Package ID",   tab: "address" as const, value: DEMO_PACKAGE_ID, short: DEMO_PACKAGE_ID.slice(0, 10) + "…" },
+  { label: "Source Code",  tab: "source"  as const, value: DEMO_SOURCE,     short: "demo::vault"                      },
+  { label: "GitHub Repo",  tab: "git"     as const, value: DEMO_REPO_URL,   short: "MystenLabs/move-book"             },
+];
 type Tab = "address" | "source" | "git";
 type Network = "testnet" | "mainnet";
 
@@ -72,6 +102,20 @@ export default function AppPage() {
   const [publishOnChain, setPublishOnChain] = useState(false);
   const [submitting, setSubmitting]         = useState(false);
   const [apiError, setApiError]             = useState<string | null>(null);
+  const [copiedIdx, setCopiedIdx]           = useState<number | null>(null);
+
+  const handleDemo = useCallback((idx: number) => {
+    const demo = DEMOS[idx];
+    if (!demo) return;
+    setTab(demo.tab);
+    setApiError(null);
+    if (demo.tab === "address") setAddress(demo.value);
+    else if (demo.tab === "source") { setSourceText(demo.value); setFileName("demo.move"); }
+    else setGitUrl(demo.value);
+    navigator.clipboard.writeText(demo.value).catch(() => {});
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 1800);
+  }, []);
 
   function validateAddress(val: string): string | null {
     if (!val.trim()) return "Package address is required";
@@ -167,6 +211,30 @@ export default function AppPage() {
 
       {/* ── Form section ──────────────────────────────────────────────────────── */}
       <section className="flex flex-col items-center px-6 pb-20">
+
+        {/* Try a demo row */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+          <span className="font-mono-plex text-[11px] tracking-[0.1em] uppercase" style={{ color: "var(--text-secondary)" }}>
+            Try a demo
+          </span>
+          {DEMOS.map((demo, idx) => (
+            <button
+              key={demo.tab}
+              type="button"
+              onClick={() => handleDemo(idx)}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-medium transition-all"
+              style={{
+                background: copiedIdx === idx ? "rgba(92,255,177,0.12)" : "rgba(255,255,255,0.05)",
+                border: `1px solid ${copiedIdx === idx ? "rgba(92,255,177,0.35)" : "rgba(255,255,255,0.1)"}`,
+                color: copiedIdx === idx ? "#5cffb1" : "rgba(255,255,255,0.65)",
+              }}
+            >
+              <span>{demo.label}</span>
+              <span className="font-mono-plex opacity-50 text-[10px]">{demo.short}</span>
+              <span style={{ opacity: 0.5 }}>{copiedIdx === idx ? "✓" : "↗"}</span>
+            </button>
+          ))}
+        </div>
 
         {/* Floating pill tab switcher */}
         <div className="flex justify-center pt-5 pb-4">

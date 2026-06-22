@@ -21,10 +21,28 @@ export function LiveDemoHero() {
             <br />
             get audited.
           </h2>
+
+          {/* Mascot inside the rectangle */}
+          <div className="relative z-10 -mt-14 sm:-mt-18 md:-mt-28 mb-0 pointer-events-none select-none">
+            <img
+              src="/2.png"
+              alt="MoveLens mascot"
+              className="w-[520px] sm:w-[600px] md:w-[760px] h-auto object-contain"
+            />
+          </div>
         </div>
 
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[55%] w-[280px] sm:w-[360px] md:w-[840px] z-20 pointer-events-none select-none">
-          <img src="/2.png" alt="MoveLens mascot" className="w-full h-auto object-contain" />
+        {/* Video below the rectangle, same slot the mascot used to occupy */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[65%] w-[340px] sm:w-[580px] md:w-[1000px] z-20">
+          <div className="relative w-full rounded-[24px] overflow-hidden bg-black/40 ring-1 ring-white/10" style={{ aspectRatio: "16/9" }}>
+            <iframe
+              src="https://www.youtube.com/embed/lhozR8KO6-g?start=23&rel=0&modestbranding=1"
+              title="MoveLens live demo"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="absolute inset-0 w-full h-full border-0"
+            />
+          </div>
         </div>
       </div>
     </section>
