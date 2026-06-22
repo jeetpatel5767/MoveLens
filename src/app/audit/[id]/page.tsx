@@ -8,13 +8,33 @@ import Link from "next/link";
 
 type AuditStatus = "queued"|"cloning"|"fetching"|"auditing"|"encrypting"|"uploading"|"linking"|"done"|"failed";
 type Severity = "critical"|"high"|"medium"|"low";
-type FindingSource = "layer1"|"layer2"|"layer3"|"layer4";
+type FindingSource = "layer1"|"layer2"|"layer3"|"layer4"|"layer1_confirmed"|"layer2_oz"|"layer4_groq";
 
 interface Finding {
   rule_id: string; severity: Severity; confidence: number; source: FindingSource;
   module: string; line_start: number; line_end: number;
   description: string; recommendation: string; category: string;
   patch_before?: string|null; patch_after?: string|null;
+  confidence_reason?: string; groq_reasoning?: string|null;
+}
+interface DismissedSuspect {
+  rule_id: string; title: string; reason: string;
+  location: { module:string; function:string|null; line_start:number; line_end:number };
+}
+interface UnreviewedHint {
+  rule_id: string; title: string; description: string; hint_reason: string;
+  location: { module:string; function:string|null; line_start:number; line_end:number };
+  severity: Severity;
+}
+interface AuditScore {
+  overall: number; grade: "A"|"B"|"C"|"D"|"F";
+  dimensions: {
+    accessControl:number; arithmeticSafety:number; upgradeability:number;
+    codeQuality:number; ozCompliance:number;
+  };
+  exploitability: "critical"|"high"|"medium"|"low"|"minimal";
+  confirmed_count:number; dismissed_count:number; unreviewed_count:number;
+  false_positive_rate:number;
 }
 interface SeverityCounts { critical:number; high:number; medium:number; low:number }
 interface FullReport {
@@ -25,8 +45,11 @@ interface FullReport {
   };
   risk_grade:"A"|"B"|"C"|"D"|"F";
   severity_counts:SeverityCounts;
+  score?:AuditScore|null;
   layer4_used:boolean; memory_context_used:boolean; layer3_hits?:number;
   sealed:boolean; findings:Finding[];
+  dismissed?: DismissedSuspect[];
+  unreviewed?: UnreviewedHint[];
   blobId?:string|null; txDigest?:string|null;
 }
 interface JobStatus {
@@ -52,16 +75,18 @@ const SEV_LABEL: Record<Severity,string> = {
 const GRADE_COLOR: Record<string,string> = {
   A:"#4ade80", B:"#34d399", C:"#FBBF24", D:"#FB923C", F:"#F87171",
 };
-const GRADE_SCORE: Record<string,number> = { A:95, B:80, C:60, D:40, F:20 };
 const GRADE_LABEL: Record<string,string> = {
   A:"Clean", B:"Low Risk", C:"Medium Risk", D:"High Risk", F:"Critical Risk",
 };
 
 const SOURCE_LABEL: Record<FindingSource,string> = {
-  layer1:"Rules Engine (Layer 1)",
-  layer2:"OZ Benchmarking (Layer 2)",
-  layer3:"Semantic Memory (Layer 3)",
-  layer4:"ML Analysis (Layer 4)",
+  layer1:            "Rules Engine (Layer 1)",
+  layer2:            "OZ Benchmarking (Layer 2)",
+  layer3:            "Semantic Memory (Layer 3)",
+  layer4:            "ML Analysis (Layer 4)",
+  layer1_confirmed:  "Rules Engine · AI Confirmed",
+  layer2_oz:         "OZ Benchmarking (Layer 2)",
+  layer4_groq:       "Groq ML Analysis",
 };
 
 const TERMINAL: AuditStatus[] = ["done","failed"];
@@ -277,13 +302,20 @@ function FindingCard({ finding }: { finding:Finding }) {
           <div style={{ display:"flex", gap:32, paddingTop:20, borderTop:`1px solid ${BORDER5}` }}>
             <div>
               <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.2)", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.12em" }}>Confidence</div>
-              <div className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}>{pct}%</div>
+              <div className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}
+                title={finding.confidence_reason ?? undefined}>{pct}%</div>
             </div>
             <div>
               <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.2)", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.12em" }}>Analysis Layer</div>
-              <div className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}>{SOURCE_LABEL[finding.source]}</div>
+              <div className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}>{SOURCE_LABEL[finding.source] ?? finding.source}</div>
             </div>
           </div>
+          {finding.groq_reasoning && (
+            <div style={{ marginTop:4, padding:"10px 14px", borderRadius:8, background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.15)" }}>
+              <span className="font-display" style={{ fontSize:11, fontWeight:600, color:"rgba(99,102,241,0.7)", marginRight:6 }}>AI Review:</span>
+              <span className="font-sans-switzer" style={{ fontSize:12, color:"rgba(255,255,255,0.45)", lineHeight:1.55 }}>{finding.groq_reasoning}</span>
+            </div>
+          )}
           {finding.patch_after && (
             <div>
               <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.2)", textTransform:"uppercase" as const, marginBottom:12 }}>Suggested Patch</div>
@@ -357,9 +389,9 @@ export default function AuditPage() {
   const isFailed = job?.status === "failed";
   const isLive   = job && !isDone && !isFailed;
 
-  const grade      = report?.risk_grade ?? "F";
+  const grade      = report?.score?.grade ?? report?.risk_grade ?? "F";
   const gradeColor = GRADE_COLOR[grade];
-  const riskScore  = GRADE_SCORE[grade] ?? 20;
+  const riskScore  = report?.score?.overall ?? (grade === "A" ? 95 : grade === "B" ? 80 : grade === "C" ? 60 : grade === "D" ? 40 : 20);
   const { critical=0, high=0, medium=0, low=0 } = report?.severity_counts ?? {};
   const total = critical + high + medium + low;
 
@@ -631,6 +663,59 @@ export default function AuditPage() {
                   </div>
                 </div>
 
+                {/* Reviewed & Dismissed — transparency panel */}
+                {(report.dismissed?.length ?? 0) > 0 && (
+                  <div style={{ marginTop:8 }}>
+                    <div className="font-display" style={{ ...EYE, marginBottom:12 }}>
+                      Reviewed &amp; Dismissed ({report.dismissed!.length})
+                    </div>
+                    <p className="font-sans-switzer" style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginBottom:14, lineHeight:1.6 }}>
+                      These patterns were detected by the rules engine but confirmed as false positives by Groq AI. They do <strong style={{ color:"rgba(255,255,255,0.4)" }}>not</strong> affect your score.
+                    </p>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {report.dismissed!.map((d, i) => (
+                        <div key={i} style={{ padding:"12px 16px", borderRadius:10, border:"1px solid rgba(255,255,255,0.05)", background:"rgba(74,222,128,0.03)", opacity:0.8 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                            <span className="font-display" style={{ fontSize:11, fontWeight:600, color:"#4ade80" }}>✓ Cleared</span>
+                            <span className="font-mono-plex" style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>{d.rule_id}</span>
+                            <span className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.2)" }}>—</span>
+                            <span className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.3)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{d.title}</span>
+                          </div>
+                          <div className="font-sans-switzer" style={{ fontSize:12, color:"rgba(255,255,255,0.28)", lineHeight:1.5 }}>
+                            Line {d.location.line_start} in {d.location.module}: {d.reason}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Unreviewed Hints — shown with disclaimer, never scored */}
+                {(report.unreviewed?.length ?? 0) > 0 && (
+                  <div style={{ marginTop:8 }}>
+                    <div style={{ padding:"16px 20px", borderRadius:12, border:"1px solid rgba(251,191,36,0.25)", background:"rgba(251,191,36,0.04)" }}>
+                      <div className="font-display" style={{ fontSize:12, fontWeight:600, color:"#FBBF24", marginBottom:6 }}>
+                        ⚠ {report.unreviewed!.length} Pattern(s) Not AI-Reviewed
+                      </div>
+                      <p className="font-sans-switzer" style={{ fontSize:12, color:"rgba(251,191,36,0.65)", lineHeight:1.6, margin:0 }}>
+                        These patterns were detected but could not be reviewed by the AI gate (Groq unavailable or no API key). They are <strong>NOT</strong> included in your score. Manual review is recommended.
+                      </p>
+                      <div style={{ marginTop:12, display:"flex", flexDirection:"column", gap:5 }}>
+                        {report.unreviewed!.slice(0, 5).map((h, i) => (
+                          <div key={i} className="font-mono-plex" style={{ fontSize:11, color:"rgba(255,255,255,0.3)" }}>
+                            {h.rule_id} @ {h.location.module}:{h.location.line_start} — {h.severity}
+                          </div>
+                        ))}
+                        {report.unreviewed!.length > 5 && (
+                          <div className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.2)" }}>
+                            + {report.unreviewed!.length - 5} more
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Link href="/app" className="font-display" style={{ fontSize:13, color:"#8B8DFF", textDecoration:"none", opacity:0.7, display:"block", paddingBottom:8 }}>
                   ← Run another audit
                 </Link>
@@ -644,12 +729,15 @@ export default function AuditPage() {
                   <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.22)", textTransform:"uppercase" as const, marginBottom:18 }}>
                     Audit Snapshot
                   </div>
-                  {[
+                  {([
                     { label:"Risk Score",     right: <span className="font-display" style={{ fontSize:13, fontWeight:600, color:gradeColor }}>{riskScore} / 100</span> },
                     { label:"Grade",          right: <span className="font-display" style={{ fontSize:14, fontWeight:700, color:gradeColor, letterSpacing:"-0.01em" }}>{grade}</span> },
-                    { label:"Total Findings", right: <span className="font-display" style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{total}</span> },
+                    { label:"Confirmed",      right: <span className="font-display" style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{total}</span> },
+                    ...(report.score ? [
+                      { label:"Dismissed",    right: <span className="font-display" style={{ fontSize:13, color:"#4ade80" }}>{report.score.dismissed_count} cleared</span> },
+                    ] : []),
                     { label:"Status",         right: <div style={{ display:"flex", alignItems:"center", gap:6 }}><div style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80" }} /><span className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}>Completed</span></div> },
-                  ].map(({ label, right }, i, arr) => (
+                  ] as { label:string; right:React.ReactNode }[]).map(({ label, right }, i, arr) => (
                     <div key={label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 0", borderBottom: i<arr.length-1 ? `1px solid ${BORDER5}` : "none" }}>
                       <span className="font-display" style={{ fontSize:13, color:"rgba(255,255,255,0.38)" }}>{label}</span>
                       {right}

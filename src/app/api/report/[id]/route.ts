@@ -68,14 +68,19 @@ export async function GET(
       fileCount:   r.package.fileCount   ?? null,
       cappedAt:    r.package.cappedAt    ?? null,
     },
-    risk_grade:       r.risk_grade,
-    severity_counts:  r.severity_counts,
-    layer4_used:      r.layer4_used,
+    risk_grade:          r.risk_grade,
+    severity_counts:     r.severity_counts,
+    score:               r.score ?? null,
+    layer4_used:         r.layer4_used,
     memory_context_used: r.memory_context_used,
-    layer3_hits:      r.layer3_hits ?? 0,
-    sealed:           r.sealed,
-    // Findings — included for demo display
-    findings:         r.findings,
+    layer3_hits:         r.layer3_hits ?? 0,
+    sealed:              r.sealed,
+    // Confirmed findings — shown in UI
+    findings:            r.findings,
+    // Dismissed suspects — shown for transparency (not scored)
+    dismissed:           r.dismissed ?? [],
+    // Unreviewed hints — shown with disclaimer (not scored)
+    unreviewed:          r.unreviewed ?? [],
     // Trust panel fields
     blobId:           job.blobId   ?? null,
     txDigest:         job.txDigest ?? null,

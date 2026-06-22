@@ -51,11 +51,12 @@ const ACC_RULES: Rule[] = [
   {
     id: "ML-ACC-001",
     type: "regex",
-    // Check the parameter list (between parens, same line) for capability types instead of the body.
-    // Narrowed to `public entry fun` only — plain public fns are callable from other modules but not PTBs directly.
-    pattern: /public\s+entry\s+fun\s+\w+[^(]*\((?![^)]*(?:AdminCap|OwnerCap|[A-Z]\w*Cap\b))[^)]*\)/gm,
+    // Matches public fun AND public entry fun without a capability in the param list.
+    // Gate (Groq) dismisses legitimate open functions (getters, deposits).
+    // The pattern checks the parameter list on the same line — no cross-line lookahead issues.
+    pattern: /public\s+(?:entry\s+)?fun\s+\w+[^(]*\((?![^)]*(?:AdminCap|OwnerCap|[A-Z]\w*Cap\b))[^)]*\)/gm,
     severity: "high",
-    description: "Public entry function with no capability parameter — transaction-callable by anyone without an authorization guard.",
+    description: "Public function with no capability parameter — callable without an authorization guard.",
     recommendation: "Add `_: &AdminCap` parameter or assert `ctx.sender()` inside the body before any privileged state mutation.",
     category: "access_control",
   },
