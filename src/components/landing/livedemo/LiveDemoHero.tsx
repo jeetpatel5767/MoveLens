@@ -1,6 +1,6 @@
 export function LiveDemoHero() {
   return (
-    <section className="relative w-full bg-black px-6 pt-20 sm:pt-24 pb-64 sm:pb-80 md:pb-96">
+    <section className="relative w-full bg-black px-6 pt-16 sm:pt-24 pb-40 sm:pb-64 md:pb-96">
       <div className="relative max-w-[1320px] mx-auto">
         <div className="relative rounded-[48px] overflow-hidden min-h-[480px] sm:min-h-[560px] flex flex-col items-center">
           <img
@@ -16,24 +16,24 @@ export function LiveDemoHero() {
             </span>
           </div>
 
-          <h2 className="relative z-10 mt-6 sm:mt-8 text-center font-display font-semibold text-[58px] sm:text-[88px] md:text-[120px] leading-[1.0] tracking-[-0.02em] text-[var(--text-primary)] max-w-[1240px] px-6">
+          <h2 className="relative z-10 mt-6 sm:mt-8 text-center font-display font-semibold text-[36px] sm:text-[88px] md:text-[120px] leading-[1.0] tracking-[-0.02em] text-[var(--text-primary)] max-w-[1240px] px-6">
             Watch your contract
             <br />
             get audited.
           </h2>
 
           {/* Mascot inside the rectangle */}
-          <div className="relative z-10 -mt-14 sm:-mt-18 md:-mt-28 mb-0 pointer-events-none select-none">
+          <div className="relative z-10 mt-6 sm:mt-14 mb-8 sm:mb-16 pointer-events-none select-none w-full flex justify-center">
             <img
               src="/2.png"
               alt="MoveLens mascot"
-              className="w-[520px] sm:w-[600px] md:w-[760px] h-auto object-contain"
+              className="w-[260px] sm:w-[520px] md:w-[760px] h-auto object-contain"
             />
           </div>
         </div>
 
         {/* Video below the rectangle, same slot the mascot used to occupy */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[65%] w-[340px] sm:w-[580px] md:w-[1000px] z-20">
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-[55%] w-[280px] sm:w-[480px] md:w-[840px] z-20">
           <div className="relative w-full rounded-[24px] overflow-hidden bg-black/40 ring-1 ring-white/10" style={{ aspectRatio: "16/9" }}>
             <iframe
               src="https://www.youtube.com/embed/lhozR8KO6-g?start=23&rel=0&modestbranding=1"

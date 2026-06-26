@@ -92,7 +92,7 @@ const FINDINGS = [
   },
 ];
 
-// ── Tokens (matching real audit page) ─────────────────────────────────────────
+// ── Tokens ────────────────────────────────────────────────────────────────────
 
 const BG      = "#0A0A0A";
 const SURFACE = "#111111";
@@ -170,10 +170,10 @@ function CategoryList() {
   return (
     <div style={{ ...CARD, overflow:"hidden" }}>
       {cats.map(({ cat, count, topSev }, i) => (
-        <div key={cat} style={{ padding:"18px 28px", borderBottom: i < cats.length-1 ? `1px solid ${BORDER5}` : "none" }}>
-          <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:10 }}>
-            <span className="font-display" style={{ fontSize:14, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>{cat.replace(/_/g," ")}</span>
-            <span className="font-display" style={{ fontSize:12, color:"rgba(255,255,255,0.3)", marginLeft:16, whiteSpace:"nowrap" }}>{count} findings</span>
+        <div key={cat} style={{ padding:"16px 20px", borderBottom: i < cats.length-1 ? `1px solid ${BORDER5}` : "none" }}>
+          <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:8 }}>
+            <span className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>{cat.replace(/_/g," ")}</span>
+            <span className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.3)", marginLeft:12, whiteSpace:"nowrap" }}>{count} findings</span>
           </div>
           <div style={{ height:3, background:"rgba(255,255,255,0.05)", borderRadius:2, overflow:"hidden" }}>
             <div style={{ height:"100%", borderRadius:2, width:`${Math.round((count/max)*100)}%`, background:SEV[topSev], opacity:0.55 }} />
@@ -199,65 +199,66 @@ function FindingCard({ finding }: { finding: FindingData }) {
   return (
     <div style={{ background:SURFACE, borderRadius:12, overflow:"hidden", border:`1px solid ${BORDER}`, borderLeft:`3px solid ${col}` }}>
       <button type="button" onClick={() => setOpen(v => !v)}
-        style={{ width:"100%", textAlign:"left", padding:"18px 22px", display:"flex", alignItems:"center", gap:14, cursor:"pointer", background:"transparent", border:"none" }}>
-        <div style={{ width:8, height:8, borderRadius:"50%", background:col, flexShrink:0 }} />
+        style={{ width:"100%", textAlign:"left", padding:"16px 18px", display:"flex", alignItems:"flex-start", gap:12, cursor:"pointer", background:"transparent", border:"none" }}>
+        <div style={{ width:8, height:8, borderRadius:"50%", background:col, flexShrink:0, marginTop:4 }} />
         <div style={{ flex:1, minWidth:0 }}>
-          <div className="font-display" style={{ fontSize:14, fontWeight:500, color:"#fff", lineHeight:1.35, marginBottom:5, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+          <div className="font-display" style={{ fontSize:13, fontWeight:500, color:"#fff", lineHeight:1.4, marginBottom:5, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" as const }}>
             {finding.description}
           </div>
-          <div style={{ display:"flex", gap:14, alignItems:"center" }}>
-            <span className="font-mono-plex" style={{ fontSize:11, color:"rgba(255,255,255,0.27)" }}>{finding.rule_id}</span>
-            <span className="font-display"   style={{ fontSize:11, color:"rgba(255,255,255,0.22)" }}>{finding.module}</span>
-            <span className="font-display"   style={{ fontSize:11, color:"rgba(255,255,255,0.22)" }}>Line {finding.line_start}</span>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center" }}>
+            <span className="font-mono-plex" style={{ fontSize:10, color:"rgba(255,255,255,0.27)" }}>{finding.rule_id}</span>
+            <span className="font-display"   style={{ fontSize:10, color:"rgba(255,255,255,0.22)" }}>{finding.module}</span>
+            <span className="font-display"   style={{ fontSize:10, color:"rgba(255,255,255,0.22)" }}>L{finding.line_start}</span>
           </div>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+        <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0 }}>
           <span className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.1em", color:col, textTransform:"uppercase" as const, whiteSpace:"nowrap" }}>
             {SEV_LABEL[finding.severity]}
           </span>
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-            style={{ transform:open?"rotate(180deg)":"none", transition:"transform 0.2s", color:"rgba(255,255,255,0.22)", flexShrink:0 }}>
+            style={{ transform:open?"rotate(180deg)":"none", transition:"transform 0.2s", color:"rgba(255,255,255,0.22)" }}>
             <path d="M3 5L7 9L11 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
         </div>
       </button>
 
       {open && (
-        <div style={{ borderTop:`1px solid ${BORDER5}`, padding:"28px", display:"flex", flexDirection:"column", gap:24, background:"#0D0D0D" }}>
+        <div style={{ borderTop:`1px solid ${BORDER5}`, padding:"20px", display:"flex", flexDirection:"column", gap:20, background:"#0D0D0D" }}>
           <div>
-            <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.2)", textTransform:"uppercase" as const, marginBottom:10 }}>Description</div>
-            <p className="font-sans-switzer" style={{ fontSize:14, lineHeight:1.72, color:"rgba(255,255,255,0.58)", margin:0 }}>{finding.description}</p>
+            <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.2)", textTransform:"uppercase" as const, marginBottom:8 }}>Description</div>
+            <p className="font-sans-switzer" style={{ fontSize:13, lineHeight:1.72, color:"rgba(255,255,255,0.58)", margin:0 }}>{finding.description}</p>
           </div>
           <div>
-            <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.2)", textTransform:"uppercase" as const, marginBottom:10 }}>Recommended Fix</div>
-            <p className="font-sans-switzer" style={{ fontSize:14, lineHeight:1.72, color:"rgba(255,255,255,0.58)", margin:0 }}>{finding.recommendation}</p>
+            <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.2)", textTransform:"uppercase" as const, marginBottom:8 }}>Recommended Fix</div>
+            <p className="font-sans-switzer" style={{ fontSize:13, lineHeight:1.72, color:"rgba(255,255,255,0.58)", margin:0 }}>{finding.recommendation}</p>
           </div>
-          <div style={{ display:"flex", gap:32, paddingTop:20, borderTop:`1px solid ${BORDER5}` }}>
+          <div style={{ display:"flex", gap:24, flexWrap:"wrap", paddingTop:16, borderTop:`1px solid ${BORDER5}` }}>
             <div>
-              <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.2)", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.12em" }}>Confidence</div>
+              <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.2)", marginBottom:4, textTransform:"uppercase" as const, letterSpacing:"0.12em" }}>Confidence</div>
               <div className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}>{pct}%</div>
             </div>
             <div>
-              <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.2)", marginBottom:5, textTransform:"uppercase" as const, letterSpacing:"0.12em" }}>Analysis Layer</div>
+              <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.2)", marginBottom:4, textTransform:"uppercase" as const, letterSpacing:"0.12em" }}>Analysis Layer</div>
               <div className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}>{SOURCE_LABEL[finding.source]}</div>
             </div>
           </div>
           {finding.patch_after && (
             <div>
-              <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.2)", textTransform:"uppercase" as const, marginBottom:12 }}>Suggested Patch</div>
+              <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.2)", textTransform:"uppercase" as const, marginBottom:10 }}>Suggested Patch</div>
               <div style={{ border:"1px solid rgba(255,255,255,0.07)", borderRadius:12, overflow:"hidden" }}>
-                <div style={{ display:"grid", gridTemplateColumns: finding.patch_before ? "1fr 1fr" : "1fr" }}>
+                {/* Stacked on mobile, side-by-side on sm+ */}
+                <div className="flex flex-col sm:flex-row">
                   {finding.patch_before && (
-                    <div style={{ borderRight:"1px solid rgba(255,255,255,0.07)" }}>
+                    <div className="flex-1 min-w-0 sm:border-r sm:border-r-[rgba(255,255,255,0.07)]">
                       <div style={{ padding:"10px 16px", background:"rgba(248,113,113,0.05)", borderBottom:"1px solid rgba(255,255,255,0.06)" }}>
                         <span className="font-display" style={{ fontSize:11, fontWeight:500, color:"rgba(248,113,113,0.55)", letterSpacing:"0.04em" }}>Before</span>
                       </div>
-                      <pre className="font-mono-plex" style={{ padding:"20px 18px", fontSize:12, lineHeight:1.75, color:"rgba(255,255,255,0.42)", overflowX:"auto", margin:0, background:"transparent", whiteSpace:"pre" }}>
+                      <pre className="font-mono-plex" style={{ padding:"16px", fontSize:11, lineHeight:1.75, color:"rgba(255,255,255,0.42)", overflowX:"auto", margin:0, background:"transparent", whiteSpace:"pre" }}>
                         {finding.patch_before}
                       </pre>
                     </div>
                   )}
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <div style={{ padding:"10px 16px", background:"rgba(74,222,128,0.05)", borderBottom:"1px solid rgba(255,255,255,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                       <span className="font-display" style={{ fontSize:11, fontWeight:500, color:"rgba(74,222,128,0.55)", letterSpacing:"0.04em" }}>After</span>
                       <button type="button" onClick={() => void navigator.clipboard.writeText(finding.patch_after!)}
@@ -265,7 +266,7 @@ function FindingCard({ finding }: { finding: FindingData }) {
                         Copy
                       </button>
                     </div>
-                    <pre className="font-mono-plex" style={{ padding:"20px 18px", fontSize:12, lineHeight:1.75, color:"rgba(255,255,255,0.42)", overflowX:"auto", margin:0, background:"transparent", whiteSpace:"pre" }}>
+                    <pre className="font-mono-plex" style={{ padding:"16px", fontSize:11, lineHeight:1.75, color:"rgba(255,255,255,0.42)", overflowX:"auto", margin:0, background:"transparent", whiteSpace:"pre" }}>
                       {finding.patch_after}
                     </pre>
                   </div>
@@ -275,6 +276,19 @@ function FindingCard({ finding }: { finding: FindingData }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Sidebar card ──────────────────────────────────────────────────────────────
+
+function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ ...CARD, padding:"20px 22px" }}>
+      <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.22)", textTransform:"uppercase" as const, marginBottom:16 }}>
+        {title}
+      </div>
+      {children}
     </div>
   );
 }
@@ -291,15 +305,15 @@ export function SampleReport() {
   const byLayer = { layer1: 2, layer2: 0, layer3: 0, layer4: 1 };
 
   return (
-    <section id="demo" className="relative w-full px-6 py-20 sm:py-28">
+    <section id="demo" className="relative w-full px-4 sm:px-6 py-16 sm:py-28">
       {/* Section heading */}
-      <div className="max-w-[1100px] mx-auto text-center flex flex-col items-center mb-14 sm:mb-20">
-        <h2 className="font-display font-bold text-[40px] sm:text-[64px] md:text-[78px] leading-[0.98] tracking-[-0.03em] text-white">
+      <div className="max-w-[1100px] mx-auto text-center flex flex-col items-center mb-10 sm:mb-20">
+        <h2 className="font-display font-bold text-[36px] sm:text-[64px] md:text-[78px] leading-[0.98] tracking-[-0.03em] text-white">
           No exploit
           <br />
           survives the light.
         </h2>
-        <p className="mt-5 text-[16px] sm:text-[18px] leading-[1.6] text-[var(--text-secondary)] max-w-xl font-sans-switzer font-extralight">
+        <p className="mt-4 sm:mt-5 text-[14px] sm:text-[18px] leading-[1.6] text-[var(--text-secondary)] max-w-xl font-sans-switzer font-extralight px-4">
           Every audit surfaces structured findings — severity-ranked, code-pinned,
           encrypted, and stored permanently on Walrus.
         </p>
@@ -309,32 +323,35 @@ export function SampleReport() {
       <div style={{ maxWidth:1080, margin:"0 auto" }}>
 
         {/* ── HERO ── */}
-        <div style={{
-          padding:"52px 56px 48px",
-          display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:48,
-          borderBottom:`1px solid ${BORDER}`,
-          background: SURFACE, borderRadius:"16px 16px 0 0", border:`1px solid ${BORDER}`,
-        }}>
+        <div
+          className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 sm:gap-12"
+          style={{
+            padding:"28px 24px",
+            borderBottom:`1px solid ${BORDER}`,
+            background: SURFACE, borderRadius:"16px 16px 0 0", border:`1px solid ${BORDER}`,
+          }}
+        >
+          {/* Left: metadata */}
           <div style={{ flex:1, minWidth:0 }}>
             <div className="font-display" style={EYE}>Security Report · Sample</div>
-            <div className="font-display" style={{ fontSize:36, fontWeight:700, color:"#fff", letterSpacing:"-0.03em", lineHeight:1.08, marginBottom:8 }}>
+            <div className="font-display" style={{ fontSize:"clamp(24px,4vw,36px)", fontWeight:700, color:"#fff", letterSpacing:"-0.03em", lineHeight:1.08, marginBottom:6 }}>
               Move Package Audit
             </div>
-            <div className="font-display" style={{ fontSize:20, fontWeight:400, color:"rgba(255,255,255,0.45)", letterSpacing:"-0.015em", marginBottom:32 }}>
+            <div className="font-display" style={{ fontSize:"clamp(14px,2.5vw,20px)", fontWeight:400, color:"rgba(255,255,255,0.45)", letterSpacing:"-0.015em", marginBottom:24 }}>
               {SAMPLE.package.mvrName} · v2_pool
             </div>
 
-            <div style={{ display:"inline-flex", alignItems:"center", gap:10, padding:"10px 16px", background:"rgba(255,255,255,0.04)", border:`1px solid ${BORDER}`, borderRadius:10, marginBottom:32 }}>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"8px 14px", background:"rgba(255,255,255,0.04)", border:`1px solid ${BORDER}`, borderRadius:10, marginBottom:24 }}>
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ flexShrink:0 }}>
                 <rect x="1.5" y="1.5" width="9" height="9" rx="1.5" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" fill="none"/>
                 <path d="M4 6h4" stroke="rgba(255,255,255,0.2)" strokeWidth="1.2" strokeLinecap="round"/>
               </svg>
-              <span className="font-mono-plex" style={{ fontSize:12, color:"rgba(255,255,255,0.32)", letterSpacing:"0.04em" }}>
+              <span className="font-mono-plex" style={{ fontSize:11, color:"rgba(255,255,255,0.32)", letterSpacing:"0.04em" }}>
                 0xa9b0ffe2…c3f2
               </span>
             </div>
 
-            <div style={{ display:"flex", gap:48, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:24, flexWrap:"wrap" }}>
               {[
                 { label:"Modules",   val:"5" },
                 { label:"Version",   val:"v3" },
@@ -342,79 +359,85 @@ export function SampleReport() {
                 { label:"Generated", val:"Jun 18, 2025" },
               ].map(({ label, val }) => (
                 <div key={label}>
-                  <div className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.25)", marginBottom:6, letterSpacing:"0.04em" }}>{label}</div>
-                  <div className="font-display" style={{ fontSize:15, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>{val}</div>
+                  <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.25)", marginBottom:5, letterSpacing:"0.04em" }}>{label}</div>
+                  <div className="font-display" style={{ fontSize:14, fontWeight:500, color:"rgba(255,255,255,0.75)" }}>{val}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Score */}
-          <div style={{ flexShrink:0, textAlign:"right" }}>
-            <div className="font-display" style={{ fontSize:120, fontWeight:700, lineHeight:1, letterSpacing:"-0.055em", color:gradeColor }}>
+          {/* Right: Score — sits at top on mobile, floats right on sm+ */}
+          <div className="flex sm:flex-col items-center sm:items-end gap-4 sm:gap-0 sm:flex-shrink-0">
+            <div className="font-display" style={{ fontSize:"clamp(64px,15vw,120px)", fontWeight:700, lineHeight:1, letterSpacing:"-0.055em", color:gradeColor }}>
               {riskScore}
             </div>
-            <div className="font-display" style={{ fontSize:14, color:"rgba(255,255,255,0.28)", marginTop:4, letterSpacing:"0.01em" }}>out of 100</div>
-            <div style={{ display:"inline-flex", alignItems:"center", gap:7, marginTop:18, padding:"7px 16px", background:`${gradeColor}12`, border:`1px solid ${gradeColor}28`, borderRadius:100 }}>
-              <div style={{ width:6, height:6, borderRadius:"50%", background:gradeColor, flexShrink:0 }} />
-              <span className="font-display" style={{ fontSize:11, fontWeight:600, letterSpacing:"0.1em", color:gradeColor, textTransform:"uppercase" as const }}>
-                {GRADE_LABEL[grade]}
-              </span>
+            <div className="flex flex-col items-start sm:items-end gap-1">
+              <div className="font-display" style={{ fontSize:13, color:"rgba(255,255,255,0.28)", letterSpacing:"0.01em" }}>out of 100</div>
+              <div style={{ display:"inline-flex", alignItems:"center", gap:7, marginTop:8, padding:"7px 14px", background:`${gradeColor}12`, border:`1px solid ${gradeColor}28`, borderRadius:100 }}>
+                <div style={{ width:6, height:6, borderRadius:"50%", background:gradeColor, flexShrink:0 }} />
+                <span className="font-display" style={{ fontSize:11, fontWeight:600, letterSpacing:"0.1em", color:gradeColor, textTransform:"uppercase" as const }}>
+                  {GRADE_LABEL[grade]}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* ── MAIN GRID ── */}
-        <div style={{
-          display:"grid", gridTemplateColumns:"1fr 280px", gap:0,
-          background: BG, border:`1px solid ${BORDER}`, borderTop:"none", borderRadius:"0 0 16px 16px",
-        }}>
-
-          {/* LEFT */}
-          <div style={{ padding:"48px 40px 64px", display:"flex", flexDirection:"column", gap:48, borderRight:`1px solid ${BORDER}`, minWidth:0 }}>
+        {/* ── MAIN GRID: sidebar on right on lg+, stacked on mobile ── */}
+        <div
+          className="grid grid-cols-1 lg:grid-cols-[1fr_260px]"
+          style={{ background: BG, border:`1px solid ${BORDER}`, borderTop:"none", borderRadius:"0 0 16px 16px" }}
+        >
+          {/* LEFT: main content */}
+          <div
+            className="flex flex-col gap-10 lg:border-r"
+            style={{ padding:"32px 24px 48px", borderColor: BORDER, minWidth:0 }}
+          >
 
             {/* Executive Summary */}
             <div>
               <div className="font-display" style={EYE}>Executive Summary</div>
-              <div style={{ ...CARD, padding:"28px 32px", display:"grid", gridTemplateColumns:"repeat(5,1fr)" }}>
-                {[
-                  { label:"Risk Score", val:String(riskScore), col:gradeColor },
-                  { label:"Findings",   val:String(total),     col:"#fff" },
-                  { label:"Critical",   val:String(critical),  col:critical>0?"#F87171":"#fff" },
-                  { label:"Modules",    val:"5",               col:"#fff" },
-                  { label:"Confidence", val:`${avgConf}%`,     col:"#fff" },
-                ].map(({ label, val, col }, i, arr) => (
-                  <div key={label} style={{
-                    paddingRight: i < arr.length-1 ? 24 : 0,
-                    paddingLeft:  i > 0 ? 24 : 0,
-                    borderRight:  i < arr.length-1 ? `1px solid ${BORDER}` : "none",
-                  }}>
-                    <div className="font-display" style={{ fontSize:32, fontWeight:700, letterSpacing:"-0.035em", lineHeight:1, marginBottom:9, color:col }}>{val}</div>
-                    <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.28)", letterSpacing:"0.1em", textTransform:"uppercase" as const }}>{label}</div>
-                  </div>
-                ))}
+              {/* 2 cols on mobile, 3 on sm, 5 on md */}
+              <div
+                style={{ ...CARD, padding:"20px" }}
+              >
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                  {[
+                    { label:"Risk Score", val:String(riskScore), col:gradeColor },
+                    { label:"Findings",   val:String(total),     col:"#fff" },
+                    { label:"Critical",   val:String(critical),  col:critical>0?"#F87171":"#fff" },
+                    { label:"Modules",    val:"5",               col:"#fff" },
+                    { label:"Confidence", val:`${avgConf}%`,     col:"#fff" },
+                  ].map(({ label, val, col }) => (
+                    <div key={label}>
+                      <div className="font-display" style={{ fontSize:28, fontWeight:700, letterSpacing:"-0.035em", lineHeight:1, marginBottom:7, color:col }}>{val}</div>
+                      <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.28)", letterSpacing:"0.1em", textTransform:"uppercase" as const }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
             {/* Severity Overview */}
             <div>
               <div className="font-display" style={EYE}>Severity Overview</div>
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10 }}>
+              {/* 2 cols on mobile, 4 on md */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
                 {(["critical","high","medium","low"] as Severity[]).map(sev => {
                   const cnt   = SAMPLE.severity_counts[sev];
                   const col   = SEV[sev];
                   const pct   = total > 0 ? ((cnt/total)*100).toFixed(1) : "0.0";
                   const worst = sev === "critical" && cnt > 0;
                   return (
-                    <div key={sev} style={{ background:SURFACE, border:`1px solid ${worst ? col+"24" : BORDER}`, borderRadius:14, padding:"20px 18px" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:18 }}>
+                    <div key={sev} style={{ background:SURFACE, border:`1px solid ${worst ? col+"24" : BORDER}`, borderRadius:14, padding:"16px 14px" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:14 }}>
                         <div style={{ width:7, height:7, borderRadius:"50%", background:col, flexShrink:0 }} />
-                        <span className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.1em", color:worst?col:"rgba(255,255,255,0.4)", textTransform:"uppercase" as const }}>
+                        <span className="font-display" style={{ fontSize:9, fontWeight:600, letterSpacing:"0.1em", color:worst?col:"rgba(255,255,255,0.4)", textTransform:"uppercase" as const }}>
                           {SEV_LABEL[sev]}
                         </span>
                       </div>
-                      <div className="font-display" style={{ fontSize:38, fontWeight:700, color:"#fff", letterSpacing:"-0.04em", lineHeight:1, marginBottom:6 }}>{cnt}</div>
-                      <div className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.28)" }}>{pct}% of total</div>
+                      <div className="font-display" style={{ fontSize:32, fontWeight:700, color:"#fff", letterSpacing:"-0.04em", lineHeight:1, marginBottom:5 }}>{cnt}</div>
+                      <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.28)" }}>{pct}% of total</div>
                     </div>
                   );
                 })}
@@ -424,7 +447,7 @@ export function SampleReport() {
             {/* Risk Distribution */}
             <div>
               <div className="font-display" style={EYE}>Risk Distribution</div>
-              <div style={{ ...CARD, padding:"28px 32px" }}>
+              <div style={{ ...CARD, padding:"24px" }}>
                 <RiskDistribution counts={SAMPLE.severity_counts} />
               </div>
             </div>
@@ -437,7 +460,7 @@ export function SampleReport() {
 
             {/* Findings */}
             <div>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
                 <div className="font-display" style={{ ...EYE, marginBottom:0 }}>Findings</div>
                 <div className="font-display" style={{ fontSize:12, color:"rgba(255,255,255,0.25)" }}>{total} total</div>
               </div>
@@ -451,64 +474,52 @@ export function SampleReport() {
             </a>
           </div>
 
-          {/* SIDEBAR */}
-          <div style={{ padding:"48px 24px 64px", display:"flex", flexDirection:"column", gap:14 }}>
+          {/* SIDEBAR — below content on mobile, right column on lg */}
+          <div style={{ padding:"32px 20px 48px", display:"flex", flexDirection:"column", gap:12 }}>
 
-            {/* Audit Snapshot */}
-            <div style={{ ...CARD, padding:"22px 24px" }}>
-              <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.22)", textTransform:"uppercase" as const, marginBottom:18 }}>
-                Audit Snapshot
-              </div>
+            <SidebarSection title="Audit Snapshot">
               {[
                 { label:"Risk Score",     right: <span className="font-display" style={{ fontSize:13, fontWeight:600, color:gradeColor }}>{riskScore} / 100</span> },
                 { label:"Grade",          right: <span className="font-display" style={{ fontSize:14, fontWeight:700, color:gradeColor, letterSpacing:"-0.01em" }}>{grade}</span> },
                 { label:"Total Findings", right: <span className="font-display" style={{ fontSize:13, fontWeight:600, color:"#fff" }}>{total}</span> },
                 { label:"Status",         right: <div style={{ display:"flex", alignItems:"center", gap:6 }}><div style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80" }} /><span className="font-display" style={{ fontSize:13, fontWeight:500, color:"rgba(255,255,255,0.55)" }}>Completed</span></div> },
               ].map(({ label, right }, i, arr) => (
-                <div key={label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 0", borderBottom:i<arr.length-1?`1px solid ${BORDER5}`:"none" }}>
+                <div key={label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0", borderBottom:i<arr.length-1?`1px solid ${BORDER5}`:"none" }}>
                   <span className="font-display" style={{ fontSize:13, color:"rgba(255,255,255,0.38)" }}>{label}</span>
                   {right}
                 </div>
               ))}
-            </div>
+            </SidebarSection>
 
-            {/* Provenance */}
-            <div style={{ ...CARD, padding:"22px 24px" }}>
-              <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.22)", textTransform:"uppercase" as const, marginBottom:18 }}>
-                Provenance
-              </div>
+            <SidebarSection title="Provenance">
               <div style={{ display:"flex", flexDirection:"column" }}>
-                <div style={{ padding:"11px 0", borderBottom:`1px solid ${BORDER5}` }}>
-                  <div className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.22)", marginBottom:5, letterSpacing:"0.04em" }}>Walrus Blob</div>
+                <div style={{ padding:"10px 0", borderBottom:`1px solid ${BORDER5}` }}>
+                  <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.22)", marginBottom:4, letterSpacing:"0.04em" }}>Walrus Blob</div>
                   <span className="font-mono-plex" style={{ fontSize:11, color:"rgba(255,255,255,0.47)" }}>4xK9mR2p…NqE7</span>
                 </div>
-                <div style={{ padding:"11px 0", borderBottom:`1px solid ${BORDER5}` }}>
-                  <div className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.22)", marginBottom:5, letterSpacing:"0.04em" }}>Transaction</div>
+                <div style={{ padding:"10px 0", borderBottom:`1px solid ${BORDER5}` }}>
+                  <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.22)", marginBottom:4, letterSpacing:"0.04em" }}>Transaction</div>
                   <span className="font-mono-plex" style={{ fontSize:11, color:"#8B8DFF" }}>Cx4R…d9fE</span>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"11px 0" }}>
-                  <div className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.22)", letterSpacing:"0.04em" }}>Seal Status</div>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0" }}>
+                  <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.22)", letterSpacing:"0.04em" }}>Seal Status</div>
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                     <div style={{ width:5, height:5, borderRadius:"50%", background:"#4ade80" }} />
                     <span className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.47)" }}>Verified</span>
                   </div>
                 </div>
               </div>
-            </div>
+            </SidebarSection>
 
-            {/* Analysis Layers */}
-            <div style={{ ...CARD, padding:"22px 24px" }}>
-              <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.22)", textTransform:"uppercase" as const, marginBottom:18 }}>
-                Analysis Layers
-              </div>
+            <SidebarSection title="Analysis Layers">
               {[
                 { name:"Rules Engine",    layer:"Layer 1", count:byLayer.layer1, on:true },
                 { name:"OZ Benchmarking", layer:"Layer 2", count:byLayer.layer2, on:true },
                 { name:"Semantic Memory", layer:"Layer 3", count:byLayer.layer3, on:SAMPLE.memory_context_used },
                 { name:"ML Analysis",     layer:"Layer 4", count:1, on:SAMPLE.layer4_used },
               ].map(({ name, layer, count, on }, i, arr) => (
-                <div key={layer} style={{ padding:"12px 0", borderBottom:i<arr.length-1?`1px solid ${BORDER5}`:"none", opacity:on?1:0.35 }}>
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:5 }}>
+                <div key={layer} style={{ padding:"10px 0", borderBottom:i<arr.length-1?`1px solid ${BORDER5}`:"none", opacity:on?1:0.35 }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4 }}>
                     <span className="font-display" style={{ fontSize:12, fontWeight:500, color:"rgba(255,255,255,0.65)" }}>{name}</span>
                     <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                       <div style={{ width:5, height:5, borderRadius:"50%", background:on?"#4ade80":"rgba(255,255,255,0.18)" }} />
@@ -516,28 +527,24 @@ export function SampleReport() {
                     </div>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                    <span className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.2)" }}>{layer}</span>
-                    <span className="font-display" style={{ fontSize:11, color:"rgba(255,255,255,0.38)" }}>{count} findings</span>
+                    <span className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.2)" }}>{layer}</span>
+                    <span className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.38)" }}>{count} findings</span>
                   </div>
                 </div>
               ))}
-            </div>
+            </SidebarSection>
 
-            {/* Disclaimer */}
-            <div style={{ ...CARD, padding:"20px 24px" }}>
-              <div className="font-display" style={{ fontSize:10, fontWeight:600, letterSpacing:"0.14em", color:"rgba(255,255,255,0.18)", textTransform:"uppercase" as const, marginBottom:10 }}>
-                Disclaimer
-              </div>
+            <SidebarSection title="Disclaimer">
               <p className="font-sans-switzer" style={{ fontSize:11, lineHeight:1.72, color:"rgba(255,255,255,0.22)", margin:0 }}>
                 {SAMPLE.watermark}
               </p>
-            </div>
+            </SidebarSection>
 
           </div>
         </div>
 
         {/* CTA */}
-        <div className="mt-10 flex justify-center">
+        <div className="mt-8 sm:mt-10 flex justify-center">
           <a href="/app" className="bg-[var(--brand-lavender)] hover:bg-[var(--brand-lavender-hover)] text-[var(--ink)] px-8 py-3.5 rounded-full text-sm font-semibold tracking-wide transition-all flex items-center gap-2 shadow-lg">
             Run your own audit <span className="opacity-80 text-xs">↗</span>
           </a>

@@ -977,3 +977,44 @@ Deadline: June 21, 2026 (Sui Overflow — Walrus track).
 - Artifacts:
   - Live audit IDs (clean): f25a6c60, 827dcd2e
   - Live audit IDs (vuln): 6200a241, e99312a5
+
+[2026-06-23] Session — UI fixes + demo UX
+- Worked on: polling bug fix, live demo video embed, demo prefill buttons
+- Completed (tested end-to-end):
+  - fix(ui): polling loop stuck on "Encrypting Report" — root cause was void pollJob()
+    inside setJob() state updater (React 18 concurrent mode calls updaters multiple times).
+    Fixed with plain setInterval(pollJob, 2500) + useRef to clear on terminal status.
+  - LiveDemoHero: YouTube video (lhozR8KO6-g) embedded inside rounded-[48px] rectangle,
+    mascot (2.png) repositioned inside rectangle overlapping heading, video hangs below.
+  - /app page: "Try a demo" row with 3 one-click pills — Package ID, Source Code, GitHub Repo.
+    Clicking fills the form input, switches tab, copies value to clipboard, flashes green.
+- Commits:
+  6b6fc61 fix(ui): fix polling loop stuck on Encrypting Report
+  (LiveDemoHero + demo buttons uncommitted — pending git add + push to AWS)
+- Current state: local dev server working. Changes not yet pushed to AWS EC2.
+- Next session should:
+  - git add + commit LiveDemoHero.tsx and app/page.tsx changes
+  - git push origin main → SSH into EC2 → docker build + restart
+  - Verify Gate fallback (remove GROQ_API_KEY → score=100 + yellow banner)
+- Issues found: none
+- Artifacts: none new
+
+[2026-06-26] Session — Mobile responsive overhaul
+- Worked on: Full site mobile responsiveness
+- Completed (tested end-to-end):
+  - Header.tsx: Added hamburger menu (useClient + useState) — 3-line animated hamburger, dropdown overlay on mobile, all nav links + CTA. Desktop nav unchanged.
+  - Hero.tsx: Base heading text-[64px] → text-[40px] (sm+ unchanged). Quote text text-[34px] → text-[26px].
+  - LiveDemoHero.tsx: Heading text-[58px] → text-[36px]. Mascot w-[520px] → w-[260px] sm:w-[520px] (no more overflow on 375px screens). Section padding reduced on mobile.
+  - CTA.tsx: Base heading text-[64px] → text-[40px].
+  - TrustVerification.tsx: Converted inline gridTemplateColumns ("3fr 2fr" / "2fr 3fr") to grid-cols-2 Tailwind (equal columns on all sizes, clean).
+  - SampleReport.tsx: Full responsive rewrite — report hero stacks on mobile (score beside title), main grid switches from 1fr+280px to single column on mobile (sidebar below), exec summary 2-col mobile/3-col sm/5-col md, severity overview 2-col mobile/4-col md, patch code blocks stack vertically on mobile (flex-col sm:flex-row). All paddings responsive.
+  - app/page.tsx: Heading text-[48px] → text-[36px]. Tab switcher labels shortened on mobile (Package/Source/GitHub vs full names). Form header stacks on mobile. All form zone paddings reduced (px-10 → px-6 sm:px-10).
+  - audit/[id]/page.tsx: Nav height reduced (64px logo → 40px). Nav spacer 104px → 68px. Main container px-4 sm:px-8 lg:px-10. Hero section flex-col on mobile. Score uses clamp(). Main grid single-column on mobile (lg:grid-cols-[1fr_312px]). Exec summary 2-col/3-col/5-col responsive. Severity 2-col/4-col responsive. Sidebar loses sticky on mobile (lg:sticky only).
+- Commits: (below)
+- Current state: build clean (npx next build passes, no TypeScript errors). All responsive breakpoints implemented.
+- Next session should:
+  - git push to AWS EC2 and verify on real mobile device
+  - Verify Gate fallback (remove GROQ_API_KEY → score=100 + yellow warning banner)
+  - Verify Groq reasoning text visible in browser when expanding a confirmed finding
+- Issues found: none
+- Artifacts: none
