@@ -40,11 +40,11 @@ export function TrustVerification() {
           </div>
 
           <div className="flex-1 flex flex-col gap-4">
-            <div className="grid gap-4" style={{ gridTemplateColumns: "3fr 2fr" }}>
+            <div className="grid grid-cols-2 gap-4">
               <TrustCard card={CARDS[0]} />
               <TrustCard card={CARDS[1]} />
             </div>
-            <div className="grid gap-4" style={{ gridTemplateColumns: "2fr 3fr" }}>
+            <div className="grid grid-cols-2 gap-4">
               <TrustCard card={CARDS[2]} />
               <TrustCard card={CARDS[3]} />
             </div>

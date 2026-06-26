@@ -126,7 +126,7 @@ const STAGE_SUB: Record<AuditStatus, string> = {
 function LoadingScreen({ job }: { job:JobStatus }) {
   return (
     <div style={{
-      position:"relative", minHeight:"calc(100vh - 104px)", overflow:"hidden",
+      position:"relative", minHeight:"calc(100vh - 68px)", overflow:"hidden",
       display:"flex", flexDirection:"column",
       alignItems:"center", justifyContent:"center", padding:"80px 28px", textAlign:"center",
     }}>
@@ -422,11 +422,11 @@ export default function AuditPage() {
         position:"fixed", top:0, left:0, right:0, zIndex:100,
         background:"rgba(10,10,10,0.72)", backdropFilter:"blur(16px)",
         WebkitBackdropFilter:"blur(16px)", borderBottom:"1px solid rgba(255,255,255,0.06)",
-        display:"flex", alignItems:"center", padding:"20px 32px",
+        display:"flex", alignItems:"center", padding:"14px 16px",
       }}>
-        <div style={{ display:"flex", alignItems:"center", gap:20, flex:1, minWidth:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, flex:1, minWidth:0 }}>
           <Link href="/" style={{ display:"flex", alignItems:"center", gap:9, textDecoration:"none", flexShrink:0 }}>
-            <img src="/Logo.png" alt="MoveLens" style={{ height:64 }} />
+            <img src="/Logo.png" alt="MoveLens" style={{ height:40 }} />
           </Link>
           <div style={{ width:1, height:16, background:"rgba(255,255,255,0.1)", flexShrink:0 }} />
           <div style={{ display:"flex", alignItems:"center", gap:6, overflow:"hidden", minWidth:0 }}>
@@ -445,13 +445,13 @@ export default function AuditPage() {
       </nav>
 
       {/* Fixed nav spacer */}
-      <div style={{ height:104, position:"relative", zIndex:10 }} />
+      <div style={{ height:68, position:"relative", zIndex:10 }} />
 
       {/* ── Content ──────────────────────────────────────────────────────────── */}
       <div style={{ position:"relative", zIndex:10 }}>
 
         {err && (
-          <div style={{ maxWidth:1400, margin:"20px auto", padding:"0 40px" }}>
+          <div className="px-4 sm:px-10" style={{ maxWidth:1400, margin:"20px auto" }}>
             <div className="font-sans-switzer" style={{ padding:16, borderRadius:12, background:"rgba(248,113,113,0.06)", border:"1px solid rgba(248,113,113,0.2)", color:"#F87171", fontSize:14 }}>
               Failed to load: {err}
             </div>
@@ -471,7 +471,7 @@ export default function AuditPage() {
         {/* Failed */}
         {isFailed && (
           <div style={{ minHeight:"80vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"80px 24px" }}>
-            <div style={{ width:520, ...CARD, padding:48, textAlign:"center" }}>
+            <div style={{ width:"min(520px, 90vw)", ...CARD, padding:"32px 24px", textAlign:"center" }}>
               <div className="font-display" style={{ fontSize:64, fontWeight:700, letterSpacing:"-0.04em", color:"#F87171", lineHeight:1, marginBottom:14 }}>!</div>
               <div className="font-display" style={{ fontSize:18, fontWeight:600, color:"#fff", marginBottom:8 }}>Audit Failed</div>
               {job?.error && <p className="font-sans-switzer" style={{ fontSize:14, color:"rgba(255,255,255,0.35)", lineHeight:1.65, marginBottom:28 }}>{job.error}</p>}
@@ -496,10 +496,10 @@ export default function AuditPage() {
 
         {/* ── FULL REPORT ── */}
         {isDone && report && total > 0 && (
-          <div style={{ maxWidth:1400, margin:"0 auto", padding:"0 40px" }}>
+          <div className="px-4 sm:px-8 lg:px-10" style={{ maxWidth:1400, margin:"0 auto" }}>
 
             {/* HERO */}
-            <div style={{ padding:"80px 0 72px", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:48, borderBottom:`1px solid ${BORDER}` }}>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 sm:gap-12" style={{ padding:"40px 0 36px", borderBottom:`1px solid ${BORDER}` }}>
               <div style={{ flex:1, minWidth:0 }}>
                 <div className="font-display" style={EYE}>Security Report</div>
                 <div className="font-display" style={{ fontSize:44, fontWeight:700, color:"#fff", letterSpacing:"-0.03em", lineHeight:1.08, marginBottom:10 }}>
@@ -564,8 +564,8 @@ export default function AuditPage() {
               </div>
 
               {/* Score */}
-              <div style={{ flexShrink:0, textAlign:"right" }}>
-                <div className="font-display" style={{ fontSize:132, fontWeight:700, lineHeight:1, letterSpacing:"-0.055em", color:gradeColor }}>
+              <div className="flex sm:flex-col items-center sm:items-end gap-4 sm:gap-0 sm:flex-shrink-0 sm:text-right">
+                <div className="font-display" style={{ fontSize:"clamp(72px,15vw,132px)", fontWeight:700, lineHeight:1, letterSpacing:"-0.055em", color:gradeColor }}>
                   {riskScore}
                 </div>
                 <div className="font-display" style={{ fontSize:14, color:"rgba(255,255,255,0.28)", marginTop:4, letterSpacing:"0.01em" }}>out of 100</div>
@@ -579,7 +579,7 @@ export default function AuditPage() {
             </div>
 
             {/* MAIN GRID */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 312px", gap:56, padding:"56px 0 96px", alignItems:"start" }}>
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_312px] gap-10 lg:gap-14" style={{ padding:"32px 0 64px", alignItems:"start" }}>
 
               {/* LEFT */}
               <div style={{ display:"flex", flexDirection:"column", gap:56, minWidth:0 }}>
@@ -587,7 +587,7 @@ export default function AuditPage() {
                 {/* Executive Summary */}
                 <div>
                   <div className="font-display" style={EYE}>Executive Summary</div>
-                  <div style={{ ...CARD, padding:"32px 36px", display:"grid", gridTemplateColumns:"repeat(5, 1fr)" }}>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4" style={{ ...CARD, padding:"20px 24px" }}>
                     {[
                       { label:"Risk Score", val:String(riskScore),                          col:gradeColor },
                       { label:"Findings",   val:String(total),                              col:"#fff" },
@@ -595,12 +595,8 @@ export default function AuditPage() {
                       { label:"Modules",    val:String(report.package.moduleCount),         col:"#fff" },
                       { label:"Confidence", val:`${avgConf}%`,                              col:"#fff" },
                     ].map(({ label, val, col }, i, arr) => (
-                      <div key={label} style={{
-                        paddingRight: i<arr.length-1 ? 28 : 0,
-                        paddingLeft:  i>0 ? 28 : 0,
-                        borderRight:  i<arr.length-1 ? `1px solid ${BORDER}` : "none",
-                      }}>
-                        <div className="font-display" style={{ fontSize:36, fontWeight:700, letterSpacing:"-0.035em", lineHeight:1, marginBottom:9, color:col }}>{val}</div>
+                      <div key={label}>
+                        <div className="font-display" style={{ fontSize:28, fontWeight:700, letterSpacing:"-0.035em", lineHeight:1, marginBottom:7, color:col }}>{val}</div>
                         <div className="font-display" style={{ fontSize:10, color:"rgba(255,255,255,0.28)", letterSpacing:"0.1em", textTransform:"uppercase" as const }}>{label}</div>
                       </div>
                     ))}
@@ -610,7 +606,7 @@ export default function AuditPage() {
                 {/* Severity Overview */}
                 <div>
                   <div className="font-display" style={EYE}>Severity Overview</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:12 }}>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
                     {(["critical","high","medium","low"] as Severity[]).map(sev => {
                       const cnt   = report.severity_counts[sev];
                       const col   = SEV[sev];
@@ -726,7 +722,7 @@ export default function AuditPage() {
               </div>
 
               {/* SIDEBAR */}
-              <div style={{ position:"sticky", top:88, display:"flex", flexDirection:"column", gap:14 }}>
+              <div className="lg:sticky" style={{ top:88, display:"flex", flexDirection:"column", gap:14 }}>
 
                 {/* Audit Snapshot */}
                 <div style={{ ...CARD, padding:"22px 24px" }}>

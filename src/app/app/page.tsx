@@ -199,7 +199,7 @@ export default function AppPage() {
         <AuroraBackground />
 
         <div className="relative z-10 text-center max-w-4xl mx-auto">
-          <h1 className="font-display font-bold text-[48px] sm:text-[64px] md:text-[80px] leading-[0.92] tracking-[-0.035em] text-white mb-5">
+          <h1 className="font-display font-bold text-[36px] sm:text-[64px] md:text-[80px] leading-[0.92] tracking-[-0.035em] text-white mb-5">
             Audit your contract.
           </h1>
           <p className="font-sans-switzer text-[16px] sm:text-[18px] leading-[1.6] max-w-xl mx-auto font-extralight" style={{ color: "var(--text-secondary)" }}>
@@ -252,13 +252,14 @@ export default function AppPage() {
                 key={t}
                 type="button"
                 onClick={() => { setTab(t); setApiError(null); setGitUrlError(null); }}
-                className="px-6 py-2.5 rounded-full font-sans-switzer text-sm font-medium transition-all"
+                className="px-3 py-2 sm:px-6 sm:py-2.5 rounded-full font-sans-switzer text-xs sm:text-sm font-medium transition-all"
                 style={{
                   background: tab === t ? "var(--brand-lavender)" : "transparent",
                   color:      tab === t ? "var(--ink)"            : "var(--text-secondary)",
                 }}
               >
-                {t === "address" ? "Package Address" : t === "source" ? "Paste Source" : "GitHub Repo"}
+                <span className="hidden sm:inline">{t === "address" ? "Package Address" : t === "source" ? "Paste Source" : "GitHub Repo"}</span>
+                <span className="sm:hidden">{t === "address" ? "Package" : t === "source" ? "Source" : "GitHub"}</span>
               </button>
             ))}
           </div>
@@ -270,10 +271,10 @@ export default function AppPage() {
           <form onSubmit={handleSubmit}>
 
             {/* ── Zone 1: Header — logo + label left, network right ── */}
-            <div className="flex items-center justify-between px-10 pt-10 pb-8">
-              <div className="flex items-center gap-3.5">
-                <img src="/Logo.png" alt="MoveLens" className="h-10 w-auto object-contain" />
-                <span className="font-display font-semibold text-[22px] text-white leading-none">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 sm:px-10 pt-7 sm:pt-10 pb-6 sm:pb-8">
+              <div className="flex items-center gap-3">
+                <img src="/Logo.png" alt="MoveLens" className="h-8 sm:h-10 w-auto object-contain" />
+                <span className="font-display font-semibold text-[17px] sm:text-[22px] text-white leading-none">
                   {tab === "address" ? "Sui Package Address" : tab === "source" ? "Move Source" : "GitHub Repository"}
                 </span>
               </div>
@@ -300,7 +301,7 @@ export default function AppPage() {
 
             {/* ── Zone 2: Input area ── */}
             {tab === "git" ? (
-              <div className="px-10 pb-10">
+              <div className="px-6 sm:px-10 pb-8 sm:pb-10">
                 <input
                   type="url"
                   value={gitUrl}
@@ -325,7 +326,7 @@ export default function AppPage() {
                 </div>
               </div>
             ) : tab === "address" ? (
-              <div className="px-10 pb-10">
+              <div className="px-6 sm:px-10 pb-8 sm:pb-10">
                 <input
                   type="text"
                   value={address}
@@ -349,7 +350,7 @@ export default function AppPage() {
                 </div>
               </div>
             ) : (
-              <div className="px-10 pb-8">
+              <div className="px-6 sm:px-10 pb-6 sm:pb-8">
                 <div className="flex items-center justify-between mb-5">
                   <span className="font-display text-[15px]" style={{ color: "var(--text-secondary)" }}>{fileName}</span>
                   <button
@@ -375,7 +376,7 @@ export default function AppPage() {
             )}
 
             {/* ── Zone 3: Settings strip ── */}
-            <div className="flex items-center gap-4 px-10 pb-7">
+            <div className="flex items-center gap-4 px-6 sm:px-10 pb-6 sm:pb-7">
               <label className="flex items-center gap-3.5 cursor-pointer flex-1 min-w-0">
                 <input
                   type="checkbox"
@@ -397,13 +398,13 @@ export default function AppPage() {
 
             {/* ── API error ── */}
             {apiError && (
-              <div className="px-10 pb-5 font-display text-[14px]" style={{ color: "var(--severity-critical)" }}>
+              <div className="px-6 sm:px-10 pb-4 sm:pb-5 font-display text-[14px]" style={{ color: "var(--severity-critical)" }}>
                 ⚠ {apiError}
               </div>
             )}
 
             {/* ── Zone 4: CTA ── */}
-            <div className="px-8 pb-8">
+            <div className="px-5 sm:px-8 pb-6 sm:pb-8">
               <button
                 type="submit"
                 disabled={submitting}

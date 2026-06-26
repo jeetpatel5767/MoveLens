@@ -10,7 +10,7 @@ export function CTA() {
         </div>
 
         <div className="max-w-[1200px] w-full mx-auto text-center flex flex-col items-center relative z-20">
-          <h1 className="font-display font-bold text-[64px] sm:text-[100px] md:text-[116px] lg:text-[128px] leading-[0.9] tracking-[-0.035em] text-white mb-6 max-w-5xl">
+          <h1 className="font-display font-bold text-[40px] sm:text-[100px] md:text-[116px] lg:text-[128px] leading-[0.9] tracking-[-0.035em] text-white mb-6 max-w-5xl">
             Don&rsquo;t ship your
             <br />
             contract blind.
