@@ -1,20 +1,58 @@
+# === Dependencies ===
 node_modules/
+
+# === Environment ===
 .env
 .env.local
+
+# === Next.js ===
 .next/
 out/
 dist/
-lancedb_store/
+
+# === TypeScript ===
+*.tsbuildinfo
+
+# === Python ===
 __pycache__/
 *.pyc
 .python-version
-/tmp/
-*.log
+
+# === Database ===
 audits.db
 audits.db-shm
 audits.db-wal
 
-# Docs / internal markdown (live at https://movelens.mintlify.io)
+# === LanceDB vector store ===
+lancedb_store/
+
+# === Logs & temp files ===
+*.log
+/tmp/
+git_report_tmp.json
+-w
+
+# === Move build artifacts ===
+move/**/build/
+
+# === AI tooling / session files ===
+.claude/
+progress.txt
+features.json
+init.sh
+mcp-server.ts
+movelens-mcp.json
+
+# === Old frontend (code now lives in src/) ===
+Movelens fronted/
+
+# === Test / verification scripts ===
+test/
+
+# === Script outputs ===
+scripts/cetus-result.json
+
+# === Docs & internal markdown (live at https://movelens.mintlify.io) ===
 docs/
 *.md
 !README.md
